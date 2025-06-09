@@ -1,0 +1,130 @@
+"use server";
+
+import { checkUser } from "@/lib/auth/check";
+import { prisma } from "../prisma";
+import { User } from "@prisma/client";
+
+export const createUser = async (
+  email: string,
+  hashedPassword: string,
+  name: string,
+  username: string
+) => {
+  try {
+    type UserCreateInput = {
+      email: string;
+      password: string;
+      name: string;
+      username: string;
+    };
+    const newUser = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        username,
+        name,
+      } as UserCreateInput,
+    });
+
+    return newUser;
+  } catch (e) {
+    console.error("Error creating user:", e);
+    if (e instanceof Error) {
+      console.error("Error message:", e.message);
+      console.error("Error stack:", e.stack);
+    }
+    return null;
+  }
+};
+
+export const getUserByEmail = async (email: string) => {
+  if (!email) {
+    return null;
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        email: email,
+      },
+    });
+
+    return user;
+  } catch (error) {
+    console.error("Error in getUserByEmail:");
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    } else {
+      console.error("Unknown error:", error);
+    }
+    throw error; // Re-throw the error to be handled by the auth logic
+  }
+};
+
+export const getUserById = async (userId: string) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        email: true,
+      },
+    });
+    if (!user) return { error: "User not found" };
+
+    return {
+      name: user?.name,
+      id: user?.id,
+      username: user?.username,
+      email: user?.email,
+    };
+  } catch (error) {
+    // Log the error stack instead of the error object directly
+    if (error instanceof Error) {
+      console.error("Error in user creation process - Stack:", error.stack);
+      throw new Error(`Failed to create user: ${error.message}`);
+    } else {
+      console.error("Unknown error in user creation process");
+      throw new Error("Failed to create user: Unknown error");
+    }
+    return null;
+  }
+};
+
+export const updateUser = async (userId: string, data: Partial<User>) => {
+  const { success } = await checkUser({ userId });
+  if (!success) {
+    return { error: "Unauthorized" };
+  }
+  // check if the username is already taken
+  if (data.username) {
+    const existingUser = await prisma.user.findUnique({
+      where: { username: data.username },
+    });
+    if (existingUser) {
+      return { error: "Username already taken" };
+    }
+  }
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data,
+  });
+
+  return user;
+};
+
+export const deleteUser = async (userId: string) => {
+  const { success } = await checkUser({ userId });
+  if (!success) {
+    return { error: "Unauthorized" };
+  }
+
+  const user = await prisma.user.delete({
+    where: { id: userId },
+  });
+
+  return user;
+};
