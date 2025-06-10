@@ -8,20 +8,23 @@ generator client {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  name          String?
-  email         String?        @unique
-  emailVerified DateTime?
-  username      String?        @unique
-  password      String?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  apiKeys       ApiKey[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  Conversation  Conversation[]
-  Message       Message[]
+  id                String              @id @default(cuid())
+  name              String?
+  email             String?             @unique
+  emailVerified     DateTime?
+  username          String?             @unique
+  password          String?
+  image             String?
+  accounts          Account[]
+  sessions          Session[]
+  apiKeys           ApiKey[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  Conversation      Conversation[]
+  Message           Message[]
+  ChatSettings      ChatSettings[]
+  UserCustomization UserCustomization[]
+  PreferredModel    PreferredModel[]
 }
 
 model Account {
@@ -92,11 +95,69 @@ model Message {
   content          String
   role             String
   provider         String
+  model            String?
   reasoningContent String?
+  promptId         String?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   conversation     Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt           Prompt?      @relation(fields: [promptId], references: [id])
+}
+
+model ChatSettings {
+  id          String   @id @default(cuid())
+  userId      String
+  provider    String
+  model       String
+  promptId    String?
+  temperature Float?   @default(0.5)
+  maxTokens   Int?     @default(1000)
+  topP        Float?   @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt      Prompt?  @relation(fields: [promptId], references: [id])
+}
+
+model UserCustomization {
+  id                    String   @id @default(cuid())
+  userId                String
+  displayName           String?
+  userRole              String?
+  userTraits            String?
+  additionalContext     String?
+  isBoringTheme         Boolean  @default(false)
+  hidePersonalInfo      Boolean  @default(false)
+  disableThematicBreaks Boolean  @default(false)
+  showStatsForNerds     Boolean  @default(false)
+  mainTextFont          String?  @default("Inter")
+  codeFont              String?  @default("JetBrains Mono")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+}
+
+model Prompt {
+  id           String         @id @default(cuid())
+  userId       String
+  prompt       String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  ChatSettings ChatSettings[]
+  Message      Message[]
+}
+
+model PreferredModel {
+  id        String   @id @default(cuid())
+  userId    String
+  model     String
+  provider  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ResponseCache {

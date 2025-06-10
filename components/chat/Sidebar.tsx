@@ -9,6 +9,9 @@ import { Search, Pin, X } from "lucide-react";
 import { Message } from "ai";
 import { Conversation } from "@prisma/client";
 import { ChatContext } from "@/context/ChatContext";
+import { useRouter } from "next/navigation";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import SettingsModal from "@/components/settings/SettingsModal";
 
 interface SidebarProps {
   isCollapsed?: boolean;
@@ -22,6 +25,7 @@ interface SidebarProps {
 export function Sidebar({ setConversationId, setMessages }: SidebarProps) {
   const [searchValue, setSearchValue] = useState("");
   const { conversations, activeUser } = useContext(ChatContext);
+  const router = useRouter();
   return (
     <>
       {/* Sidebar */}
@@ -40,6 +44,7 @@ export function Sidebar({ setConversationId, setMessages }: SidebarProps) {
                   onClick={() => {
                     setConversationId(null);
                     setMessages([]);
+                    router.push("/chat");
                   }}
                 >
                   <span className="w-full select-none text-center text-sm ">
@@ -133,36 +138,43 @@ export function Sidebar({ setConversationId, setMessages }: SidebarProps) {
 
             {/* Footer */}
             <div className="flex flex-col gap-2 m-0 p-2 pt-0 justify-end">
-              <Link
-                aria-label="Go to settings"
-                className="flex select-none flex-row items-center justify-between gap-3 rounded-lg px-3 py-3 hover:bg-sidebar-accent focus:bg-sidebar-accent focus:outline-2"
-                href="/settings/subscription"
-              >
-                <div className="flex w-full min-w-0 flex-row items-center gap-3">
-                  {activeUser?.image ? (
-                    <Image
-                      alt={activeUser.name || "User"}
-                      loading="lazy"
-                      width={32}
-                      height={32}
-                      className="h-8 w-8 rounded-full ring-1 ring-muted-foreground/20"
-                      src={activeUser.image}
-                    />
-                  ) : (
-                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center ring-1 ring-muted-foreground/20">
-                      <span className="text-sm font-medium">
-                        {activeUser?.name?.[0] || "U"}
-                      </span>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button
+                    aria-label="Go to settings"
+                    className="flex select-none flex-row items-center justify-between gap-3 rounded-lg px-3 py-3 hover:bg-sidebar-accent focus:bg-sidebar-accent focus:outline-2 w-full text-left"
+                  >
+                    <div className="flex w-full min-w-0 flex-row items-center gap-3">
+                      {activeUser?.image ? (
+                        <Image
+                          alt={activeUser.name || "User"}
+                          loading="lazy"
+                          width={32}
+                          height={32}
+                          className="h-8 w-8 rounded-full ring-1 ring-muted-foreground/20"
+                          src={activeUser.image}
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center ring-1 ring-muted-foreground/20">
+                          <span className="text-sm font-medium">
+                            {activeUser?.name?.[0] || "U"}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex min-w-0 flex-col text-foreground">
+                        <span className="truncate text-sm font-medium">
+                          {activeUser?.name || "User"}
+                        </span>
+                        <span className="text-xs">OSS FREE FOR EVER</span>
+                      </div>
                     </div>
-                  )}
-                  <div className="flex min-w-0 flex-col text-foreground">
-                    <span className="truncate text-sm font-medium">
-                      {activeUser?.name || "User"}
-                    </span>
-                    <span className="text-xs">OSS FREE FOR EVER</span>
-                  </div>
-                </div>
-              </Link>
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="h-[90vh] w-[90vw] max-w-[90vw] max-sm:h-[90vh] max-sm:w-[90vw]">
+                  <DialogTitle className="sr-only">Settings</DialogTitle>
+                  <SettingsModal />
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>
