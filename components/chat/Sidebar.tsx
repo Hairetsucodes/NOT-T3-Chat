@@ -1,40 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Pin, X } from "lucide-react";
-
-interface Thread {
-  id: string;
-  title: string;
-  href: string;
-}
+import { Message } from "ai";
+import { Conversation } from "@prisma/client";
+import { ChatContext } from "@/context/ChatContext";
 
 interface SidebarProps {
   isCollapsed?: boolean;
   onToggle?: () => void;
-  threads?: Thread[];
-  user?: {
-    name: string;
-    email: string;
-    image?: string;
-    plan: string;
-  };
+
+  setMessages: (messages: Message[]) => void;
+  setConversationId: (conversationId: string | null) => void;
+  conversations: Conversation[];
 }
 
-export function Sidebar({
-  threads = [],
-  user = {
-    name: "User",
-    email: "user@example.com",
-    plan: "Free",
-  },
-}: SidebarProps) {
+export function Sidebar({ setConversationId, setMessages }: SidebarProps) {
   const [searchValue, setSearchValue] = useState("");
-
+  const { conversations, activeUser } = useContext(ChatContext);
   return (
     <>
       {/* Sidebar */}
@@ -47,13 +34,18 @@ export function Sidebar({
             </div>
             <div className="flex flex-col gap-2 relative m-1 mb-0 space-y-1 p-0 !pt-safe">
               <div className="px-1">
-                <Link href="/chat/new" className="w-full">
-                  <Button variant="callToAction" className="w-full">
-                    <span className="w-full select-none text-center text-sm ">
-                      New Chat
-                    </span>
-                  </Button>
-                </Link>
+                <Button
+                  variant="callToAction"
+                  className="w-full"
+                  onClick={() => {
+                    setConversationId(null);
+                    setMessages([]);
+                  }}
+                >
+                  <span className="w-full select-none text-center text-sm ">
+                    New Chat
+                  </span>
+                </Button>
               </div>
 
               <div className="border-b px-3">
@@ -80,15 +72,15 @@ export function Sidebar({
 
                 <div className="w-full text-sm">
                   <ul className="flex w-full min-w-0 flex-col gap-1">
-                    {threads.length > 0 ? (
-                      threads.map((thread) => (
+                    {conversations.length > 0 ? (
+                      conversations.map((thread) => (
                         <li
                           key={thread.id}
                           className="group/menu-item relative"
                         >
                           <Link
                             className="group/link relative flex h-9 w-full items-center overflow-hidden rounded-lg px-2 py-1 text-sm outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring hover:focus-visible:bg-sidebar-accent"
-                            href={thread.href}
+                            href={`/chat/${thread.id}`}
                           >
                             <div className="relative flex w-full items-center">
                               <div className="relative w-full">
@@ -147,27 +139,27 @@ export function Sidebar({
                 href="/settings/subscription"
               >
                 <div className="flex w-full min-w-0 flex-row items-center gap-3">
-                  {user.image ? (
+                  {activeUser?.image ? (
                     <Image
-                      alt={user.name}
+                      alt={activeUser.name || "User"}
                       loading="lazy"
                       width={32}
                       height={32}
                       className="h-8 w-8 rounded-full ring-1 ring-muted-foreground/20"
-                      src={user.image}
+                      src={activeUser.image}
                     />
                   ) : (
                     <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center ring-1 ring-muted-foreground/20">
                       <span className="text-sm font-medium">
-                        {user.name[0]}
+                        {activeUser?.name?.[0] || "U"}
                       </span>
                     </div>
                   )}
                   <div className="flex min-w-0 flex-col text-foreground">
                     <span className="truncate text-sm font-medium">
-                      {user.name}
+                      {activeUser?.name || "User"}
                     </span>
-                    <span className="text-xs">{user.plan}</span>
+                    <span className="text-xs">OSS FREE FOR EVER</span>
                   </div>
                 </div>
               </Link>

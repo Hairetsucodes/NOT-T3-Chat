@@ -29,6 +29,7 @@ export const createAPIKey = async (
     const existingKey = await prisma.apiKey.findFirst({
       where: {
         userId: validatedUserId,
+        provider: validatedProvider,
       },
     });
 

@@ -8,18 +8,20 @@ generator client {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?        @unique
   emailVerified DateTime?
-  username      String?   @unique
+  username      String?        @unique
   password      String?
   image         String?
   accounts      Account[]
   sessions      Session[]
   apiKeys       ApiKey[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  Conversation  Conversation[]
+  Message       Message[]
 }
 
 model Account {
@@ -71,6 +73,30 @@ model ApiKey {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Message   Message[]
+}
+
+model Message {
+  id               String       @id @default(cuid())
+  conversationId   String
+  userId           String
+  content          String
+  role             String
+  provider         String
+  reasoningContent String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  conversation     Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ResponseCache {

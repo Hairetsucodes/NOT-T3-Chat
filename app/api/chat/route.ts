@@ -1,17 +1,17 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { streamText, wrapLanguageModel } from "ai";
+import { streamText, wrapLanguageModel, generateText } from "ai";
 import { auth } from "@/auth";
 import { getAPIKeys } from "@/data/apikeys";
 import { createCacheMiddleware } from "@/lib/middleware/cache";
+import { createMessage } from "@/data/messages";
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages, conversationId } = await req.json();
 
   const session = await auth();
-  console.log("session", session);
-  console.log("user", session?.user);
+
   if (!session?.user?.id) {
     return new Response("Unauthorized", { status: 401 });
   }
@@ -37,6 +37,57 @@ export async function POST(req: Request) {
       middleware: [createCacheMiddleware(session.user.id)],
     });
 
+    // Generate title for new conversations (without conversationId)
+    let generatedTitle = null;
+    if (!conversationId && messages.length > 0) {
+      const lastUserMessage = messages[messages.length - 1];
+      if (lastUserMessage?.role === "user") {
+        try {
+          const titleResult = await generateText({
+            model: baseModel,
+            messages: [
+              {
+                role: "system",
+                content:
+                  "Generate a short, concise title (3-6 words) for this conversation based on the user's message. Only return the title, nothing else.",
+              },
+              {
+                role: "user",
+                content: lastUserMessage.content,
+              },
+            ],
+            maxTokens: 20,
+            temperature: 0.3,
+          });
+          generatedTitle = titleResult.text;
+        } catch (error) {
+          console.error("Title generation failed:", error);
+          // Fallback to a default title
+          generatedTitle = "New Conversation";
+        }
+      }
+    }
+
+    // Save the user message and create/get conversation
+    let currentConversationId: string | undefined = conversationId;
+    const lastUserMessage = messages[messages.length - 1];
+    
+    if (lastUserMessage?.role === "user") {
+      const savedMessage = await createMessage(
+        session.user.id,
+        lastUserMessage.content,
+        "user",
+        "openai",
+        "",
+        currentConversationId,
+        generatedTitle || undefined
+      );
+      // If this was a new conversation, get the conversationId
+      if (!currentConversationId && savedMessage) {
+        currentConversationId = savedMessage.conversationId;
+      }
+    }
+
     const optimizedMessages = [
       {
         role: "system" as const,
@@ -48,18 +99,35 @@ export async function POST(req: Request) {
     const result = streamText({
       model: cachedModel,
       messages: optimizedMessages,
-      // Optimize for faster streaming
       temperature: 0.7,
       maxTokens: 4000,
+      onFinish: async (result) => {
+        // Save the assistant's response when streaming finishes
+        try {
+          if (currentConversationId && result.text) {
+            await createMessage(
+              session.user.id,
+              result.text,
+              "assistant",
+              "openai",
+              "",
+              currentConversationId
+            );
+          }
+        } catch (error) {
+          console.error("Failed to save assistant message:", error);
+        }
+      },
     });
 
     return result.toDataStreamResponse({
-      // Add headers for better streaming performance
       headers: {
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
-        // Add cache info header for client-side monitoring
         "X-Cache-Optimized": "true",
+        // Include generated title and conversation ID in response headers
+        ...(generatedTitle && { "X-Generated-Title": generatedTitle }),
+        ...(currentConversationId && { "X-Conversation-Id": currentConversationId }),
       },
     });
   } catch (error) {

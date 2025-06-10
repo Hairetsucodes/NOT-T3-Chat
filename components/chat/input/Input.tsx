@@ -13,18 +13,16 @@ interface ChatInputProps {
     e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLTextAreaElement>
   ) => void;
   handleSubmit: (event?: { preventDefault?: () => void } | undefined) => void;
-  isLoading: boolean;
 }
 
 export function ChatInput({
   input,
   handleInputChange,
   handleSubmit,
-  isLoading,
 }: ChatInputProps) {
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim() && !isLoading) {
+    if (input.trim()) {
       handleSubmit(e);
     }
   };
@@ -57,7 +55,6 @@ export function ChatInput({
                 value={input}
                 rows={1}
                 onChange={handleInputChange}
-                disabled={isLoading}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -73,7 +70,7 @@ export function ChatInput({
                   variant="callToAction"
                   size="icon"
                   type="submit"
-                  disabled={!input.trim() || isLoading}
+                  disabled={!input.trim()}
                   aria-label={
                     input.trim() ? "Send message" : "Message requires text"
                   }

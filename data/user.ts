@@ -71,6 +71,7 @@ export const getUserById = async (userId: string) => {
         name: true,
         username: true,
         email: true,
+        image: true,
       },
     });
     if (!user) return { error: "User not found" };
@@ -80,6 +81,7 @@ export const getUserById = async (userId: string) => {
       id: user?.id,
       username: user?.username,
       email: user?.email,
+      image: user?.image,
     };
   } catch (error) {
     // Log the error stack instead of the error object directly

@@ -6,33 +6,30 @@ import { ChatHeader } from "./ui/Header";
 import CornerDecorator from "./ui/CornerDecorator";
 import { MessageRenderer } from "./message/Renderer";
 import { Message } from "@ai-sdk/react";
-import { ChangeEvent, useEffect } from "react";
+import { ChangeEvent, useContext, useEffect } from "react";
 import { disposeHighlighter } from "@/lib/shikiHighlighter";
+import { ChatContext } from "@/context/ChatContext";
 
 interface ChatContainerProps {
-  userName?: string;
   messages: Message[];
   input: string;
   handleInputChange: (
     e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLTextAreaElement>
   ) => void;
   handleSubmit: (event?: { preventDefault?: () => void } | undefined) => void;
-  isLoading: boolean;
 }
 
 export function ChatContainer({
-  userName = "User",
   messages,
   input,
   handleInputChange,
   handleSubmit,
-  isLoading,
 }: ChatContainerProps) {
   const handleSuggestionSelect = (suggestion: string) => {
     // TODO: Implement suggestion selection logic
     console.log("Suggestion selected:", suggestion);
   };
-
+  const { activeUser } = useContext(ChatContext);
   useEffect(() => {
     return () => {
       disposeHighlighter();
@@ -56,7 +53,6 @@ export function ChatContainer({
             input={input}
             handleInputChange={handleInputChange}
             handleSubmit={handleSubmit}
-            isLoading={isLoading}
           />
         </div>
       </div>
@@ -68,7 +64,7 @@ export function ChatContainer({
       >
         {messages.length === 0 ? (
           <WelcomeScreen
-            userName={userName}
+            userName={activeUser?.name || ""}
             onSelectSuggestion={handleSuggestionSelect}
           />
         ) : (
@@ -83,11 +79,6 @@ export function ChatContainer({
                 <MessageRenderer message={message} />
               </div>
             ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="text-muted-foreground">Thinking...</div>
-              </div>
-            )}
           </div>
         )}
       </div>
