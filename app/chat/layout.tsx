@@ -11,8 +11,8 @@ export default async function ChatLayout({
     redirect("/");
   }
   return (
-    <div className="flex flex-col h-screen">
-      <div className="flex-1 overflow-hidden">{children}</div>
+    <div className="">
+      <div className="">{children}</div>
     </div>
   );
 }

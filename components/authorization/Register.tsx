@@ -11,7 +11,7 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import FormError from "@/components/authorization/forms/form-error";
+import FormResults from "@/components/authorization/form/Results";
 import { register } from "@/lib/auth/register";
 import { startTransition } from "react";
 import { RegisterSchema } from "@/schemas/registerSchema";
@@ -19,8 +19,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "@/lib/auth/login";
 import { motion } from "motion/react";
-import { SocialLogin } from "@/components/authorization/SocialSignUp";
-import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 
 export default function Register() {
@@ -126,7 +124,7 @@ export default function Register() {
               />
 
               <div>
-                <FormError message={error} />
+                <FormResults message={error} type="error" />
                 <Button
                   type="submit"
                   className="w-full flex items-center justify-center"
@@ -144,19 +142,6 @@ export default function Register() {
               </div>
             </form>
           </Form>
-          <div className="mt-4 relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-card text-muted-foreground">
-                Or continue with
-              </span>
-            </div>
-          </div>
-          <div className="mt-4">
-            <SocialLogin isLoading={isLoading} setisLoading={setIsLoading} />
-          </div>
         </div>
       </motion.div>
     </>
