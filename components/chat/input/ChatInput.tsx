@@ -1,23 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowUp } from "lucide-react";
 import { InputActions } from "./InputActions";
 import ModelSelector from "./ModelSelector";
 
 interface ChatInputProps {
-  onSubmit: (message: string) => void;
+  input: string;
+  handleInputChange: (
+    e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLTextAreaElement>
+  ) => void;
+  handleSubmit: (event?: { preventDefault?: () => void } | undefined) => void;
+  isLoading: boolean;
 }
 
-export function ChatInput({ onSubmit }: ChatInputProps) {
-  const [message, setMessage] = useState("");
-
-  const handleSubmit = (e: React.FormEvent) => {
+export function ChatInput({
+  input,
+  handleInputChange,
+  handleSubmit,
+  isLoading,
+}: ChatInputProps) {
+  const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (message.trim()) {
-      onSubmit(message.trim());
-      setMessage("");
+    if (input.trim() && !isLoading) {
+      handleSubmit(e);
     }
   };
 
@@ -25,15 +32,17 @@ export function ChatInput({ onSubmit }: ChatInputProps) {
     <div className="pointer-events-auto">
       <div
         className="rounded-t-[20px] bg-chat-input-background p-2 pb-0 backdrop-blur-lg ![--c:--chat-input-gradient]"
-        style={{
-          "--gradientBorder-gradient":
-            "linear-gradient(180deg, var(--min), var(--max), var(--min)), linear-gradient(15deg, var(--min) 50%, var(--max))",
-          "--start": "#000000e0",
-          "--opacity": "1",
-        } as React.CSSProperties}
+        style={
+          {
+            "--gradientBorder-gradient":
+              "linear-gradient(180deg, var(--min), var(--max), var(--min)), linear-gradient(15deg, var(--min) 50%, var(--max))",
+            "--start": "#000000e0",
+            "--opacity": "1",
+          } as React.CSSProperties
+        }
       >
         <form
-          onSubmit={handleSubmit}
+          onSubmit={onSubmit}
           className="relative flex w-full flex-col items-stretch gap-2 rounded-t-xl border border-b-0 border-white/70 bg-chat-input-background px-2 pt-3 text-secondary-foreground outline outline-8 outline-[hsl(var(--chat-input-gradient)/0.5)] pb-safe-offset-3 max-sm:pb-6 sm:max-w-3xl dark:border-[hsl(0,0%,83%)]/[0.04] dark:outline-chat-background/40"
         >
           <div className="flex flex-grow flex-col">
@@ -44,13 +53,14 @@ export function ChatInput({ onSubmit }: ChatInputProps) {
                 placeholder="Type your message here..."
                 className="w-full resize-none bg-transparent text-base leading-6 text-foreground outline-none placeholder:text-secondary-foreground/60 disabled:opacity-0"
                 aria-label="Message input"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                value={input}
+                onChange={handleInputChange}
+                disabled={isLoading}
                 style={{ height: "48px" }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
-                    handleSubmit(e);
+                    onSubmit(e);
                   }
                 }}
               />
@@ -62,9 +72,9 @@ export function ChatInput({ onSubmit }: ChatInputProps) {
                   variant="callToAction"
                   size="icon"
                   type="submit"
-                  disabled={!message.trim()}
+                  disabled={!input.trim() || isLoading}
                   aria-label={
-                    message.trim() ? "Send message" : "Message requires text"
+                    input.trim() ? "Send message" : "Message requires text"
                   }
                 >
                   <ArrowUp className="size-5" />
@@ -83,4 +93,4 @@ export function ChatInput({ onSubmit }: ChatInputProps) {
       </div>
     </div>
   );
-} 
+}

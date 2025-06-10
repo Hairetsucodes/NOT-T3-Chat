@@ -14,7 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import FormResults from "@/components/authorization/form/Results";
 import { register } from "@/lib/auth/register";
 import { startTransition } from "react";
-import { RegisterSchema } from "@/schemas/registerSchema";
+import { RegisterSchema } from "@/schemas/register";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "@/lib/auth/login";

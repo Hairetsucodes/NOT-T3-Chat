@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import FormResults from "@/components/authorization/form/Results";
 import { login } from "@/lib/auth/login";
 import { startTransition, useState } from "react";
-import { LoginSchema } from "@/schemas/loginSchema";
+import { LoginSchema } from "@/schemas/login";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Loader2 } from "lucide-react";

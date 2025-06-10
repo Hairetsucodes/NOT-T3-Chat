@@ -135,7 +135,7 @@
   --chat-background: 270 16.13% 12.16%;
   --chat-accent: rgba(25, 21, 30, 0.86);
   --chat-input-gradient: 289 23% 23%;
-  --chat-input-background: hsla(270, 10%, 20%, var(--blur-fallback, 0.4));
+  --chat-input-background: hsla(270, 10%, 25%, var(--blur-fallback, 0.4));
   --chat-overlay: hsla(270, 12%, 16%, var(--blur-fallback, 0.71));
   --wordmark-color: #e3bad1;
 }

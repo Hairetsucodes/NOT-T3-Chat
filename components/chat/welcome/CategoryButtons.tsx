@@ -24,8 +24,9 @@ export function CategoryButtons() {
         return (
           <Button
             key={category.key}
+            size="lg"
             variant="secondary"
-            className="rounded-2xl bg-chat-input-background backdrop-blur-lg ![--c:--chat-input-gradient] py-2 px-4"
+            className="rounded-2xl border-1 border-solid border-secondary bg-chat-input-background backdrop-blur-lg ![--c:--chat-input-gradient] py-2 px-4"
           >
             <div className="flex items-center gap-2">
               <Icon className="max-sm:block size-4" />
