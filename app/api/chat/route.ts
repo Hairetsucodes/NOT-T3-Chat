@@ -1,15 +1,14 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { streamText } from "ai";
+import { streamText, wrapLanguageModel } from "ai";
 import { auth } from "@/auth";
 import { getAPIKeys } from "@/data/apikeys";
+import { createCacheMiddleware } from "@/lib/middleware/cache";
 
-// Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
-  // Get the authenticated user from the JWT token
   const session = await auth();
   console.log("session", session);
   console.log("user", session?.user);
@@ -18,7 +17,6 @@ export async function POST(req: Request) {
   }
 
   try {
-    // Get the user's API keys from the database
     const apiKeys = await getAPIKeys(session.user.id);
     const openaiKey = apiKeys.find((key) => key.provider === "openai");
 
@@ -29,17 +27,41 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create OpenAI client with user's API key
     const openai = createOpenAI({
       apiKey: openaiKey.key,
     });
 
-    const result = streamText({
-      model: openai("gpt-4o"),
-      messages,
+    const baseModel = openai("gpt-4o");
+    const cachedModel = wrapLanguageModel({
+      model: baseModel,
+      middleware: [createCacheMiddleware(session.user.id)],
     });
 
-    return result.toDataStreamResponse();
+    const optimizedMessages = [
+      {
+        role: "system" as const,
+        content: "You are a helpful assistant.",
+      },
+      ...messages,
+    ];
+
+    const result = streamText({
+      model: cachedModel,
+      messages: optimizedMessages,
+      // Optimize for faster streaming
+      temperature: 0.7,
+      maxTokens: 4000,
+    });
+
+    return result.toDataStreamResponse({
+      // Add headers for better streaming performance
+      headers: {
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+        // Add cache info header for client-side monitoring
+        "X-Cache-Optimized": "true",
+      },
+    });
   } catch (error) {
     console.error("Chat API error:", error);
     return new Response("Internal server error", { status: 500 });

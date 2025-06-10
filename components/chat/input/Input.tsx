@@ -3,8 +3,9 @@
 import { ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowUp } from "lucide-react";
-import { InputActions } from "./InputActions";
+import { InputActions } from "./Actions";
 import ModelSelector from "./ModelSelector";
+import { Textarea } from "@/components/ui/textarea";
 
 interface ChatInputProps {
   input: string;
@@ -47,16 +48,16 @@ export function ChatInput({
         >
           <div className="flex flex-grow flex-col">
             <div className="flex flex-grow flex-row items-start">
-              <textarea
+              <Textarea
                 name="input"
                 id="chat-input"
                 placeholder="Type your message here..."
-                className="w-full resize-none bg-transparent text-base leading-6 text-foreground outline-none placeholder:text-secondary-foreground/60 disabled:opacity-0"
+                className="w-full max-h-60 resize-none bg-transparent text-base leading-6 text-foreground outline-none placeholder:text-secondary-foreground/60 disabled:opacity-0"
                 aria-label="Message input"
                 value={input}
+                rows={1}
                 onChange={handleInputChange}
                 disabled={isLoading}
-                style={{ height: "48px" }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();

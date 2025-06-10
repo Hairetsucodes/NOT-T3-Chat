@@ -221,4 +221,180 @@
   .bg-sidebar {
     background-color: hsl(var(--sidebar-background));
   }
+
+  /* Markdown Styles */
+  .contentMarkdown {
+    @apply text-foreground space-y-3;
+  }
+
+  .contentMarkdown h1 {
+    @apply text-3xl font-bold mb-4 text-foreground/90;
+  }
+
+  .contentMarkdown h2 {
+    @apply text-2xl font-bold mb-3 text-foreground/90;
+  }
+
+  .contentMarkdown h3 {
+    @apply text-xl font-semibold mb-2.5 mt-4 text-foreground/90;
+  }
+
+  .contentMarkdown h4 {
+    @apply text-lg font-semibold mb-2 mt-3 text-foreground/90;
+  }
+
+  .contentMarkdown h5 {
+    @apply text-base font-semibold mb-2 mt-3 text-foreground/90;
+  }
+
+  .contentMarkdown h6 {
+    @apply text-sm font-semibold mb-2 mt-3 text-foreground/90;
+  }
+
+  .contentMarkdown p {
+    @apply mb-3 leading-relaxed text-foreground/80;
+  }
+
+  .contentMarkdown ul {
+    @apply mb-3 space-y-1.5 list-none ml-4;
+  }
+
+  .contentMarkdown ol {
+    @apply mb-3 space-y-1.5 list-none ml-4;
+    counter-reset: item;
+  }
+
+  .contentMarkdown li {
+    @apply relative pl-8 leading-relaxed text-foreground/80;
+  }
+
+  .contentMarkdown ul > li::before {
+    @apply absolute left-0 top-[0.7em] w-2 h-2 rounded-full bg-primary/70 -translate-y-1/2;
+    content: "";
+  }
+
+  .contentMarkdown ol > li {
+    counter-increment: item;
+    @apply pl-8;
+  }
+
+  .contentMarkdown ol > li::before {
+    @apply absolute left-0 top-0 font-semibold text-primary/90 min-w-[1.5rem];
+    content: counter(item) ".";
+  }
+
+  /* Nested lists */
+  .contentMarkdown li > ul {
+    @apply mt-2 mb-0 ml-4;
+  }
+
+  .contentMarkdown li > ol {
+    @apply mt-2 mb-0 ml-4;
+  }
+
+  /* Nested unordered list items should have smaller bullets */
+  .contentMarkdown li > ul > li::before {
+    @apply w-1.5 h-1.5 bg-primary/50;
+  }
+
+  .contentMarkdown li > ul > li {
+    @apply pl-6;
+  }
+
+  /* Nested ordered list items */
+  .contentMarkdown li > ol > li {
+    @apply pl-6;
+  }
+
+  .contentMarkdown li > ol > li::before {
+    @apply text-sm;
+  }
+
+  /* Deeply nested lists */
+  .contentMarkdown li li > ul > li::before {
+    @apply w-1 h-1 bg-primary/40;
+  }
+
+  .contentMarkdown li li > ul > li {
+    @apply pl-5;
+  }
+
+  .contentMarkdown code {
+    @apply px-2 py-0.5 rounded-md bg-secondary/40 text-primary/90 font-mono text-[13px] border border-secondary/50;
+  }
+
+  .contentMarkdown strong {
+    @apply font-semibold text-primary/90;
+  }
+
+  .contentMarkdown em {
+    @apply italic text-foreground/85;
+  }
+
+  .contentMarkdown a {
+    @apply text-primary/90 hover:text-primary hover:underline decoration-primary/30 transition-colors duration-200;
+  }
+
+  .contentMarkdown blockquote {
+    @apply border-l-4 border-primary/40 pl-4 italic my-4 text-foreground/70 bg-secondary/20 py-2 pr-3 rounded-r-lg;
+  }
+
+  .contentMarkdown pre {
+    @apply p-4 rounded-lg bg-secondary/30 overflow-x-auto my-4 border border-secondary/50;
+  }
+
+  .contentMarkdown pre code {
+    @apply bg-transparent p-0 text-foreground/90 border-0;
+  }
+
+  /* Table styles */
+  .contentMarkdown table {
+    @apply w-full border-collapse border border-border/50 my-4 rounded-lg overflow-hidden;
+  }
+
+  .contentMarkdown thead {
+    @apply bg-secondary/30;
+  }
+
+  .contentMarkdown th {
+    @apply border border-border/50 px-3 py-2 text-left font-semibold text-foreground/90;
+  }
+
+  .contentMarkdown td {
+    @apply border border-border/50 px-3 py-2 text-foreground/80;
+  }
+
+  .contentMarkdown tbody tr:nth-child(even) {
+    @apply bg-secondary/10;
+  }
+
+  /* Horizontal rule */
+  .contentMarkdown hr {
+    @apply border-0 border-t border-border/50 my-6;
+  }
+
+  /* Task lists */
+  .contentMarkdown input[type="checkbox"] {
+    @apply mr-2 accent-primary;
+  }
+
+  /* Remove default spacing conflicts */
+  .contentMarkdown ul ul,
+  .contentMarkdown ol ol,
+  .contentMarkdown ul ol,
+  .contentMarkdown ol ul {
+    @apply mt-2 mb-0;
+  }
+
+  .contentMarkdown li > p {
+    @apply inline mb-0;
+  }
+
+  .contentMarkdown li > p:not(:last-child) {
+    @apply block mb-2;
+  }
+  /* Code Styles */
+  code {
+    white-space: pre-wrap !important;
+  }
 }

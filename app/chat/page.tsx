@@ -1,8 +1,8 @@
 "use client";
 
 import { Sidebar } from "@/components/chat/Sidebar";
-import { ChatContainer } from "@/components/chat/ChatContainer";
-import { useChat } from '@ai-sdk/react';
+import { ChatContainer } from "@/components/chat/Container";
+import { useChat } from "@ai-sdk/react";
 
 // Mock data - replace with actual data from your backend
 const mockThreads = [
@@ -22,7 +22,11 @@ const mockUser = {
 };
 
 export default function Chat() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat();
+  const { messages, input, handleInputChange, handleSubmit, isLoading } =
+    useChat({
+      // Optimize for faster streaming
+      keepLastMessageOnError: true,
+    });
 
   return (
     <div className="flex w-full">
@@ -45,8 +49,8 @@ export default function Chat() {
         <div className="absolute inset-0 bg-black/40 dark:block hidden"></div>
       </div>
       <Sidebar threads={mockThreads} user={mockUser} />
-      <ChatContainer 
-        userName={mockUser.name} 
+      <ChatContainer
+        userName={mockUser.name}
         messages={messages}
         input={input}
         handleInputChange={handleInputChange}

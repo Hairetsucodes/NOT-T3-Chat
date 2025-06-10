@@ -36,4 +36,4 @@ export default function CornerDecorator() {
       </div>
     </div>
   );
-}
+} 

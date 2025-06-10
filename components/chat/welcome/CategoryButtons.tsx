@@ -1,12 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Sparkles,
-  Newspaper,
-  Code,
-  GraduationCap,
-} from "lucide-react";
+import { Sparkles, Newspaper, Code, GraduationCap } from "lucide-react";
 
 const categories = [
   { icon: Sparkles, label: "Create", key: "create" },
@@ -37,4 +32,4 @@ export function CategoryButtons() {
       })}
     </div>
   );
-} 
+}

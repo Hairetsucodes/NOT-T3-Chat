@@ -1,11 +1,13 @@
 "use client";
 
-import { ChatInput } from "./input/ChatInput";
-import { WelcomeScreen } from "./welcome/WelcomeScreen";
-import { ChatHeader } from "./header/ChatHeader";
-import CornerDecorator from "./header/CornerDecorator";
+import { ChatInput } from "./input/Input";
+import { WelcomeScreen } from "./welcome/Welcome";
+import { ChatHeader } from "./ui/Header";
+import CornerDecorator from "./ui/CornerDecorator";
+import { MessageRenderer } from "./message/Renderer";
 import { Message } from "@ai-sdk/react";
-import { ChangeEvent } from "react";
+import { ChangeEvent, useEffect } from "react";
+import { disposeHighlighter } from "@/lib/shikiHighlighter";
 
 interface ChatContainerProps {
   userName?: string;
@@ -30,6 +32,12 @@ export function ChatContainer({
     // TODO: Implement suggestion selection logic
     console.log("Suggestion selected:", suggestion);
   };
+
+  useEffect(() => {
+    return () => {
+      disposeHighlighter();
+    };
+  }, []);
 
   return (
     <main className="relative flex w-full flex-1 flex-col overflow-hidden transition-[width,height]">
@@ -64,7 +72,7 @@ export function ChatContainer({
             onSelectSuggestion={handleSuggestionSelect}
           />
         ) : (
-          <div className="flex flex-col w-full max-w-3xl mx-auto px-4 py-8 space-y-6">
+          <div className="flex flex-col w-full max-w-[770px] mx-auto px-4 py-8 space-y-6">
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -72,15 +80,7 @@ export function ChatContainer({
                   message.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                <div
-                  className={`whitespace-pre-wrap ${
-                    message.role === "user"
-                      ? "bg-chat-input-background text-white rounded-2xl rounded-br-sm px-4 py-4 max-w-[80%]"
-                      : "text-foreground w-full"
-                  }`}
-                >
-                  {message.content}
-                </div>
+                <MessageRenderer message={message} />
               </div>
             ))}
             {isLoading && (

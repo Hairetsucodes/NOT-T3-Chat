@@ -23,4 +23,4 @@ export function ChatHeader() {
       <ModeToggle />
     </div>
   );
-}
+} 
