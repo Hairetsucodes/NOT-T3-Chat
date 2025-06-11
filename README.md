@@ -133,6 +133,7 @@ ANTHROPIC_API_KEY="your-anthropic-api-key"
 GOOGLE_GENERATIVE_AI_API_KEY="your-google-api-key"
 DEEPSEEK_API_KEY="your-deepseek-api-key"
 XAI_API_KEY="your-xai-api-key"
+OPENROUTER_API_KEY="your-openrouter-api-key"
 ```
 
 ### AI Provider Setup
