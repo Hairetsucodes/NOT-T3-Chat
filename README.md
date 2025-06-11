@@ -49,10 +49,6 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
    NEXTAUTH_SECRET="your-secret-key"
    NEXTAUTH_URL="http://localhost:3000"
 
-   # AI Provider API Keys (add as needed)
-   OPENAI_API_KEY="your-openai-key"
-   ANTHROPIC_API_KEY="your-anthropic-key"
-   GOOGLE_GENERATIVE_AI_API_KEY="your-google-key"
    ```
 
 4. **Initialize the database:**
