@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { Search, ChevronDown, Pin, ChevronUp, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -140,6 +140,23 @@ const isProModel = (name: string, pricing: unknown): boolean => {
   return nameBasedCheck || Boolean(pricingBasedCheck);
 };
 
+// Custom hook for debounced value
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 export default function ModelSelector() {
   const { preferredModels, availableModels: dbModels } =
     useContext(ChatContext);
@@ -148,65 +165,100 @@ export default function ModelSelector() {
   const [isOpen, setIsOpen] = useState(false);
   const [showAllModels, setShowAllModels] = useState(false);
 
-  // Create a set of preferred model IDs for quick lookup
-  const preferredModelIds = new Set(preferredModels.map((pm) => pm.model));
+  // Debounce search query to improve performance
+  const debouncedSearchQuery = useDebounce(searchQuery, 200);
 
-  // Convert database models to the format expected by the UI
-  const availableModels = dbModels.map((model) => ({
-    id: model.modelId, // Use modelId as the identifier
-    name: model.name,
-    subtitle: model.modelFamily || "",
-    icon: getProviderIcon(model.provider),
-    capabilities: [], // Will need to map capabilities from DB
-    provider: model.provider,
-    isPro: isProModel(model.name, model.pricing),
-    isDisabled: false,
-    isFavorite: preferredModelIds.has(model.modelId), // Check against modelId\
-  }));
+  // Memoize preferred model IDs set
+  const preferredModelIds = useMemo(
+    () => new Set(preferredModels.map((pm) => pm.model)),
+    [preferredModels]
+  );
+
+  // Memoize available models conversion
+  const availableModels = useMemo(
+    () =>
+      dbModels.map((model) => ({
+        id: model.modelId,
+        name: model.name,
+        subtitle: model.modelFamily || "",
+        icon: getProviderIcon(model.provider),
+        capabilities: [],
+        provider: model.provider,
+        isPro: isProModel(model.name, model.pricing),
+        isDisabled: false,
+        isFavorite: preferredModelIds.has(model.modelId),
+      })),
+    [dbModels, preferredModelIds]
+  );
+
+  // Memoize filtered models
+  const { favoriteModels, otherModels, enabledModels } = useMemo(() => {
+    const enabled = availableModels.filter((model) => !model.isDisabled);
+    const favorites = availableModels.filter((model) => model.isFavorite);
+    const others = availableModels.filter((model) => !model.isFavorite);
+
+    return {
+      favoriteModels: favorites,
+      otherModels: others,
+      enabledModels: enabled,
+    };
+  }, [availableModels]);
+
+    // Memoize search filtered models
+  const filteredModels = useMemo(() => {
+    const modelsToShow = showAllModels ? availableModels : favoriteModels;
+    return modelsToShow.filter((model) =>
+      model.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+    );
+  }, [availableModels, favoriteModels, showAllModels, debouncedSearchQuery]);
+
+  // Memoize filtered favorites and others for cards view
+  const { filteredFavorites, filteredOthers } = useMemo(() => {
+    const favorites = favoriteModels.filter((model) =>
+      model.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+    );
+    const others = otherModels.filter((model) =>
+      model.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+    );
+    
+    return { filteredFavorites: favorites, filteredOthers: others };
+  }, [favoriteModels, otherModels, debouncedSearchQuery]);
+
+  // Memoize selected model data
+  const selectedModelData = useMemo(
+    () => availableModels.find((model) => model.id === selectedModel),
+    [availableModels, selectedModel]
+  );
 
   // Ensure selected model is available, otherwise select first available
   useEffect(() => {
-    const enabledModels = availableModels.filter((model) => !model.isDisabled);
     if (
       enabledModels.length > 0 &&
       !enabledModels.find((model) => model.id === selectedModel)
     ) {
       setSelectedModel(enabledModels[0].id);
     }
-  }, [availableModels, selectedModel]);
+  }, [enabledModels, selectedModel]);
 
-  const favoriteModels = availableModels.filter((model) => model.isFavorite);
-  const otherModels = availableModels.filter((model) => !model.isFavorite);
-  const selectedModelData = availableModels.find(
-    (model) => model.id === selectedModel
-  );
-
-  // Filter models based on search and show all toggle
-  const modelsToShow = showAllModels ? availableModels : favoriteModels;
-  const filteredModels = modelsToShow.filter((model) =>
-    model.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // For cards view, separate favorites and others
-  const filteredFavorites = favoriteModels.filter((model) =>
-    model.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  const filteredOthers = otherModels.filter((model) =>
-    model.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleModelSelect = (modelId: string) => {
+  // Memoize handlers
+  const handleModelSelect = useCallback((modelId: string) => {
     setSelectedModel(modelId);
     setIsOpen(false);
     setSearchQuery("");
-  };
+  }, []);
 
-  const toggleShowAll = () => {
+  const toggleShowAll = useCallback(() => {
     setShowAllModels(!showAllModels);
-  };
+  }, [showAllModels]);
+
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchQuery(e.target.value);
+    },
+    []
+  );
 
   // If no models are available, show a fallback
-  const enabledModels = availableModels.filter((model) => !model.isDisabled);
   if (enabledModels.length === 0) {
     return (
       <Button
@@ -258,7 +310,7 @@ export default function ModelSelector() {
                 aria-label="Search models"
                 placeholder="Search models..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
                 className="w-full bg-transparent py-2 text-sm text-foreground placeholder-muted-foreground/50 placeholder:select-none focus:outline-none border-none focus:ring-0"
               />
             </div>

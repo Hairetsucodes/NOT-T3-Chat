@@ -38,7 +38,7 @@ export function Sidebar({
   const [searchValue, setSearchValue] = useState("");
   const { conversations, activeUser } = useContext(ChatContext);
   const router = useRouter();
-
+  console.log(activeUser);
   return (
     <>
       {/* Sidebar - Hidden on desktop md+, toggleable on mobile */}
@@ -257,13 +257,15 @@ export function Sidebar({
                       ) : (
                         <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center ring-1 ring-muted-foreground/20">
                           <span className="text-sm font-medium">
-                            {activeUser?.name?.[0] || "U"}
+                            {activeUser?.username?.[0] ||
+                              activeUser?.name?.[0] ||
+                              "U"}
                           </span>
                         </div>
                       )}
                       <div className="flex min-w-0 flex-col text-foreground">
                         <span className="truncate text-sm font-medium">
-                          {activeUser?.name || "User"}
+                          {activeUser?.username || activeUser?.name || "User"}
                         </span>
                         <span className="text-xs">OSS FREE FOR EVER</span>
                       </div>

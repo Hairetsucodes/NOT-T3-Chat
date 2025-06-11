@@ -1,14 +1,39 @@
-import type { AIModel } from "@/types/models"
 import { Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { memo, useCallback } from "react"
+
+interface Capability {
+  label: string;
+  icon: React.ReactNode;
+}
+
+interface AIModel {
+  id: string;
+  name: string;
+  subtitle: string;
+  icon: React.ReactNode;
+  capabilities: Capability[];
+  provider: string;
+  isPro: boolean;
+  isDisabled: boolean;
+  isFavorite: boolean;
+  isExperimental?: boolean;
+  requiresKey?: boolean;
+}
 
 interface ModelListItemProps {
   model: AIModel
   onSelect: (modelId: string) => void
 }
 
-export function ModelListItem({ model, onSelect }: ModelListItemProps) {
+export const ModelListItem = memo(function ModelListItem({ model, onSelect }: ModelListItemProps) {
   const isDisabled = model.isDisabled
+
+  const handleSelect = useCallback(() => {
+    if (!isDisabled) {
+      onSelect(model.id);
+    }
+  }, [isDisabled, onSelect, model.id]);
 
   return (
     <div
@@ -19,7 +44,7 @@ export function ModelListItem({ model, onSelect }: ModelListItemProps) {
           : "cursor-default"
       }`}
       tabIndex={-1}
-      onClick={() => !isDisabled && onSelect(model.id)}
+      onClick={handleSelect}
     >
       <div className="flex w-full items-center justify-between">
         <div className={`flex items-center gap-2 pr-2 font-medium text-muted-foreground transition-colors ${isDisabled ? "opacity-50" : ""}`}>
@@ -42,7 +67,7 @@ export function ModelListItem({ model, onSelect }: ModelListItemProps) {
         </div>
         
         <div className="flex items-center gap-1.5">
-          {model.capabilities.map((capability, index) => (
+          {model.capabilities.map((capability: Capability, index: number) => (
             <div
               key={index}
               className="relative flex h-6 w-6 items-center justify-center overflow-hidden rounded-md text-[--color] dark:text-[--color-dark]"
@@ -61,7 +86,7 @@ export function ModelListItem({ model, onSelect }: ModelListItemProps) {
       </div>
     </div>
   )
-}
+});
 
 function getCapabilityColor(label: string) {
   const colors = {

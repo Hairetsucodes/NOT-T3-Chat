@@ -70,6 +70,24 @@ export const Chat = ({
     [input, conversationId, append, setInput]
   );
 
+  // Handle suggestion selection from welcome screen
+  const handleSuggestionSelect = useCallback(
+    (suggestion: string) => {
+      setInput(suggestion);
+      // Submit the suggestion immediately
+      append(
+        {
+          role: "user",
+          content: suggestion,
+        },
+        {
+          body: conversationId ? { conversationId } : {},
+        }
+      );
+    },
+    [conversationId, append, setInput]
+  );
+
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
@@ -131,6 +149,7 @@ export const Chat = ({
           input={input}
           handleInputChange={handleInputChange}
           handleSubmit={handleSubmit}
+          handleSuggestionSelect={handleSuggestionSelect}
         />
       </div>
     </div>

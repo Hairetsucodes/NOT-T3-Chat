@@ -17,6 +17,7 @@ interface ChatContainerProps {
     e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLTextAreaElement>
   ) => void;
   handleSubmit: (event?: { preventDefault?: () => void } | undefined) => void;
+  handleSuggestionSelect: (suggestion: string) => void;
 }
 
 export function ChatContainer({
@@ -24,11 +25,8 @@ export function ChatContainer({
   input,
   handleInputChange,
   handleSubmit,
+  handleSuggestionSelect,
 }: ChatContainerProps) {
-  const handleSuggestionSelect = (suggestion: string) => {
-    // TODO: Implement suggestion selection logic
-    console.log(suggestion);
-  };
   const { activeUser } = useContext(ChatContext);
   useEffect(() => {
     return () => {
@@ -59,7 +57,7 @@ export function ChatContainer({
 
       {/* Main content scrollable area */}
       <div
-        className="absolute inset-0 overflow-y-auto pt-4 md:pt-7.5"
+        className="absolute inset-0 overflow-y-auto mt-4 md:mt-4"
         style={{ paddingBottom: "144px", scrollbarGutter: "stable both-edges" }}
       >
         {messages.length === 0 ? (

@@ -1,7 +1,7 @@
 export default function CornerDecorator() {
   return (
-    <div className="absolute bottom-0 top-0 w-full pointer-events-none">
-      <div className="fixed right-0 top-0 max-sm:hidden">
+    <div className="absolute bottom-0 top-0 w-full pointer-events-none overflow-hidden">
+      <div className="fixed right-0 top-0 translate-y-[-140px] md:translate-y-0 transition-transform duration-300 ease-snappy">
         <div className="absolute top-3.5 h-32 w-full origin-top transition-all ease-snappy bg-noise bg-gradient-noise-top">
           <svg
             className="absolute -right-8 h-9 origin-top-left skew-x-[30deg] overflow-visible"
@@ -36,4 +36,4 @@ export default function CornerDecorator() {
       </div>
     </div>
   );
-} 
+}

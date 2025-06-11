@@ -15,7 +15,7 @@ export function ChatHeader() {
             <Settings2 />
           </Button>
         </DialogTrigger>
-        <DialogContent className="h-[90vh] w-[90vw] max-w-[90vw] max-sm:h-[90vh] max-sm:w-[90vw]">
+        <DialogContent className="h-[90vh] w-[90vw] max-w-[90vw] max-sm:h-[90vh] max-sm:w-[90vw] bg-background">
           <DialogTitle className="sr-only">Settings</DialogTitle>
           <SettingsModal />
         </DialogContent>

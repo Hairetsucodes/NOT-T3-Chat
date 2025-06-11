@@ -10,18 +10,29 @@ const categories = [
   { icon: GraduationCap, label: "Learn", key: "learn" },
 ];
 
-export function CategoryButtons() {
+interface CategoryButtonsProps {
+  selectedCategory: string;
+  onCategorySelect: (category: string) => void;
+}
+
+export function CategoryButtons({ selectedCategory, onCategorySelect }: CategoryButtonsProps) {
   return (
     <div className="flex flex-row flex-wrap gap-2.5 text-sm max-sm:justify-evenly">
       {categories.map((category) => {
         const Icon = category.icon;
+        const isSelected = selectedCategory === category.key;
 
         return (
           <Button
             key={category.key}
             size="lg"
             variant="secondary"
-            className="rounded-2xl border-1 border-solid border-secondary bg-chat-input-background backdrop-blur-lg ![--c:--chat-input-gradient] py-2 px-4"
+            onClick={() => onCategorySelect(category.key)}
+            className={`rounded-2xl border-1 border-solid backdrop-blur-lg py-2 px-4 transition-all ${
+              isSelected
+                ? "border-primary bg-primary/20 text-primary ![--c:--primary]"
+                : "border-secondary bg-chat-input-background ![--c:--chat-input-gradient]"
+            }`}
           >
             <div className="flex items-center gap-2">
               <Icon className="max-sm:block size-4" />

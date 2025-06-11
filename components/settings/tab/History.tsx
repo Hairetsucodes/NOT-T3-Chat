@@ -397,7 +397,7 @@ export function HistoryTab() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label className="font-medium text-base text-foreground/80">
-                  Sync across devices
+                  Sync across devices (coming soon)
                 </Label>
                 <p className="text-sm text-muted-foreground">
                   Keep your history synchronized across all your devices
@@ -406,7 +406,7 @@ export function HistoryTab() {
               <Switch
                 checked={syncDevices}
                 onCheckedChange={setSyncDevices}
-                disabled={isLoading}
+                disabled={true}
               />
             </div>
 

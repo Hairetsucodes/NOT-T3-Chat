@@ -1,6 +1,6 @@
 import { FlaskConical, Gem, Key, Pin } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useContext, useState } from "react";
+import { useContext, useState, useCallback, memo } from "react";
 import { ChatContext } from "@/context/ChatContext";
 import { addPreferredModel, removePreferredModel } from "@/data/models";
 import { toast } from "sonner";
@@ -30,7 +30,7 @@ interface ModelCardProps {
   onSelect: (modelId: string) => void;
 }
 
-export function ModelCard({ model, isSelected, onSelect }: ModelCardProps) {
+export const ModelCard = memo(function ModelCard({ model, isSelected, onSelect }: ModelCardProps) {
   const { activeUser, refreshPreferredModels } = useContext(ChatContext);
   const [isToggling, setIsToggling] = useState(false);
 
@@ -39,7 +39,7 @@ export function ModelCard({ model, isSelected, onSelect }: ModelCardProps) {
   const isPremium = model.isPro;
   const isKeyRequired = model.requiresKey;
 
-  const handleToggleFavorite = async (e: React.MouseEvent) => {
+  const handleToggleFavorite = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent the model card from being selected
 
     if (!activeUser?.id) {
@@ -83,7 +83,13 @@ export function ModelCard({ model, isSelected, onSelect }: ModelCardProps) {
     } finally {
       setIsToggling(false);
     }
-  };
+  }, [activeUser?.id, model.isFavorite, model.id, model.provider, isToggling, refreshPreferredModels]);
+
+  const handleSelectModel = useCallback(() => {
+    if (!isDisabled) {
+      onSelect(model.id);
+    }
+  }, [isDisabled, onSelect, model.id]);
 
   return (
     <div className="group relative">
@@ -94,7 +100,7 @@ export function ModelCard({ model, isSelected, onSelect }: ModelCardProps) {
             ? "cursor-not-allowed opacity-50 hover:!bg-transparent [&>*:not(.preserve-hover)]:opacity-50"
             : "cursor-pointer"
         } ${isSelected ? "bg-accent border-primary" : ""}`}
-        onClick={() => !isDisabled && onSelect(model.id)}
+        onClick={handleSelectModel}
         disabled={isDisabled}
       >
         <div
@@ -165,4 +171,4 @@ export function ModelCard({ model, isSelected, onSelect }: ModelCardProps) {
       </div>
     </div>
   );
-}
+});
