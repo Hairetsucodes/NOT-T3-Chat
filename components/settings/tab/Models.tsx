@@ -385,10 +385,16 @@ export default function Models() {
 
   if (loadingPreferences) {
     return (
-      <div className="flex h-full flex-col items-center justify-center space-y-4">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <p className="text-sm text-muted-foreground">Loading models...</p>
-      </div>
+      <Card className="relative z-10 h-full flex flex-col bg-gradient-chat-overlay border-chat-border/50 backdrop-blur-sm">
+        <CardContent className="flex-1 flex items-center justify-center">
+          <div className="flex items-center gap-3">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <span className="text-foreground/80 font-medium">
+              Loading models...
+            </span>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 

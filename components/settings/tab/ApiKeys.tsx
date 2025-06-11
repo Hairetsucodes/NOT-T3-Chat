@@ -143,11 +143,13 @@ export function ApiKeysTab() {
   // Show loading if session is loading
   if (status === "loading") {
     return (
-      <Card className="h-full flex flex-col">
-        <CardContent className="flex items-center justify-center h-64">
+      <Card className="relative z-10 h-full flex flex-col bg-gradient-chat-overlay border-chat-border/50 backdrop-blur-sm">
+        <CardContent className="flex-1 flex items-center justify-center">
           <div className="flex items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <span className="text-muted-foreground">Loading API keys...</span>
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <span className="text-foreground/80 font-medium">
+              Loading API keys...
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -270,14 +272,16 @@ export function ApiKeysTab() {
 
         {/* Active Providers Section */}
         {isLoadingKeys ? (
-          <div className="flex items-center justify-center p-8">
-            <div className="flex items-center gap-3">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <span className="text-sm text-muted-foreground">
-                Loading active providers...
-              </span>
-            </div>
-          </div>
+          <Card className="relative z-10 h-full flex flex-col bg-gradient-chat-overlay border-chat-border/50 backdrop-blur-sm">
+            <CardContent className="flex-1 flex items-center justify-center">
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="text-foreground/80 font-medium">
+                  Loading active providers...
+                </span>
+              </div>
+            </CardContent>
+          </Card>
         ) : (
           <ActiveProviders
             apiKeys={savedKeys.map((key) => ({
