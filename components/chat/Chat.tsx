@@ -12,12 +12,10 @@ export const Chat = () => {
   const {
     conversations,
     messages,
-    setMessages,
     input,
     handleInputChange,
     handleSubmit,
     handleSuggestionSelect,
-    setConversationId,
   } = useContext(ChatContext);
 
   const toggleSidebar = () => {
@@ -69,8 +67,6 @@ export const Chat = () => {
       )}
 
       <Sidebar
-        setMessages={setMessages}
-        setConversationId={setConversationId}
         conversations={conversations}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}

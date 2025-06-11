@@ -6,10 +6,9 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Pin, X, Loader2 } from "lucide-react";
-import { Message } from "@/types/chat";
 import { Conversation } from "@prisma/client";
 import { ChatContext } from "@/context/ChatContext";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -26,23 +25,16 @@ type ConversationWithLoading = Conversation & {
 interface SidebarProps {
   isCollapsed?: boolean;
   onToggle?: () => void;
-  setMessages: (messages: Message[]) => void;
-  setConversationId: (conversationId: string | null) => void;
   conversations: ConversationWithLoading[];
   isOpen?: boolean;
   onClose?: () => void;
 }
 
-export function Sidebar({
-  setConversationId,
-  setMessages,
-  isOpen = false,
-  onClose,
-}: SidebarProps) {
+export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const [searchValue, setSearchValue] = useState("");
-  const { conversations, activeUser } = useContext(ChatContext);
+  const { conversations, activeUser, setConversationId, setMessages } =
+    useContext(ChatContext);
   const router = useRouter();
-  const pathname = usePathname();
   return (
     <>
       {/* Sidebar - Hidden on desktop md+, toggleable on mobile */}
@@ -63,12 +55,12 @@ export function Sidebar({
                   variant="callToAction"
                   className="w-full"
                   onClick={() => {
+                    // Clear state immediately
                     setConversationId(null);
                     setMessages([]);
-                    // Only navigate to /chat if currently on a specific chat page (/chat/[id])
-                    if (pathname && pathname.startsWith("/chat/")) {
-                      router.push("/chat");
-                    }
+
+                    // Navigate to fresh chat page and close sidebar
+                    router.push("/chat");
                     onClose?.();
                   }}
                 >

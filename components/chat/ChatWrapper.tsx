@@ -14,22 +14,14 @@ export function ChatWrapper({
   initialConversationId,
   children,
 }: ChatWrapperProps) {
-  const { setMessages, setConversationId, conversationId } =
-    useContext(ChatContext);
+  const { setMessages, setConversationId } = useContext(ChatContext);
 
   useEffect(() => {
-    // Only initialize if we're loading a different conversation or no conversation is loaded
-    if (conversationId !== initialConversationId) {
-      setMessages(initialMessages);
-      setConversationId(initialConversationId);
-    }
-  }, [
-    initialMessages,
-    initialConversationId,
-    conversationId,
-    setMessages,
-    setConversationId,
-  ]);
+    // Always load conversation data when initialConversationId changes
+    // This ensures conversations load when navigating between them
+    setMessages(initialMessages);
+    setConversationId(initialConversationId);
+  }, [initialConversationId, initialMessages, setMessages, setConversationId]);
 
   return <>{children}</>;
 }
