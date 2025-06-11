@@ -45,10 +45,16 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
    cp .env.example .env
    ```
 
-   Configure your `.env` file with the required API keys and database URL:
+   **Generate random secret:**
+
+   ```bash
+   npx auth secret
+   ```
+
+   Configure your `.env` or `.env.local` file with the required API keys and database URL:
 
    ```env
-   DATABASE_URL="file:./dev.db"
+   DATABASE_URL="file:../dev.db"
    NEXTAUTH_SECRET="your-secret-key"
    NEXTAUTH_URL="http://localhost:3000"
 
