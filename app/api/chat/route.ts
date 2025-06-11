@@ -27,7 +27,10 @@ export async function POST(req: Request) {
     let providerKey = apiKeys.find((key) => key.provider === provider);
 
     // For unsupported providers (not openai, anthropic, google, xai, deepseek), use OpenRouter
-    if (!providerKey && !["openai", "anthropic", "google", "xai", "deepseek"].includes(provider)) {
+    if (
+      !providerKey &&
+      !["openai", "anthropic", "google", "xai", "deepseek"].includes(provider)
+    ) {
       providerKey = apiKeys.find((key) => key.provider === "openrouter");
       if (!providerKey) {
         return new Response(
@@ -69,6 +72,7 @@ export async function POST(req: Request) {
         lastUserMessage.content,
         "user",
         provider,
+        modelId,
         "",
         currentConversationId,
         generatedTitle || undefined
@@ -90,6 +94,7 @@ export async function POST(req: Request) {
 
     // Wrap the stream to accumulate content and save to database when complete
     let fullContent = "";
+    let fullReasoning = "";
     const transformedStream = new ReadableStream({
       start(controller) {
         const reader = stream.getReader();
@@ -107,7 +112,8 @@ export async function POST(req: Request) {
                     fullContent,
                     "assistant",
                     provider,
-                    "", // No reasoning content for now in streaming
+                    modelId,
+                    fullReasoning,
                     currentConversationId
                   );
                 }
@@ -117,16 +123,22 @@ export async function POST(req: Request) {
 
               const chunk = decoder.decode(value, { stream: true });
 
-              // Extract content from SSE format to accumulate
+              // Extract content and reasoning from SSE format to accumulate
               if (chunk.includes("data: ")) {
                 try {
                   const lines = chunk.split("\n");
                   for (const line of lines) {
                     if (line.startsWith("data: ")) {
                       const data = line.slice(6);
-                      const parsed = JSON.parse(data);
-                      if (parsed.content) {
-                        fullContent += parsed.content;
+                      if (data.trim()) {
+                        // Only parse non-empty data
+                        const parsed = JSON.parse(data);
+                        if (parsed.content) {
+                          fullContent += parsed.content;
+                        }
+                        if (parsed.reasoning) {
+                          fullReasoning += parsed.reasoning;
+                        }
                       }
                     }
                   }

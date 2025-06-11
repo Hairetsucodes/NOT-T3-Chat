@@ -231,8 +231,15 @@ export async function handleLLMRequestStreaming(
         signal
       );
 
-    case "xai":
     case "deepseek":
+      return await callDeepSeekStreaming(
+        messagesWithSystem,
+        modelId,
+        apiKey,
+        signal
+      );
+
+    case "xai":
     default:
       // Route unsupported providers through OpenRouter
       return await callOpenRouterStreaming(
@@ -301,8 +308,18 @@ export async function handleLLMRequest(
         reasoning = googleResult.reasoning || "";
         break;
 
-      case "xai":
       case "deepseek":
+        const deepseekResult = await callDeepSeek(
+          messagesWithSystem,
+          modelId,
+          apiKey,
+          signal
+        );
+        content = deepseekResult.content;
+        reasoning = deepseekResult.reasoning || "";
+        break;
+
+      case "xai":
       default:
         // Route unsupported providers through OpenRouter
         content = await callOpenRouter(
@@ -324,12 +341,6 @@ export async function handleLLMRequest(
     if (reasoning) {
       assistantMessage.reasoning_content = reasoning;
     }
-
-    console.log("✅ Successfully processed LLM response:", {
-      contentLength: content.length,
-      reasoningLength: reasoning.length,
-      conversationId,
-    });
 
     return {
       id: conversationId || "response",
@@ -495,6 +506,44 @@ async function callOpenRouter(
   return data.choices[0]?.message?.content || "";
 }
 
+async function callDeepSeek(
+  messages: Message[],
+  modelId: string,
+  apiKey: string,
+  signal?: AbortSignal
+): Promise<{ content: string; reasoning?: string }> {
+  const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: modelId,
+      messages: messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      })),
+      temperature: 0.7,
+      max_tokens: 4000,
+    }),
+    signal,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  const message = data.choices[0]?.message;
+
+  return {
+    content: message?.content || "",
+    reasoning: message?.reasoning_content || "",
+  };
+}
+
 async function callGoogle(
   messages: Message[],
   modelId: string,
@@ -635,6 +684,118 @@ async function callOpenRouterStreaming(
       try {
         while (true) {
           const { done, value } = await reader.read();
+          if (done) {
+            break;
+          }
+
+          const chunk = decoder.decode(value, { stream: true });
+
+          const lines = chunk.split("\n").filter((line) => line.trim());
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+
+              if (data === "[DONE]") {
+                controller.close();
+                return;
+              }
+
+              try {
+                const parsed = JSON.parse(data);
+
+                const delta = parsed.choices?.[0]?.delta;
+                if (delta) {
+                  // Handle reasoning content
+                  if (delta.reasoning) {
+                    controller.enqueue(
+                      new TextEncoder().encode(
+                        `data: ${JSON.stringify({
+                          reasoning: delta.reasoning,
+                        })}\n\n`
+                      )
+                    );
+                  }
+
+                  // Handle regular content
+                  if (delta.content) {
+                    controller.enqueue(
+                      new TextEncoder().encode(
+                        `data: ${JSON.stringify({
+                          content: delta.content,
+                        })}\n\n`
+                      )
+                    );
+                  }
+
+                  if (!delta.content && !delta.reasoning) {
+                  }
+                } else {
+                }
+              } catch (e) {
+                console.error(
+                  "❌ OpenRouter JSON parse error:",
+                  e,
+                  "Data:",
+                  data
+                );
+                // Skip invalid JSON
+              }
+            }
+          }
+        }
+        controller.close();
+      } catch (error) {
+        console.error("💥 OpenRouter stream error:", error);
+        controller.error(error);
+      }
+    },
+  });
+}
+
+async function callDeepSeekStreaming(
+  messages: Message[],
+  modelId: string,
+  apiKey: string,
+  signal?: AbortSignal
+): Promise<ReadableStream> {
+  const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: modelId,
+      messages: messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      })),
+      temperature: 0.7,
+      max_tokens: 4000,
+      stream: true,
+    }),
+    signal,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+  }
+
+  return new ReadableStream({
+    async start(controller) {
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        controller.error(new Error("No response body reader"));
+        return;
+      }
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
           if (done) break;
 
           const chunk = decoder.decode(value, { stream: true });
@@ -650,16 +811,33 @@ async function callOpenRouterStreaming(
 
               try {
                 const parsed = JSON.parse(data);
-                const content = parsed.choices?.[0]?.delta?.content;
-                if (content) {
-                  controller.enqueue(
-                    new TextEncoder().encode(
-                      `data: ${JSON.stringify({ content })}\n\n`
-                    )
-                  );
+                const delta = parsed.choices?.[0]?.delta;
+
+                if (delta) {
+                  // Handle reasoning content for deepseek-reasoner model
+                  if (delta.reasoning_content) {
+                    controller.enqueue(
+                      new TextEncoder().encode(
+                        `data: ${JSON.stringify({
+                          reasoning: delta.reasoning_content,
+                        })}\n\n`
+                      )
+                    );
+                  }
+
+                  // Handle regular content
+                  if (delta.content) {
+                    controller.enqueue(
+                      new TextEncoder().encode(
+                        `data: ${JSON.stringify({
+                          content: delta.content,
+                        })}\n\n`
+                      )
+                    );
+                  }
                 }
               } catch (e) {
-                console.error("❌ OpenRouter API error:", e);
+                console.error("❌ DeepSeek API error:", e);
                 // Skip invalid JSON
               }
             }

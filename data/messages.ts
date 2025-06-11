@@ -7,6 +7,7 @@ export const createMessage = async (
   content: string,
   role: string,
   provider: string,
+  modelId: string,
   reasoningContent: string,
   conversationId?: string,
   title?: string
@@ -43,6 +44,7 @@ export const createMessage = async (
       content,
       role,
       provider,
+      model: modelId,
       reasoningContent,
     },
   });

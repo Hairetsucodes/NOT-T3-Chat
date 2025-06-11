@@ -10,7 +10,10 @@ interface ReasoningDisplayProps {
   isStreaming?: boolean;
 }
 
-export function ReasoningDisplay({ reasoning, isStreaming }: ReasoningDisplayProps) {
+export function ReasoningDisplay({
+  reasoning,
+  isStreaming,
+}: ReasoningDisplayProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [renderedReasoning, setRenderedReasoning] = useState<string>("");
   const [reasoningTitle, setReasoningTitle] = useState<string>("");
@@ -19,7 +22,7 @@ export function ReasoningDisplay({ reasoning, isStreaming }: ReasoningDisplayPro
   // Extract the latest/current markdown title from reasoning content
   const extractTitle = (text: string): string => {
     if (!text) return "";
-    
+
     // Find all **bold text** patterns and get the last one
     const boldMatches = text.match(/\*\*(.*?)\*\*/g);
     if (boldMatches && boldMatches.length > 0) {
@@ -29,7 +32,7 @@ export function ReasoningDisplay({ reasoning, isStreaming }: ReasoningDisplayPro
         return titleMatch[1];
       }
     }
-    
+
     // Find all markdown headers and get the last one
     const headerMatches = text.match(/^#{1,6}\s+(.*?)$/gm);
     if (headerMatches && headerMatches.length > 0) {
@@ -39,13 +42,13 @@ export function ReasoningDisplay({ reasoning, isStreaming }: ReasoningDisplayPro
         return headerMatch[1];
       }
     }
-    
+
     // Fallback to first sentence
     const firstSentence = text.split(/[.!?]/)[0];
     if (firstSentence && firstSentence.length < 80) {
       return firstSentence.trim();
     }
-    
+
     return "";
   };
 
@@ -54,13 +57,13 @@ export function ReasoningDisplay({ reasoning, isStreaming }: ReasoningDisplayPro
     if (reasoning) {
       processMarkdown(reasoning).then(setRenderedReasoning);
       const newTitle = extractTitle(reasoning);
-      
+
       // Trigger pixel animation when title changes
       if (newTitle && newTitle !== reasoningTitle) {
         setIsAnimating(true);
         setTimeout(() => setIsAnimating(false), 600); // Smoother, shorter duration
       }
-      
+
       setReasoningTitle(newTitle);
     }
   }, [reasoning, reasoningTitle]);
@@ -70,7 +73,7 @@ export function ReasoningDisplay({ reasoning, isStreaming }: ReasoningDisplayPro
   }
 
   return (
-    <div className="mt-3 border border-border/50 rounded-lg bg-muted/30 overflow-hidden">
+    <div className="mt-3 border border-border/50 rounded-lg bg-muted/30 overflow-hidden my-2">
       <style>
         {`
           @keyframes pixelGlitch {
@@ -110,32 +113,36 @@ export function ReasoningDisplay({ reasoning, isStreaming }: ReasoningDisplayPro
       <Button
         variant="ghost"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full justify-start p-3 h-auto text-sm hover:bg-muted/50"
+        className="w-full justify-start p-1 h-auto text-sm hover:bg-muted/50 bg-secondary"
       >
         <Brain className="h-4 w-4 mr-2 text-blue-500" />
         <div className="flex flex-col items-start min-w-0 flex-1">
-          <span 
+          <span
             key={reasoningTitle} // Force re-render on title change
             className={`font-medium transition-all duration-300 ${
-              reasoningTitle ? 'text-primary' : ''
+              reasoningTitle ? "text-primary dark:text-primary" : ""
             } ${
-              isAnimating ? 'animate-pixel-in' : reasoningTitle ? 'animate-pulse' : ''
+              isAnimating
+                ? "animate-pixel-in dark:text-primary text-primary/90"
+                : reasoningTitle
+                ? "animate-pulse"
+                : ""
             }`}
             style={{
-              textShadow: reasoningTitle ? '0 0 8px hsl(var(--primary) / 0.5)' : 'none',
-              transform: isAnimating 
-                ? 'scale(1.1)' 
-                : reasoningTitle 
-                ? 'scale(1)' 
-                : 'scale(0.95)',
-              filter: isAnimating 
-                ? 'blur(1px) brightness(1.3) contrast(1.2)' 
-                : reasoningTitle 
-                ? 'brightness(1.1)' 
-                : 'brightness(1)',
-              animation: isAnimating 
-                ? 'pixelGlitch 0.6s ease-out' 
-                : 'none',
+              textShadow: reasoningTitle
+                ? "0 0 8px hsl(var(--primary) / 0.5)"
+                : "none",
+              transform: isAnimating
+                ? "scale(1.1)"
+                : reasoningTitle
+                ? "scale(1)"
+                : "scale(0.95)",
+              filter: isAnimating
+                ? "blur(1px) brightness(0.9) contrast(1.2)"
+                : reasoningTitle
+                ? "brightness(0.95)"
+                : "brightness(1)",
+              animation: isAnimating ? "pixelGlitch 0.6s ease-out" : "none",
             }}
           >
             {reasoningTitle || "Reasoning"}
@@ -160,12 +167,12 @@ export function ReasoningDisplay({ reasoning, isStreaming }: ReasoningDisplayPro
           )}
         </div>
       </Button>
-      
+
       {isExpanded && (
-        <div className="px-3 pb-3 border-t border-border/30">
+        <div className="px-3 pb-3 border-t border-border/30 bg-background">
           <div className="mt-3 text-sm text-muted-foreground">
             {renderedReasoning ? (
-              <div 
+              <div
                 className="contentMarkdown prose prose-sm max-w-none"
                 dangerouslySetInnerHTML={{ __html: renderedReasoning }}
               />
@@ -182,4 +189,4 @@ export function ReasoningDisplay({ reasoning, isStreaming }: ReasoningDisplayPro
       )}
     </div>
   );
-} 
+}
