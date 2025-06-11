@@ -27,7 +27,7 @@ export function ChatContainer({
 }: ChatContainerProps) {
   const handleSuggestionSelect = (suggestion: string) => {
     // TODO: Implement suggestion selection logic
-    console.log("Suggestion selected:", suggestion);
+    console.log(suggestion);
   };
   const { activeUser } = useContext(ChatContext);
   useEffect(() => {
@@ -37,10 +37,10 @@ export function ChatContainer({
   }, []);
 
   return (
-    <main className="relative flex w-full flex-1 flex-col overflow-hidden transition-[width,height]">
+    <main className="relative flex w-full h-full flex-col overflow-hidden transition-[width,height]">
       {/* Background with borders */}
-      <div className="absolute bottom-0 top-0 w-full overflow-hidden border-l border-t border-chat-border bg-chat-background bg-fixed pb-[140px] transition-all ease-snappy max-sm:border-none sm:translate-y-3.5 sm:rounded-tl-xl">
-        <div className="bg-noise absolute inset-0 -top-3.5 bg-fixed transition-transform ease-snappy [background-position:right_bottom]"></div>
+      <div className="absolute bottom-0 top-0 w-full overflow-hidden border-chat-border bg-chat-background bg-fixed pb-[140px] transition-all ease-snappy md:border-l md:border-t md:translate-y-3.5 md:rounded-tl-xl">
+        <div className="bg-noise absolute inset-0 bg-fixed transition-transform ease-snappy [background-position:right_bottom] md:-top-3.5"></div>
       </div>
 
       {/* Corner decoration */}
@@ -59,7 +59,7 @@ export function ChatContainer({
 
       {/* Main content scrollable area */}
       <div
-        className="absolute inset-0 sm:pt-3.5 overflow-y-auto mt-4"
+        className="absolute inset-0 overflow-y-auto pt-4 md:pt-7.5"
         style={{ paddingBottom: "144px", scrollbarGutter: "stable both-edges" }}
       >
         {messages.length === 0 ? (

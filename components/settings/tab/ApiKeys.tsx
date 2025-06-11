@@ -3,7 +3,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -23,14 +22,7 @@ import { createAPIKey, getAPIKeys, deleteAPIKey } from "@/data/apikeys";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import ActiveProviders from "@/components/settings/ActiveProviders";
-
-interface ApiKey {
-  id: string;
-  key: string;
-  provider: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { ApiKey } from "@prisma/client";
 
 export function ApiKeysTab() {
   const { data: session, status } = useSession();
@@ -74,8 +66,11 @@ export function ApiKeysTab() {
   }, [session?.user?.id, fetchApiKeys]);
 
   const handleSaveApiKey = async () => {
-    const finalProvider = selectedProvider === "custom" ? customProviderName.trim() : selectedProvider;
-    
+    const finalProvider =
+      selectedProvider === "custom"
+        ? customProviderName.trim()
+        : selectedProvider;
+
     if (!selectedProvider || !apiKey.trim() || !session?.user?.id) {
       toast.error("Please select a provider and enter an API key");
       return;
@@ -127,8 +122,13 @@ export function ApiKeysTab() {
     } catch (error) {
       console.error("Failed to delete API key:", error);
       if (error instanceof Error) {
-        if (error.message.includes("not found") || error.message.includes("unauthorized")) {
-          toast.error("API key not found or you don't have permission to delete it");
+        if (
+          error.message.includes("not found") ||
+          error.message.includes("unauthorized")
+        ) {
+          toast.error(
+            "API key not found or you don't have permission to delete it"
+          );
         } else if (error.message.includes("Invalid input")) {
           toast.error("Invalid request. Please try again");
         } else {
@@ -165,7 +165,7 @@ export function ApiKeysTab() {
   }
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-full flex flex-col bg-chat-background">
       <CardHeader className="flex-shrink-0">
         <CardTitle>API Keys</CardTitle>
         <CardDescription>
@@ -192,6 +192,7 @@ export function ApiKeysTab() {
                 <SelectItem value="google">Google AI</SelectItem>
                 <SelectItem value="deepseek">DeepSeek</SelectItem>
                 <SelectItem value="xai">xAI</SelectItem>
+                <SelectItem value="openrouter">OpenRouter</SelectItem>
                 <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
@@ -200,7 +201,9 @@ export function ApiKeysTab() {
           {/* Custom Provider Name Input - only show when custom is selected */}
           {selectedProvider === "custom" && (
             <div className="grid gap-3">
-              <Label htmlFor="custom-provider-input">Custom Provider Name</Label>
+              <Label htmlFor="custom-provider-input">
+                Custom Provider Name
+              </Label>
               <Input
                 id="custom-provider-input"
                 type="text"
@@ -224,7 +227,12 @@ export function ApiKeysTab() {
 
           <Button
             onClick={handleSaveApiKey}
-            disabled={!selectedProvider || !apiKey.trim() || isLoading || (selectedProvider === "custom" && !customProviderName.trim())}
+            disabled={
+              !selectedProvider ||
+              !apiKey.trim() ||
+              isLoading ||
+              (selectedProvider === "custom" && !customProviderName.trim())
+            }
             className="w-full"
           >
             {isLoading ? (
@@ -263,32 +271,29 @@ export function ApiKeysTab() {
             <Loader2 className="h-6 w-6 animate-spin" />
           </div>
         ) : (
-                     <ActiveProviders
-             apiKeys={savedKeys.map((key) => ({
-               id: key.id,
-               key: key.key,
-               provider: key.provider,
-             }))}
-             customModels={[]}
-             ollamaModels={[]}
-             localModels={[]}
-             onDeleteApiKey={handleDeleteApiKey}
-             providerIcons={{
-               openai: <div className="w-4 h-4 bg-green-500 rounded-full" />,
-               anthropic: <div className="w-4 h-4 bg-orange-500 rounded-full" />,
-               google: <div className="w-4 h-4 bg-blue-500 rounded-full" />,
-               deepseek: <div className="w-4 h-4 bg-purple-500 rounded-full" />,
-               xai: <div className="w-4 h-4 bg-blue-600 rounded-full" />,
-               custom: <div className="w-4 h-4 bg-purple-500 rounded-full" />,
-               ollama: <div className="w-4 h-4 bg-gray-500 rounded-full" />,
-               local: <div className="w-4 h-4 bg-red-500 rounded-full" />,
-             }}
-           />
+          <ActiveProviders
+            apiKeys={savedKeys.map((key) => ({
+              id: key.id,
+              key: key.key,
+              provider: key.provider,
+            }))}
+            customModels={[]}
+            ollamaModels={[]}
+            localModels={[]}
+            onDeleteApiKey={handleDeleteApiKey}
+            providerIcons={{
+              openai: <div className="w-4 h-4 bg-green-500 rounded-full" />,
+              anthropic: <div className="w-4 h-4 bg-orange-500 rounded-full" />,
+              google: <div className="w-4 h-4 bg-blue-500 rounded-full" />,
+              deepseek: <div className="w-4 h-4 bg-purple-500 rounded-full" />,
+              xai: <div className="w-4 h-4 bg-blue-600 rounded-full" />,
+              custom: <div className="w-4 h-4 bg-purple-500 rounded-full" />,
+              openrouter: <div className="w-4 h-4 bg-gray-500 rounded-full" />,
+              local: <div className="w-4 h-4 bg-red-500 rounded-full" />,
+            }}
+          />
         )}
       </CardContent>
-      <CardFooter className="flex-shrink-0">
-        <Button disabled>Save API Keys</Button>
-      </CardFooter>
     </Card>
   );
 }

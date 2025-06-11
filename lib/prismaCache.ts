@@ -1,5 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-import { type LanguageModelV1StreamPart } from 'ai';
+import { PrismaClient } from "@prisma/client";
+import { type LanguageModelV1StreamPart } from "ai";
 
 // Use global prisma instance to avoid connection issues in development
 const globalForPrisma = globalThis as unknown as {
@@ -8,18 +8,17 @@ const globalForPrisma = globalThis as unknown as {
 
 const prisma = globalForPrisma.prisma ?? new PrismaClient();
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 class PrismaResponseCache {
-  
   async set(
-    key: string, 
-    value: LanguageModelV1StreamPart[], 
+    key: string,
+    value: LanguageModelV1StreamPart[],
     ttlSeconds: number = 3600,
     userId?: string
   ): Promise<void> {
     const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
-    
+
     await prisma.responseCache.upsert({
       where: { cacheKey: key },
       update: {
@@ -50,20 +49,22 @@ class PrismaResponseCache {
       if (cached) {
         return JSON.parse(cached.response) as LanguageModelV1StreamPart[];
       }
-      
+
       return null;
     } catch (error) {
-      console.error('Cache get error:', error);
+      console.error("Cache get error:", error);
       return null;
     }
   }
 
   async delete(key: string): Promise<void> {
-    await prisma.responseCache.delete({
-      where: { cacheKey: key },
-    }).catch(() => {
-      // Ignore errors if key doesn't exist
-    });
+    await prisma.responseCache
+      .delete({
+        where: { cacheKey: key },
+      })
+      .catch(() => {
+        // Ignore errors if key doesn't exist
+      });
   }
 
   async size(userId?: string): Promise<number> {
@@ -75,7 +76,7 @@ class PrismaResponseCache {
         ...(userId && { userId }),
       },
     });
-    
+
     return count;
   }
 
@@ -87,11 +88,7 @@ class PrismaResponseCache {
         },
       },
     });
-    
-    if (result.count > 0) {
-      console.log(`🧹 Cleaned up ${result.count} expired cache entries`);
-    }
-    
+
     return result.count;
   }
 
@@ -130,4 +127,4 @@ export const responseCache = new PrismaResponseCache();
 // Cleanup expired entries every hour
 setInterval(() => {
   responseCache.cleanup().catch(console.error);
-}, 60 * 60 * 1000); 
+}, 60 * 60 * 1000);

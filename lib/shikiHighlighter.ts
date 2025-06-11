@@ -34,13 +34,12 @@ class ShikiHighlighterSingleton {
         return this.highlighter;
       }
 
-      console.log("[Shiki] Initializing highlighter singleton...");
       this.highlighter = await createHighlighter({
         themes: [
-          "github-light", 
-          "github-dark", 
+          "github-light",
+          "github-dark",
           "github-dark-dimmed",
-          "github-dark-high-contrast"
+          "github-dark-high-contrast",
         ],
         langs: [
           "javascript",
@@ -72,7 +71,6 @@ class ShikiHighlighterSingleton {
       });
 
       this.isInitialized = true;
-      console.log("[Shiki] Highlighter singleton initialized successfully");
       return this.highlighter;
     } catch (error) {
       console.error("Failed to initialize Shiki highlighter:", error);
@@ -83,7 +81,6 @@ class ShikiHighlighterSingleton {
 
   public dispose(): void {
     if (this.highlighter) {
-      console.log("[Shiki] Disposing highlighter singleton...");
       this.highlighter.dispose();
       this.highlighter = null;
       this.isInitialized = false;
@@ -96,12 +93,12 @@ class ShikiHighlighterSingleton {
 function fixLightColors(html: string): string {
   // Simple replacements for common light colors
   return html
-    .replace(/color:\s*#ffffff/gi, 'color: #1a1a1a')
-    .replace(/color:\s*#fff/gi, 'color: #1a1a1a')
-    .replace(/color:\s*white/gi, 'color: #1a1a1a')
-    .replace(/color:\s*#fafafa/gi, 'color: #2a2a2a')
-    .replace(/color:\s*#f5f5f5/gi, 'color: #2a2a2a')
-    .replace(/color:\s*#f0f0f0/gi, 'color: #3a3a3a');
+    .replace(/color:\s*#ffffff/gi, "color: #1a1a1a")
+    .replace(/color:\s*#fff/gi, "color: #1a1a1a")
+    .replace(/color:\s*white/gi, "color: #1a1a1a")
+    .replace(/color:\s*#fafafa/gi, "color: #2a2a2a")
+    .replace(/color:\s*#f5f5f5/gi, "color: #2a2a2a")
+    .replace(/color:\s*#f0f0f0/gi, "color: #3a3a3a");
 }
 
 // Export singleton instance
@@ -130,7 +127,7 @@ export async function highlightCode(
     const supportedLang = loadedLanguages.includes(lang) ? lang : "plaintext";
 
     // Select theme based on passed parameter
-    const theme = isDark ? 'github-dark-high-contrast' : 'github-light';
+    const theme = isDark ? "github-dark-high-contrast" : "github-light";
 
     let html = highlighter.codeToHtml(code, {
       lang: supportedLang,
@@ -138,8 +135,8 @@ export async function highlightCode(
     });
 
     // Remove background styles from the generated HTML to let our CSS handle it
-    html = html.replace(/style="[^"]*background[^"]*"/g, '');
-    
+    html = html.replace(/style="[^"]*background[^"]*"/g, "");
+
     // Fix light colors in light mode
     if (!isDark) {
       html = fixLightColors(html);

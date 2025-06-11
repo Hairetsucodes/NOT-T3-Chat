@@ -60,12 +60,31 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-screen sm:w-full sm:max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 ",
+          " data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-screen sm:w-full sm:max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 ",
           className
         )}
         {...props}
       >
-        {children}
+        {" "}
+        <div className="absolute inset-0 dark:bg-sidebar">
+          {/* Light mode gradient */}
+          <div
+            className="absolute inset-0 opacity-40 dark:opacity-0"
+            style={{
+              backgroundImage: `radial-gradient(closest-corner at 120px 36px, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0)), linear-gradient(rgb(254, 247, 255) 15%, rgb(244, 214, 250))`,
+            }}
+          />
+          {/* Dark mode gradient */}
+          <div
+            className="absolute inset-0 opacity-0 dark:opacity-40"
+            style={{
+              backgroundImage: `radial-gradient(closest-corner at 120px 36px, rgba(255, 1, 111, 0.19), rgba(255, 1, 111, 0.08)), linear-gradient(rgb(63, 51, 69) 15%, rgb(7, 3, 9))`,
+            }}
+          />
+          <div className="absolute inset-0 bg-noise" />
+          <div className="absolute inset-0 bg-black/40 dark:block hidden" />
+        </div>
+        <div className=" z-10">{children}</div>
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"

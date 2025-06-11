@@ -10,33 +10,50 @@ import { Message } from "ai";
 import { Conversation } from "@prisma/client";
 import { ChatContext } from "@/context/ChatContext";
 import { useRouter } from "next/navigation";
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import SettingsModal from "@/components/settings/SettingsModal";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface SidebarProps {
   isCollapsed?: boolean;
   onToggle?: () => void;
-
   setMessages: (messages: Message[]) => void;
   setConversationId: (conversationId: string | null) => void;
   conversations: Conversation[];
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export function Sidebar({ setConversationId, setMessages }: SidebarProps) {
+export function Sidebar({
+  setConversationId,
+  setMessages,
+  isOpen = false,
+  onClose,
+}: SidebarProps) {
   const [searchValue, setSearchValue] = useState("");
   const { conversations, activeUser } = useContext(ChatContext);
   const router = useRouter();
+
   return (
     <>
-      {/* Sidebar */}
-      <div className="w-[16rem] h-screen flex flex-col">
-        <div className="inset-y-0 hidden transition-[transform,opacity] ease-snappy md:flex left-0 group-data-[collapsible=offcanvas]:-translate-x-[var(--sidebar-width)] p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)] group z-50 border-none flex-1">
+      {/* Sidebar - Hidden on desktop md+, toggleable on mobile */}
+      <div
+        className={`${
+          isOpen ? "flex" : "hidden"
+        } md:flex md:w-[16rem] flex-col h-screen fixed md:relative inset-y-0 left-0 w-[16rem] z-50 md:z-auto bg-sidebar md:bg-transparent`}
+      >
+        <div className="inset-y-0 transition-[transform,opacity] ease-snappy flex left-0 group-data-[collapsible=offcanvas]:-translate-x-[var(--sidebar-width)] p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)] group border-none flex-1">
           <div className="flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow">
             {/* Header */}
-            <div className="w-full justify-center items-center flex pb-3">
+            <div className="w-full justify-center items-center flex pb-3 flex-shrink-0">
               OSS T3.chat
             </div>
-            <div className="flex flex-col gap-2 relative m-1 mb-0 space-y-1 p-0 !pt-safe">
+            <div className="flex flex-col gap-2 relative m-1 mb-0 space-y-1 p-0 !pt-safe flex-shrink-0">
               <div className="px-1">
                 <Button
                   variant="callToAction"
@@ -45,6 +62,7 @@ export function Sidebar({ setConversationId, setMessages }: SidebarProps) {
                     setConversationId(null);
                     setMessages([]);
                     router.push("/chat");
+                    onClose?.();
                   }}
                 >
                   <span className="w-full select-none text-center text-sm ">
@@ -68,76 +86,158 @@ export function Sidebar({ setConversationId, setMessages }: SidebarProps) {
               </div>
             </div>
 
-            {/* Content */}
-            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden small-scrollbar scroll-shadow relative pb-2">
-              <div className="relative flex w-full min-w-0 flex-col p-2">
-                <div className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading">
-                  <span>Today</span>
-                </div>
+            {/* Content - Scrollable Area */}
+            <div className="flex-1 overflow-hidden">
+              <ScrollArea className="rounded-md h-[calc(98vh-14rem)]">
+                <div className="relative flex w-full min-w-0 flex-col p-2">
+                  {(() => {
+                    // Helper function to get relative time label
+                    const getTimeLabel = (
+                      date: Date
+                    ): { label: string; daysAgo: number } => {
+                      const now = new Date();
+                      const conversationDate = new Date(date);
 
-                <div className="w-full text-sm">
-                  <ul className="flex w-full min-w-0 flex-col gap-1">
-                    {conversations.length > 0 ? (
-                      conversations.map((thread) => (
-                        <li
-                          key={thread.id}
-                          className="group/menu-item relative"
-                        >
-                          <Link
-                            className="group/link relative flex h-9 w-full items-center overflow-hidden rounded-lg px-2 py-1 text-sm outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring hover:focus-visible:bg-sidebar-accent"
-                            href={`/chat/${thread.id}`}
-                          >
-                            <div className="relative flex w-full items-center">
-                              <div className="relative w-full">
-                                <input
-                                  aria-label="Thread title"
-                                  readOnly
-                                  tabIndex={-1}
-                                  className="hover:truncate-none h-full w-full rounded bg-transparent px-1 py-1 text-sm text-muted-foreground outline-none pointer-events-none cursor-pointer overflow-hidden truncate"
-                                  title={thread.title}
-                                  type="text"
-                                  value={thread.title}
-                                />
+                      // Calculate difference in milliseconds
+                      const diffTime =
+                        now.getTime() - conversationDate.getTime();
+                      const diffDays = Math.floor(
+                        diffTime / (1000 * 60 * 60 * 24)
+                      );
+
+                      // Handle edge cases for negative days
+                      if (diffDays === -1)
+                        return { label: "Yesterday", daysAgo: 1 };
+                      if (diffDays <= 0) return { label: "Today", daysAgo: 0 };
+                      if (diffDays === 1)
+                        return { label: "Yesterday", daysAgo: 1 };
+                      if (diffDays < 7)
+                        return {
+                          label: `${diffDays} days ago`,
+                          daysAgo: diffDays,
+                        };
+                      if (diffDays < 30)
+                        return {
+                          label: `${Math.floor(diffDays / 7)} week${
+                            Math.floor(diffDays / 7) > 1 ? "s" : ""
+                          } ago`,
+                          daysAgo: diffDays,
+                        };
+                      return {
+                        label: `${Math.floor(diffDays / 30)} month${
+                          Math.floor(diffDays / 30) > 1 ? "s" : ""
+                        } ago`,
+                        daysAgo: diffDays,
+                      };
+                    };
+
+                    // Group conversations by time periods
+                    const groupedConversations = conversations.reduce(
+                      (groups, conversation) => {
+                        const updatedAt = conversation.updatedAt || new Date();
+                        const { label, daysAgo } = getTimeLabel(updatedAt);
+
+                        if (!groups[label]) {
+                          groups[label] = { conversations: [], daysAgo };
+                        }
+                        groups[label].conversations.push(conversation);
+                        return groups;
+                      },
+                      {} as Record<
+                        string,
+                        { conversations: typeof conversations; daysAgo: number }
+                      >
+                    );
+
+                    // Sort groups by recency (Today first, then Yesterday, then by days ago ascending)
+                    const sortedGroups = Object.entries(
+                      groupedConversations
+                    ).sort(([, a], [, b]) => {
+                      return a.daysAgo - b.daysAgo;
+                    });
+
+                    if (conversations.length === 0) {
+                      return (
+                        <div className="w-full text-sm">
+                          <ul className="flex w-full min-w-0 flex-col gap-1">
+                            <li className="group/menu-item relative">
+                              <div className="relative flex h-9 w-full items-center overflow-hidden rounded-lg px-2 py-1 text-sm text-muted-foreground/50">
+                                No conversations yet
                               </div>
-                              <div className="pointer-events-auto absolute -right-1 bottom-0 top-0 z-50 flex translate-x-full items-center justify-end text-muted-foreground transition-transform group-hover/link:translate-x-0 group-hover/link:bg-sidebar-accent">
-                                <div className="pointer-events-none absolute bottom-0 right-[100%] top-0 h-12 w-8 bg-gradient-to-l from-sidebar-accent to-transparent opacity-0 group-hover/link:opacity-100" />
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="rounded-md p-1.5 hover:bg-muted/40"
-                                  tabIndex={-1}
-                                  aria-label="Pin thread"
-                                >
-                                  <Pin className="size-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="rounded-md p-1.5 hover:bg-destructive/50 hover:text-destructive-foreground"
-                                  tabIndex={-1}
-                                  aria-label="Delete thread"
-                                >
-                                  <X className="size-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </Link>
-                        </li>
-                      ))
-                    ) : (
-                      <li className="group/menu-item relative">
-                        <div className="relative flex h-9 w-full items-center overflow-hidden rounded-lg px-2 py-1 text-sm text-muted-foreground/50">
-                          No conversations yet
+                            </li>
+                          </ul>
                         </div>
-                      </li>
-                    )}
-                  </ul>
+                      );
+                    }
+
+                    return sortedGroups.map(
+                      ([timeLabel, { conversations: groupConversations }]) => (
+                        <div key={timeLabel} className="mb-4">
+                          <div className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 ">
+                            <span className="text-gray-400">{timeLabel}</span>
+                          </div>
+
+                          <div className="w-full text-sm">
+                            <ul className="flex w-full min-w-0 flex-col gap-1">
+                              {groupConversations.map((thread) => (
+                                <li
+                                  key={thread.id}
+                                  className="group/menu-item relative"
+                                >
+                                  <Link
+                                    className="group/link relative flex h-9 w-full items-center overflow-hidden rounded-lg px-2 py-1 text-sm outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring hover:focus-visible:bg-sidebar-accent"
+                                    href={`/chat/${thread.id}`}
+                                    onClick={() => onClose?.()}
+                                  >
+                                    <div className="relative flex w-full items-center">
+                                      <div className="relative w-full">
+                                        <input
+                                          aria-label="Thread title"
+                                          readOnly
+                                          tabIndex={-1}
+                                          className="hover:truncate-none h-full w-full rounded bg-transparent px-1 py-1 text-sm text-muted-foreground outline-none pointer-events-none cursor-pointer overflow-hidden truncate"
+                                          title={thread.title}
+                                          type="text"
+                                          value={thread.title}
+                                        />
+                                      </div>
+                                      <div className="pointer-events-auto absolute -right-1 bottom-0 top-0 z-50 flex translate-x-full items-center justify-end text-muted-foreground transition-transform group-hover/link:translate-x-0 group-hover/link:bg-sidebar-accent">
+                                        <div className="pointer-events-none absolute bottom-0 right-[100%] top-0 h-12 w-8 bg-gradient-to-l from-sidebar-accent to-transparent opacity-0 group-hover/link:opacity-100" />
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="rounded-md p-1.5 hover:bg-muted/40"
+                                          tabIndex={-1}
+                                          aria-label="Pin thread"
+                                        >
+                                          <Pin className="size-4" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="rounded-md p-1.5 hover:bg-destructive/50 hover:text-destructive-foreground"
+                                          tabIndex={-1}
+                                          aria-label="Delete thread"
+                                        >
+                                          <X className="size-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )
+                    );
+                  })()}
                 </div>
-              </div>
+              </ScrollArea>
             </div>
 
             {/* Footer */}
-            <div className="flex flex-col gap-2 m-0 p-2 pt-0 justify-end">
+            <div className="flex flex-col gap-2 m-0 p-2 pt-0 justify-end flex-shrink-0">
               <Dialog>
                 <DialogTrigger asChild>
                   <button

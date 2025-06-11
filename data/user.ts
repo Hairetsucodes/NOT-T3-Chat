@@ -1,7 +1,7 @@
 "use server";
 
 import { checkUser } from "@/lib/auth/check";
-import { prisma } from "../prisma";
+import { prisma } from "@/prisma";
 import { User } from "@prisma/client";
 
 export const createUser = async (

@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 
 export function AttachmentsTab() {
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-full flex flex-col bg-chat-background">
       <CardHeader className="flex-shrink-0">
         <CardTitle>Attachments</CardTitle>
         <CardDescription>
@@ -37,24 +37,18 @@ export function AttachmentsTab() {
             {["PDF", "DOC", "TXT", "PNG", "JPG", "GIF"].map((type) => (
               <div key={type} className="flex items-center space-x-2">
                 <Switch id={`type-${type.toLowerCase()}`} />
-                <Label htmlFor={`type-${type.toLowerCase()}`}>
-                  {type}
-                </Label>
+                <Label htmlFor={`type-${type.toLowerCase()}`}>{type}</Label>
               </div>
             ))}
           </div>
         </div>
         <div className="flex items-center space-x-2">
           <Switch id="auto-analyze" />
-          <Label htmlFor="auto-analyze">
-            Auto-analyze uploaded files
-          </Label>
+          <Label htmlFor="auto-analyze">Auto-analyze uploaded files</Label>
         </div>
         <div className="flex items-center space-x-2">
           <Switch id="compress-images" />
-          <Label htmlFor="compress-images">
-            Compress images before upload
-          </Label>
+          <Label htmlFor="compress-images">Compress images before upload</Label>
         </div>
         <div className="space-y-2">
           <Label>Storage Usage</Label>
@@ -77,4 +71,4 @@ export function AttachmentsTab() {
       </CardFooter>
     </Card>
   );
-} 
+}

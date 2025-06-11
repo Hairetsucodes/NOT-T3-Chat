@@ -2,10 +2,24 @@
 import { checkUser } from "@/lib/auth/check";
 import { prisma } from "@/prisma";
 import { z } from "zod";
+import { populateOpenRouterModels } from "@/scripts/populate-openrouter-models";
+import { populateAnthropicModels } from "@/scripts/populate-anthropic-models";
+import { populateOpenAIModels } from "@/scripts/populate-openai-models";
+import { populateGoogleModels } from "@/scripts/populate-google-models";
+import { populateDeepSeekModels } from "@/scripts/populate-deepseek-models";
+import { populateXaiModels } from "@/scripts/populate-xai-models";
 
 // Input validation schemas
 const providerSchema = z
-  .enum(["openai", "anthropic", "google", "deepseek", "xai", "custom"])
+  .enum([
+    "openai",
+    "anthropic",
+    "google",
+    "deepseek",
+    "xai",
+    "custom",
+    "openrouter",
+  ])
   .or(z.string().min(1).max(100));
 const apiKeySchema = z.string().min(1).max(500).trim();
 const userIdSchema = z.string().cuid();
@@ -20,7 +34,24 @@ export const createAPIKey = async (
     const validatedUserId = userIdSchema.parse(userId);
     const validatedKey = apiKeySchema.parse(key);
     const validatedProvider = providerSchema.parse(provider);
-
+    if (validatedProvider.toLowerCase() === "openrouter") {
+      await populateOpenRouterModels();
+    }
+    if (validatedProvider.toLowerCase() === "anthropic") {
+      await populateAnthropicModels(validatedKey);
+    }
+    if (validatedProvider.toLowerCase() === "openai") {
+      await populateOpenAIModels(validatedKey);
+    }
+    if (validatedProvider.toLowerCase() === "google") {
+      await populateGoogleModels(validatedKey);
+    }
+    if (validatedProvider.toLowerCase() === "deepseek") {
+      await populateDeepSeekModels(validatedKey);
+    }
+    if (validatedProvider.toLowerCase() === "xai") {
+      await populateXaiModels(validatedKey);
+    }
     const user = await checkUser({ userId: validatedUserId });
     if (!user) {
       throw new Error("Unauthorized");
@@ -121,4 +152,22 @@ export const deleteAPIKey = async (userId: string, keyId: string) => {
     }
     throw new Error("Failed to delete API key");
   }
+};
+
+export const getProviders = async (userId: string) => {
+  const validatedUserId = userIdSchema.parse(userId);
+  const user = await checkUser({ userId: validatedUserId });
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  const providers = await prisma.apiKey.findMany({
+    where: {
+      userId: validatedUserId,
+    },
+    select: {
+      provider: true,
+    },
+  });
+  return providers.map((provider) => provider.provider);
 };

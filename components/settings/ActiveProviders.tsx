@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ApiKey {
@@ -32,10 +32,10 @@ export default function ActiveProviders({
   providerIcons,
   onDeleteApiKey,
 }: ActiveProvidersProps) {
-  const hasActiveProviders = 
-    apiKeys.length > 0 || 
-    customModels.length > 0 || 
-    ollamaModels.length > 0 || 
+  const hasActiveProviders =
+    apiKeys.length > 0 ||
+    customModels.length > 0 ||
+    ollamaModels.length > 0 ||
     localModels.length > 0;
 
   return (
@@ -44,19 +44,26 @@ export default function ActiveProviders({
         <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
         <h3 className="text-sm font-medium">Active Providers</h3>
       </div>
-      
+
       {hasActiveProviders ? (
         <div className="flex flex-wrap gap-2">
           {/* API Keys */}
           {apiKeys.map((apiKey) => (
             <ProviderBadge
               key={apiKey.id}
-              icon={providerIcons[apiKey.provider as keyof typeof providerIcons]}
-              name={apiKey.provider.charAt(0).toUpperCase() + apiKey.provider.slice(1)}
-              onDelete={onDeleteApiKey ? () => onDeleteApiKey(apiKey.id) : undefined}
+              icon={
+                providerIcons[apiKey.provider as keyof typeof providerIcons]
+              }
+              name={
+                apiKey.provider.charAt(0).toUpperCase() +
+                apiKey.provider.slice(1)
+              }
+              onDelete={
+                onDeleteApiKey ? () => onDeleteApiKey(apiKey.id) : undefined
+              }
             />
           ))}
-          
+
           {/* Custom Models */}
           {customModels.length > 0 && (
             <ProviderBadge
@@ -64,7 +71,7 @@ export default function ActiveProviders({
               name="Custom"
             />
           )}
-          
+
           {/* Ollama Models */}
           {ollamaModels.length > 0 && (
             <ProviderBadge
@@ -72,7 +79,7 @@ export default function ActiveProviders({
               name="Ollama"
             />
           )}
-          
+
           {/* Local Models */}
           {localModels.length > 0 && (
             <ProviderBadge
@@ -106,11 +113,11 @@ function ProviderBadge({ icon, name, onDelete }: ProviderBadgeProps) {
           variant="ghost"
           size="sm"
           onClick={onDelete}
-          className="ml-1 h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20 hover:text-destructive"
+          className="ml-1 h-3 w-3 p-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20 hover:text-destructive"
         >
-          <X className="h-3 w-3" />
+          <Trash2Icon className="h-1.5 w-1.5" />
         </Button>
       )}
     </div>
   );
-} 
+}

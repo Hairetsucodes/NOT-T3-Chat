@@ -31,7 +31,6 @@ export default {
           const passwordMatch = await bcrypt.compare(password, user.password);
 
           if (passwordMatch) {
-            console.log("Login successful for user:", email);
             // Return only the necessary user data
             return {
               id: user.id,

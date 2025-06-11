@@ -160,6 +160,94 @@ model PreferredModel {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model OpenRouterModel {
+  id            String   @id @default(cuid())
+  modelId       String   @unique
+  name          String
+  provider      String
+  description   String?
+  contextLength Int?
+  pricing       Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AnthropicModel {
+  id            String   @id @default(cuid())
+  modelId       String   @unique
+  name          String
+  modelFamily   String
+  description   String?
+  contextLength Int?
+  maxOutput     Int?
+  pricing       Json?
+  capabilities  Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model OpenaiModel {
+  id            String   @id @default(cuid())
+  modelId       String   @unique
+  name          String
+  modelFamily   String
+  description   String?
+  contextLength Int?
+  maxOutput     Int?
+  pricing       Json?
+  capabilities  Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model GoogleModel {
+  id            String   @id @default(cuid())
+  modelId       String   @unique
+  name          String
+  modelFamily   String
+  description   String?
+  contextLength Int?
+  maxOutput     Int?
+  pricing       Json?
+  capabilities  Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model DeepSeekModel {
+  id            String   @id @default(cuid())
+  modelId       String   @unique
+  name          String
+  modelFamily   String
+  description   String?
+  contextLength Int?
+  maxOutput     Int?
+  pricing       Json?
+  capabilities  Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model XaiModel {
+  id            String   @id @default(cuid())
+  modelId       String   @unique
+  name          String
+  modelFamily   String
+  description   String?
+  contextLength Int?
+  maxOutput     Int?
+  pricing       Json?
+  capabilities  Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 model ResponseCache {
   id        String   @id @default(cuid())
   cacheKey  String   @unique

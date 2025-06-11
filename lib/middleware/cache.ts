@@ -21,28 +21,11 @@ export const createCacheMiddleware = (
 
     if (isCreative) {
       cacheKey += `_creative_${Date.now()}`;
-      console.log("🎨 CREATIVE REQUEST DETECTED - Using unique cache key:", {
-        isCreative: true,
-        timestamp: new Date().toISOString(),
-      });
     }
-
-    console.log("🔑 Cache Key Generated:", {
-      keyHash: cacheKey.slice(0, 100) + "...",
-      keyLength: cacheKey.length,
-      isCreative,
-    });
 
     const cached = await responseCache.get(cacheKey);
 
     if (cached !== null && cached !== undefined) {
-      const cacheSize = await responseCache.size(userId);
-      console.log("🎯 CACHE HIT! Returning cached response:", {
-        cachedChunks: cached.length,
-        cacheSize,
-        timestamp: new Date().toISOString(),
-      });
-
       return {
         stream: simulateReadableStream({
           initialDelayInMs: 20,
@@ -52,12 +35,6 @@ export const createCacheMiddleware = (
         rawCall: { rawPrompt: null, rawSettings: {} },
       };
     }
-
-    const cacheSizeMiss = await responseCache.size(userId);
-    console.log("❄️ CACHE MISS - Generating new response:", {
-      cacheSize: cacheSizeMiss,
-      timestamp: new Date().toISOString(),
-    });
 
     const { stream, ...rest } = await doStream();
 
@@ -74,14 +51,7 @@ export const createCacheMiddleware = (
       flush() {
         responseCache
           .set(cacheKey, fullResponse, 3600, userId)
-          .then(async () => {
-            const newCacheSize = await responseCache.size(userId);
-            console.log("💾 Response cached:", {
-              chunks: fullResponse.length,
-              cacheSize: newCacheSize,
-              timestamp: new Date().toISOString(),
-            });
-          })
+          .then(async () => {})
           .catch(console.error);
       },
     });

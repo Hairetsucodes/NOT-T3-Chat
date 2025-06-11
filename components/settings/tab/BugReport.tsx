@@ -21,7 +21,7 @@ import {
 
 export function BugReportTab() {
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-full flex flex-col bg-chat-background rounded-lg border-chat-border/50">
       <CardHeader className="flex-shrink-0">
         <CardTitle>Bug Report</CardTitle>
         <CardDescription>
@@ -38,9 +38,7 @@ export function BugReportTab() {
             <SelectContent>
               <SelectItem value="bug">Bug Report</SelectItem>
               <SelectItem value="feature">Feature Request</SelectItem>
-              <SelectItem value="performance">
-                Performance Issue
-              </SelectItem>
+              <SelectItem value="performance">Performance Issue</SelectItem>
               <SelectItem value="ui">UI/UX Issue</SelectItem>
               <SelectItem value="other">Other</SelectItem>
             </SelectContent>
@@ -48,10 +46,7 @@ export function BugReportTab() {
         </div>
         <div className="grid gap-3">
           <Label htmlFor="bug-title">Title</Label>
-          <Input
-            id="bug-title"
-            placeholder="Brief description of the issue"
-          />
+          <Input id="bug-title" placeholder="Brief description of the issue" />
         </div>
         <div className="grid gap-3">
           <Label htmlFor="bug-description">Description</Label>
@@ -77,9 +72,7 @@ export function BugReportTab() {
         </div>
         <div className="flex items-center space-x-2">
           <Switch id="include-logs" />
-          <Label htmlFor="include-logs">
-            Include diagnostic information
-          </Label>
+          <Label htmlFor="include-logs">Include diagnostic information</Label>
         </div>
         <div className="space-y-2">
           <Label>Attach Screenshots</Label>
@@ -98,4 +91,4 @@ export function BugReportTab() {
       </CardFooter>
     </Card>
   );
-} 
+}

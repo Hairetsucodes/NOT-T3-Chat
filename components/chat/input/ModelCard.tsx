@@ -1,6 +1,28 @@
-import type { AIModel } from "@/types/models";
 import { FlaskConical, Gem, Key, Pin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useContext, useState } from "react";
+import { ChatContext } from "@/context/ChatContext";
+import { addPreferredModel, removePreferredModel } from "@/data/models";
+import { toast } from "sonner";
+
+interface Capability {
+  label: string;
+  icon: React.ReactNode;
+}
+
+interface AIModel {
+  id: string;
+  name: string;
+  subtitle: string;
+  icon: React.ReactNode;
+  capabilities: Capability[];
+  provider: string;
+  isPro: boolean;
+  isDisabled: boolean;
+  isFavorite: boolean;
+  isExperimental?: boolean;
+  requiresKey?: boolean;
+}
 
 interface ModelCardProps {
   model: AIModel;
@@ -9,10 +31,59 @@ interface ModelCardProps {
 }
 
 export function ModelCard({ model, isSelected, onSelect }: ModelCardProps) {
+  const { activeUser, refreshPreferredModels } = useContext(ChatContext);
+  const [isToggling, setIsToggling] = useState(false);
+
   const isDisabled = model.isDisabled;
   const isExperimental = model.isExperimental;
   const isPremium = model.isPro;
   const isKeyRequired = model.requiresKey;
+
+  const handleToggleFavorite = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent the model card from being selected
+
+    if (!activeUser?.id) {
+      toast.error("Please sign in to manage favorites");
+      return;
+    }
+
+    if (isToggling) return; // Prevent double-clicks
+
+    setIsToggling(true);
+
+    try {
+      if (model.isFavorite) {
+        // Remove from favorites
+        const result = await removePreferredModel(activeUser.id, model.id);
+        if (result && "error" in result) {
+          toast.error(result.error);
+        } else {
+          toast.success("Model removed from favorites");
+          // Refresh the preferred models to update UI
+          await refreshPreferredModels();
+        }
+      } else {
+        // Add to favorites
+        const result = await addPreferredModel(
+          activeUser.id,
+          model.id,
+          model.provider
+        );
+        if (result && "error" in result) {
+          toast.error(result.error);
+        } else {
+          toast.success("Model added to favorites");
+          // Refresh the preferred models to update UI
+          await refreshPreferredModels();
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+      toast.error("Failed to update favorites");
+    } finally {
+      setIsToggling(false);
+    }
+  };
 
   return (
     <div className="group relative">
@@ -56,7 +127,7 @@ export function ModelCard({ model, isSelected, onSelect }: ModelCardProps) {
 
         {/* Bottom capabilities */}
         <div className="absolute inset-x-0 bottom-3 flex w-full items-center justify-center gap-2">
-          {model.capabilities.map((capability, index) => (
+          {model.capabilities.map((capability: Capability, index: number) => (
             <div
               key={index}
               className="relative flex h-6 w-6 items-center justify-center overflow-hidden rounded-md text-[--color] dark:text-[--color-dark]"
@@ -80,10 +151,16 @@ export function ModelCard({ model, isSelected, onSelect }: ModelCardProps) {
         <Button
           variant="ghost"
           size="sm"
-          className="cursor-pointer rounded-md bg-accent/30 p-1.5 hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
-          aria-label="Pin model"
+          className={`cursor-pointer rounded-md p-1.5 hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50 ${
+            model.isFavorite
+              ? "bg-primary/20 text-primary hover:bg-primary/30"
+              : "bg-accent/30"
+          }`}
+          aria-label={model.isFavorite ? "Unpin model" : "Pin model"}
+          onClick={handleToggleFavorite}
+          disabled={isToggling}
         >
-          <Pin className="size-4" />
+          <Pin className={`size-4 ${model.isFavorite ? "fill-current" : ""}`} />
         </Button>
       </div>
     </div>

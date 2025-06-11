@@ -5,6 +5,8 @@ import { ChatContainer } from "./Container";
 import { useContext, useState } from "react";
 import { useCallback } from "react";
 import { ChatContext } from "@/context/ChatContext";
+import { Button } from "@/components/ui/button";
+import { Menu, X } from "lucide-react";
 
 export const Chat = ({
   messages: initialMessages,
@@ -19,6 +21,7 @@ export const Chat = ({
   const [conversationTitle, setConversationTitle] = useState<string | null>(
     null
   );
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { conversations } = useContext(ChatContext);
   const { messages, setMessages, input, handleInputChange, append, setInput } =
     useChat({
@@ -34,12 +37,10 @@ export const Chat = ({
 
           if (newConversationId && !conversationId) {
             setConversationId(newConversationId);
-            console.log("🆔 New conversation ID:", newConversationId);
           }
 
           if (generatedTitle && !conversationTitle) {
             setConversationTitle(generatedTitle);
-            console.log("📝 Generated title:", generatedTitle);
           }
         },
         [conversationId, conversationTitle]
@@ -68,8 +69,13 @@ export const Chat = ({
     },
     [input, conversationId, append, setInput]
   );
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   return (
-    <div className="flex w-full">
+    <div className="flex w-full h-screen relative">
       <div className="absolute inset-0 dark:bg-sidebar !fixed z-0">
         {/* Light mode gradient */}
         <div
@@ -88,17 +94,45 @@ export const Chat = ({
         <div className="absolute inset-0 bg-noise"></div>
         <div className="absolute inset-0 bg-black/40 dark:block hidden"></div>
       </div>
+
+      {/* Mobile sidebar toggle button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleSidebar}
+        className="fixed top-4 left-4 z-50 md:hidden bg-chat-background/80 backdrop-blur-sm border border-chat-border/50 hover:bg-chat-background"
+        aria-label={isSidebarOpen ? "Hide sidebar" : "Show sidebar"}
+      >
+        {isSidebarOpen ? (
+          <X className="h-5 w-5" />
+        ) : (
+          <Menu className="h-5 w-5" />
+        )}
+      </Button>
+
+      {/* Sidebar with overlay for mobile */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       <Sidebar
         setMessages={setMessages}
         setConversationId={setConversationId}
         conversations={conversations}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
-      <ChatContainer
-        messages={messages}
-        input={input}
-        handleInputChange={handleInputChange}
-        handleSubmit={handleSubmit}
-      />
+      <div className="flex-1 relative z-10">
+        <ChatContainer
+          messages={messages}
+          input={input}
+          handleInputChange={handleInputChange}
+          handleSubmit={handleSubmit}
+        />
+      </div>
     </div>
   );
 };
