@@ -4,14 +4,17 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 
 ## ✨ Features
 
-- 🤖 Multiple AI provider support (OpenAI, Anthropic, Google, DeepSeek, Xai, and more)
+- 🤖 Multiple AI provider support (OpenAI, Anthropic, Google, DeepSeek, Xai, OpenRouter, and more)
 - 🔐 Authentication with NextAuth
 - 💾 Persistent chat history with Prisma
+- 📤 History Sync Export/Import functionality
+- 🧠 Reasoning/thinking mode support
 - 🎨 Modern UI with Tailwind CSS and Radix UI
 - 🌙 Dark/Light mode support
 - ⚡ Real-time streaming responses
 - 📱 Responsive design
 - 🔧 Customizable user settings and prompts
+- 🎯 Syntax highlighting for code blocks
 
 ## 🚀 Quick Start
 
