@@ -30,8 +30,8 @@ export function CategoryButtons({ selectedCategory, onCategorySelect }: Category
             onClick={() => onCategorySelect(category.key)}
             className={`rounded-2xl border-1 border-solid backdrop-blur-lg py-2 px-4 transition-all ${
               isSelected
-                ? "border-primary bg-primary/20 text-primary ![--c:--primary]"
-                : "border-secondary bg-chat-input-background ![--c:--chat-input-gradient]"
+                ? "bg-gradient-to-b from-[rgb(180,80,120)] via-[rgb(150,65,95)] to-[rgb(130,50,80)] text-white border-[rgb(150,65,95)] shadow-md hover:shadow-lg hover:from-[rgb(200,100,140)] hover:via-[rgb(170,85,115)] hover:to-[rgb(150,70,100)] dark:from-pink-800/60 dark:via-pink-900/50 dark:to-pink-950/60 dark:border-pink-700/50 dark:hover:from-pink-700/70 dark:hover:via-pink-800/60 dark:hover:to-pink-950/70 ![--c:--primary]"
+                : "border-secondary/60 bg-secondary/30 text-secondary-foreground dark:border-secondary dark:bg-chat-input-background dark:text-secondary-foreground ![--c:--chat-input-gradient]"
             }`}
           >
             <div className="flex items-center gap-2">

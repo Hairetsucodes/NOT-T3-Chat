@@ -6,9 +6,8 @@ import { ChatHeader } from "./ui/Header";
 import CornerDecorator from "./ui/CornerDecorator";
 import { MessageRenderer } from "./message/Renderer";
 import { Message } from "@ai-sdk/react";
-import { ChangeEvent, useContext, useEffect } from "react";
+import { ChangeEvent, useEffect } from "react";
 import { disposeHighlighter } from "@/lib/shikiHighlighter";
-import { ChatContext } from "@/context/ChatContext";
 
 interface ChatContainerProps {
   messages: Message[];
@@ -27,7 +26,6 @@ export function ChatContainer({
   handleSubmit,
   handleSuggestionSelect,
 }: ChatContainerProps) {
-  const { activeUser } = useContext(ChatContext);
   useEffect(() => {
     return () => {
       disposeHighlighter();
@@ -61,10 +59,7 @@ export function ChatContainer({
         style={{ paddingBottom: "144px", scrollbarGutter: "stable both-edges" }}
       >
         {messages.length === 0 ? (
-          <WelcomeScreen
-            userName={activeUser?.name || ""}
-            onSelectSuggestion={handleSuggestionSelect}
-          />
+          <WelcomeScreen onSelectSuggestion={handleSuggestionSelect} />
         ) : (
           <div className="flex flex-col w-full max-w-[770px] mx-auto px-4 py-8 space-y-6">
             {messages.map((message) => (
