@@ -307,24 +307,34 @@ async function callOpenRouterStreaming(
 
           for (const line of lines) {
             if (line.startsWith("data: ")) {
-              const data = line.slice(6);
+              const data = line.slice(6).trim();
 
               if (data === "[DONE]") {
                 controller.close();
                 return;
               }
 
+              // Skip empty data or malformed chunks
+              if (!data || data.length === 0) continue;
+
               try {
                 const parsed = JSON.parse(data);
 
                 const delta = parsed.choices?.[0]?.delta;
                 if (delta) {
-                  // Handle reasoning content
-                  if (delta.reasoning) {
+                  // Handle different reasoning content formats
+                  // OpenAI o1/o4 models might use different field names
+                  const reasoningContent = 
+                    delta.reasoning || 
+                    delta.reasoning_content || 
+                    delta.thought || 
+                    delta.thinking;
+
+                  if (reasoningContent) {
                     controller.enqueue(
                       new TextEncoder().encode(
                         `data: ${JSON.stringify({
-                          reasoning: delta.reasoning,
+                          reasoning: reasoningContent,
                         })}\n\n`
                       )
                     );
@@ -340,19 +350,10 @@ async function callOpenRouterStreaming(
                       )
                     );
                   }
-
-                  if (!delta.content && !delta.reasoning) {
-                  }
-                } else {
                 }
-              } catch (e) {
-                console.error(
-                  "❌ OpenRouter JSON parse error:",
-                  e,
-                  "Data:",
-                  data
-                );
-                // Skip invalid JSON
+              } catch {
+                // Skip invalid JSON chunks silently - this is normal in streaming
+                continue;
               }
             }
           }
@@ -785,24 +786,57 @@ export async function generateTitle(
     // If model has a "/" in it, it's an OpenRouter model regardless of provider
     const actualProvider = modelId.includes("/") ? "openrouter" : provider;
     
+    // Map complex reasoning models to simpler alternatives for title generation
+    let titleModelId = modelId;
+    
+    if (actualProvider === "openrouter") {
+      // Map OpenRouter reasoning models to simpler alternatives
+      if (modelId.includes("o1") || modelId.includes("o4") || modelId.includes("reasoning") || modelId.includes("qwq")) {
+        titleModelId = "openai/gpt-4o-mini"; // Fast, reliable OpenAI model via OpenRouter
+      } else if (modelId.includes("claude") && modelId.includes("3.5")) {
+        titleModelId = "anthropic/claude-3-5-haiku-20241022"; // Fast Claude model
+      } else if (modelId.includes("deepseek") && modelId.includes("reasoner")) {
+        titleModelId = "deepseek/deepseek-chat"; // Simpler DeepSeek model
+      }
+    } else {
+      // Map direct provider reasoning models to simpler alternatives
+      switch (actualProvider.toLowerCase()) {
+        case "openai":
+          if (modelId.includes("o1")) {
+            titleModelId = "gpt-4o-mini";
+          }
+          break;
+        case "anthropic":
+          if (modelId.includes("opus")) {
+            titleModelId = "claude-3-5-haiku-20241022";
+          }
+          break;
+        case "deepseek":
+          if (modelId.includes("reasoner")) {
+            titleModelId = "deepseek-chat";
+          }
+          break;
+      }
+    }
+    
     switch (actualProvider.toLowerCase()) {
       case "openai":
-        title = await callOpenAINonStreaming(titlePrompt, modelId, apiKey);
+        title = await callOpenAINonStreaming(titlePrompt, titleModelId, apiKey);
         break;
       case "anthropic":
-        title = await callAnthropicNonStreaming(titlePrompt, modelId, apiKey);
+        title = await callAnthropicNonStreaming(titlePrompt, titleModelId, apiKey);
         break;
       case "google":
-        title = await callGoogleNonStreaming(titlePrompt, modelId, apiKey);
+        title = await callGoogleNonStreaming(titlePrompt, titleModelId, apiKey);
         break;
       case "deepseek":
-        title = await callDeepSeekNonStreaming(titlePrompt, modelId, apiKey);
+        title = await callDeepSeekNonStreaming(titlePrompt, titleModelId, apiKey);
         break;
       case "xai":
       case "openrouter":
       default:
         // Route unsupported providers through OpenRouter
-        title = await callOpenRouterNonStreaming(titlePrompt, modelId, apiKey);
+        title = await callOpenRouterNonStreaming(titlePrompt, titleModelId, apiKey);
         break;
     }
 

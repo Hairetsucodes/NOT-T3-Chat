@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       const lastUserMessage = messages[messages.length - 1];
       if (lastUserMessage?.role === "user") {
         try {
-          // Use LLM to generate a meaningful title
+          // Use LLM to generate a meaningful title with the corrected provider
           generatedTitle = await generateTitle(
             lastUserMessage.content,
             provider,
