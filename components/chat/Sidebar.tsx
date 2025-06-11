@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Pin, X } from "lucide-react";
+import { Search, Pin, X, Loader2 } from "lucide-react";
 import { Message } from "ai";
 import { Conversation } from "@prisma/client";
 import { ChatContext } from "@/context/ChatContext";
@@ -19,12 +19,16 @@ import {
 import SettingsModal from "@/components/settings/SettingsModal";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+type ConversationWithLoading = Conversation & {
+  isLoading?: boolean;
+};
+
 interface SidebarProps {
   isCollapsed?: boolean;
   onToggle?: () => void;
   setMessages: (messages: Message[]) => void;
   setConversationId: (conversationId: string | null) => void;
-  conversations: Conversation[];
+  conversations: ConversationWithLoading[];
   isOpen?: boolean;
   onClose?: () => void;
 }
@@ -38,7 +42,6 @@ export function Sidebar({
   const [searchValue, setSearchValue] = useState("");
   const { conversations, activeUser } = useContext(ChatContext);
   const router = useRouter();
-  console.log(activeUser);
   return (
     <>
       {/* Sidebar - Hidden on desktop md+, toggleable on mobile */}
@@ -91,21 +94,18 @@ export function Sidebar({
               <ScrollArea className="rounded-md h-[calc(98vh-14rem)]">
                 <div className="relative flex w-full min-w-0 flex-col p-2">
                   {(() => {
-                    // Helper function to get relative time label
                     const getTimeLabel = (
                       date: Date
                     ): { label: string; daysAgo: number } => {
                       const now = new Date();
                       const conversationDate = new Date(date);
 
-                      // Calculate difference in milliseconds
                       const diffTime =
                         now.getTime() - conversationDate.getTime();
                       const diffDays = Math.floor(
                         diffTime / (1000 * 60 * 60 * 24)
                       );
 
-                      // Handle edge cases for negative days
                       if (diffDays === -1)
                         return { label: "Yesterday", daysAgo: 1 };
                       if (diffDays <= 0) return { label: "Today", daysAgo: 0 };
@@ -130,8 +130,6 @@ export function Sidebar({
                         daysAgo: diffDays,
                       };
                     };
-
-                    // Group conversations by time periods
                     const groupedConversations = conversations.reduce(
                       (groups, conversation) => {
                         const updatedAt = conversation.updatedAt || new Date();
@@ -149,7 +147,6 @@ export function Sidebar({
                       >
                     );
 
-                    // Sort groups by recency (Today first, then Yesterday, then by days ago ascending)
                     const sortedGroups = Object.entries(
                       groupedConversations
                     ).sort(([, a], [, b]) => {
@@ -184,46 +181,61 @@ export function Sidebar({
                                   key={thread.id}
                                   className="group/menu-item relative"
                                 >
-                                  <Link
-                                    className="group/link relative flex h-9 w-full items-center overflow-hidden rounded-lg px-2 py-1 text-sm outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring hover:focus-visible:bg-sidebar-accent"
-                                    href={`/chat/${thread.id}`}
-                                    onClick={() => onClose?.()}
-                                  >
-                                    <div className="relative flex w-full items-center">
-                                      <div className="relative w-full">
-                                        <input
-                                          aria-label="Thread title"
-                                          readOnly
-                                          tabIndex={-1}
-                                          className="hover:truncate-none h-full w-full rounded bg-transparent px-1 py-1 text-sm text-muted-foreground outline-none pointer-events-none cursor-pointer overflow-hidden truncate"
-                                          title={thread.title}
-                                          type="text"
-                                          value={thread.title}
-                                        />
-                                      </div>
-                                      <div className="pointer-events-auto absolute -right-1 bottom-0 top-0 z-50 flex translate-x-full items-center justify-end text-muted-foreground transition-transform group-hover/link:translate-x-0 group-hover/link:bg-sidebar-accent">
-                                        <div className="pointer-events-none absolute bottom-0 right-[100%] top-0 h-12 w-8 bg-gradient-to-l from-sidebar-accent to-transparent opacity-0 group-hover/link:opacity-100" />
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          className="rounded-md p-1.5 hover:bg-muted/40"
-                                          tabIndex={-1}
-                                          aria-label="Pin thread"
-                                        >
-                                          <Pin className="size-4" />
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          className="rounded-md p-1.5 hover:bg-destructive/50 hover:text-destructive-foreground"
-                                          tabIndex={-1}
-                                          aria-label="Delete thread"
-                                        >
-                                          <X className="size-4" />
-                                        </Button>
+                                  {thread.isLoading ? (
+                                    // Loading conversation - not clickable
+                                    <div className="group/link relative flex h-9 w-full items-center overflow-hidden rounded-lg px-2 py-1 text-sm text-muted-foreground/70 cursor-default">
+                                      <div className="relative flex w-full items-center">
+                                        <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                        <div className="relative w-full">
+                                          <span className="text-sm">
+                                            {thread.title}
+                                          </span>
+                                        </div>
                                       </div>
                                     </div>
-                                  </Link>
+                                  ) : (
+                                    // Regular conversation - clickable
+                                    <Link
+                                      className="group/link relative flex h-9 w-full items-center overflow-hidden rounded-lg px-2 py-1 text-sm outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring hover:focus-visible:bg-sidebar-accent"
+                                      href={`/chat/${thread.id}`}
+                                      onClick={() => onClose?.()}
+                                    >
+                                      <div className="relative flex w-full items-center">
+                                        <div className="relative w-full">
+                                          <input
+                                            aria-label="Thread title"
+                                            readOnly
+                                            tabIndex={-1}
+                                            className="hover:truncate-none h-full w-full rounded bg-transparent px-1 py-1 text-sm text-muted-foreground outline-none pointer-events-none cursor-pointer overflow-hidden truncate"
+                                            title={thread.title}
+                                            type="text"
+                                            value={thread.title}
+                                          />
+                                        </div>
+                                        <div className="pointer-events-auto absolute -right-1 bottom-0 top-0 z-50 flex translate-x-full items-center justify-end text-muted-foreground transition-transform group-hover/link:translate-x-0 group-hover/link:bg-sidebar-accent">
+                                          <div className="pointer-events-none absolute bottom-0 right-[100%] top-0 h-12 w-8 bg-gradient-to-l from-sidebar-accent to-transparent opacity-0 group-hover/link:opacity-100" />
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="rounded-md p-1.5 hover:bg-muted/40"
+                                            tabIndex={-1}
+                                            aria-label="Pin thread"
+                                          >
+                                            <Pin className="size-4" />
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="rounded-md p-1.5 hover:bg-destructive/50 hover:text-destructive-foreground"
+                                            tabIndex={-1}
+                                            aria-label="Delete thread"
+                                          >
+                                            <X className="size-4" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </Link>
+                                  )}
                                 </li>
                               ))}
                             </ul>

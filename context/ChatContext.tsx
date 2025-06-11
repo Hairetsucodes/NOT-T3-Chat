@@ -12,9 +12,17 @@ type ChatUser = {
   image: string | null;
 } | null;
 
+// Extend Conversation type to include loading state
+type ConversationWithLoading = Conversation & {
+  isLoading?: boolean;
+};
+
 interface ChatContextType {
-  conversations: Conversation[];
-  setConversations: (conversations: Conversation[]) => void;
+  conversations: ConversationWithLoading[];
+  setConversations: (conversations: ConversationWithLoading[]) => void;
+  addConversation: (conversation: ConversationWithLoading) => void;
+  updateConversation: (id: string, updates: Partial<ConversationWithLoading>) => void;
+  removeLoadingConversation: (id: string) => void;
   activeUser: ChatUser;
   activeProviders: string[];
   currentProvider: string | null;
@@ -27,6 +35,9 @@ interface ChatContextType {
 export const ChatContext = createContext<ChatContextType>({
   conversations: [],
   setConversations: () => {},
+  addConversation: () => {},
+  updateConversation: () => {},
+  removeLoadingConversation: () => {},
   activeUser: null,
   activeProviders: [],
   currentProvider: null,
@@ -54,9 +65,27 @@ export const ChatProvider = ({
   children: React.ReactNode;
 }) => {
   const [conversations, setConversations] =
-    useState<Conversation[]>(initialConversations);
+    useState<ConversationWithLoading[]>(initialConversations);
   const [preferredModels, setPreferredModels] =
     useState<PreferredModel[]>(initialPreferredModels);
+
+  const addConversation = (conversation: ConversationWithLoading) => {
+    setConversations(prev => [conversation, ...prev]);
+  };
+
+  const updateConversation = (id: string, updates: Partial<ConversationWithLoading>) => {
+    setConversations(prev => 
+      prev.map(conv => 
+        conv.id === id 
+          ? { ...conv, ...updates, updatedAt: new Date() }
+          : conv
+      )
+    );
+  };
+
+  const removeLoadingConversation = (id: string) => {
+    setConversations(prev => prev.filter(conv => conv.id !== id));
+  };
 
   const refreshPreferredModels = async () => {
     if (!activeUser?.id) return;
@@ -74,6 +103,9 @@ export const ChatProvider = ({
       value={{
         conversations,
         setConversations,
+        addConversation,
+        updateConversation,
+        removeLoadingConversation,
         activeUser,
         activeProviders,
         currentProvider,

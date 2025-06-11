@@ -120,15 +120,23 @@ export async function POST(req: Request) {
       },
     });
 
+    // Create response headers with conversation data immediately
+    const responseHeaders: Record<string, string> = {
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+      "X-Cache-Optimized": "true",
+    };
+
+    // Include generated title and conversation ID in response headers immediately
+    if (generatedTitle) {
+      responseHeaders["X-Generated-Title"] = generatedTitle;
+    }
+    if (currentConversationId) {
+      responseHeaders["X-Conversation-Id"] = currentConversationId;
+    }
+
     return result.toDataStreamResponse({
-      headers: {
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-        "X-Cache-Optimized": "true",
-        // Include generated title and conversation ID in response headers
-        ...(generatedTitle && { "X-Generated-Title": generatedTitle }),
-        ...(currentConversationId && { "X-Conversation-Id": currentConversationId }),
-      },
+      headers: responseHeaders,
     });
   } catch (error) {
     console.error("Chat API error:", error);

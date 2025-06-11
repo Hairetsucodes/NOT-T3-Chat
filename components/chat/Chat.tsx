@@ -2,7 +2,7 @@
 import { Message, useChat } from "@ai-sdk/react";
 import { Sidebar } from "./Sidebar";
 import { ChatContainer } from "./Container";
-import { useContext, useState } from "react";
+import { useContext, useState, useRef } from "react";
 import { useCallback } from "react";
 import { ChatContext } from "@/context/ChatContext";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,15 @@ export const Chat = ({
     null
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { conversations } = useContext(ChatContext);
+  const loadingConversationIdRef = useRef<string | null>(null);
+  const {
+    conversations,
+    addConversation,
+    updateConversation,
+    removeLoadingConversation,
+    activeUser,
+  } = useContext(ChatContext);
+
   const { messages, setMessages, input, handleInputChange, append, setInput } =
     useChat({
       // Initialize with existing messages
@@ -35,16 +43,53 @@ export const Chat = ({
           const newConversationId = response.headers.get("X-Conversation-Id");
           const generatedTitle = response.headers.get("X-Generated-Title");
 
+          // Remove loading conversation if it exists
+          if (loadingConversationIdRef.current) {
+            removeLoadingConversation(loadingConversationIdRef.current);
+            loadingConversationIdRef.current = null;
+          }
+
           if (newConversationId && !conversationId) {
             setConversationId(newConversationId);
+
+            // Add new conversation to context immediately
+            if (generatedTitle && activeUser?.id) {
+              const newConversation = {
+                id: newConversationId,
+                title: generatedTitle,
+                userId: activeUser.id,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              };
+              addConversation(newConversation);
+            }
           }
 
           if (generatedTitle && !conversationTitle) {
             setConversationTitle(generatedTitle);
+
+            // Update existing conversation title if we have the ID
+            if (conversationId) {
+              updateConversation(conversationId, { title: generatedTitle });
+            }
           }
         },
-        [conversationId, conversationTitle]
+        [
+          conversationId,
+          conversationTitle,
+          addConversation,
+          updateConversation,
+          removeLoadingConversation,
+          activeUser?.id,
+        ]
       ),
+      // Handle errors - remove loading conversation if API fails
+      onError: useCallback(() => {
+        if (loadingConversationIdRef.current) {
+          removeLoadingConversation(loadingConversationIdRef.current);
+          loadingConversationIdRef.current = null;
+        }
+      }, [removeLoadingConversation]),
     });
 
   // Custom handleSubmit that includes conversationId
@@ -55,6 +100,24 @@ export const Chat = ({
       }
 
       if (input.trim()) {
+        // Add loading conversation for new chats
+        if (!conversationId && activeUser?.id) {
+          const loadingId = `loading-${Date.now()}-${Math.random()
+            .toString(36)
+            .substr(2, 9)}`;
+          loadingConversationIdRef.current = loadingId;
+
+          const loadingConversation = {
+            id: loadingId,
+            title: "New Chat...",
+            userId: activeUser.id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isLoading: true,
+          };
+          addConversation(loadingConversation);
+        }
+
         append(
           {
             role: "user",
@@ -67,13 +130,30 @@ export const Chat = ({
         setInput("");
       }
     },
-    [input, conversationId, append, setInput]
+    [input, conversationId, append, setInput, addConversation, activeUser?.id]
   );
 
   // Handle suggestion selection from welcome screen
   const handleSuggestionSelect = useCallback(
     (suggestion: string) => {
-      setInput(suggestion);
+      // Add loading conversation for new chats
+      if (!conversationId && activeUser?.id) {
+        const loadingId = `loading-${Date.now()}-${Math.random()
+          .toString(36)
+          .substr(2, 9)}`;
+        loadingConversationIdRef.current = loadingId;
+
+        const loadingConversation = {
+          id: loadingId,
+          title: "New Chat...",
+          userId: activeUser.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isLoading: true,
+        };
+        addConversation(loadingConversation);
+      }
+
       // Submit the suggestion immediately
       append(
         {
@@ -85,7 +165,7 @@ export const Chat = ({
         }
       );
     },
-    [conversationId, append, setInput]
+    [conversationId, append, setInput, addConversation, activeUser?.id]
   );
 
   const toggleSidebar = () => {
