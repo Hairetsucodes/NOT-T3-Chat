@@ -63,7 +63,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 4. **Initialize the database:**
 
    ```bash
-   pnpm setup
+   pnpm run setup
    ```
 
 5. **Start the development server:**
