@@ -9,7 +9,7 @@ import { Search, Pin, X, Loader2 } from "lucide-react";
 import { Message } from "ai";
 import { Conversation } from "@prisma/client";
 import { ChatContext } from "@/context/ChatContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +42,7 @@ export function Sidebar({
   const [searchValue, setSearchValue] = useState("");
   const { conversations, activeUser } = useContext(ChatContext);
   const router = useRouter();
+  const pathname = usePathname();
   return (
     <>
       {/* Sidebar - Hidden on desktop md+, toggleable on mobile */}
@@ -64,7 +65,10 @@ export function Sidebar({
                   onClick={() => {
                     setConversationId(null);
                     setMessages([]);
-                    router.push("/chat");
+                    // Only navigate to /chat if currently on a specific chat page (/chat/[id])
+                    if (pathname && pathname.startsWith("/chat/")) {
+                      router.push("/chat");
+                    }
                     onClose?.();
                   }}
                 >
