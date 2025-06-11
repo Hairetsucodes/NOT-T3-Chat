@@ -16,6 +16,82 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 - 🔧 Customizable user settings and prompts
 - 🎯 Syntax highlighting for code blocks
 
+## 📸 Screenshots
+
+### Authentication & Registration
+<table>
+  <tr>
+    <td align="center">
+      <img src="public/images/previews/signin.png" alt="Sign In" width="400"/>
+      <br/><strong>Sign In</strong>
+    </td>
+    <td align="center">
+      <img src="public/images/previews/register.png" alt="Register" width="400"/>
+      <br/><strong>Register</strong>
+    </td>
+  </tr>
+</table>
+
+### Chat Interface
+<table>
+  <tr>
+    <td align="center">
+      <img src="public/images/previews/chat.png" alt="Chat Interface" width="800"/>
+      <br/><strong>Main Chat Interface</strong>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="public/images/previews/reasoning.png" alt="Reasoning Mode" width="800"/>
+      <br/><strong>Reasoning/Thinking Mode</strong>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="public/images/previews/syntax.png" alt="Syntax Highlighting" width="800"/>
+      <br/><strong>Code Syntax Highlighting</strong>
+    </td>
+  </tr>
+</table>
+
+### Configuration & Settings
+<table>
+  <tr>
+    <td align="center">
+      <img src="public/images/previews/models.png" alt="Model Selection" width="400"/>
+      <br/><strong>AI Model Selection</strong>
+    </td>
+    <td align="center">
+      <img src="public/images/previews/apikeys.png" alt="API Keys" width="400"/>
+      <br/><strong>API Key Management</strong>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="public/images/previews/customization.png" alt="Customization" width="400"/>
+      <br/><strong>User Customization</strong>
+    </td>
+    <td align="center">
+      <img src="public/images/previews/account.png" alt="Account Settings" width="400"/>
+      <br/><strong>Account Settings</strong>
+    </td>
+  </tr>
+</table>
+
+### Additional Features
+<table>
+  <tr>
+    <td align="center">
+      <img src="public/images/previews/history.png" alt="Chat History" width="400"/>
+      <br/><strong>Chat History Management</strong>
+    </td>
+    <td align="center">
+      <img src="public/images/previews/bugreports.png" alt="Bug Reports" width="400"/>
+      <br/><strong>Bug Report System</strong>
+    </td>
+  </tr>
+</table>
+
 ## 🚀 Quick Start
 
 ### Prerequisites
