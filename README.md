@@ -139,12 +139,12 @@ XAI_API_KEY="your-xai-api-key"
 
 The application supports multiple AI providers. Configure the API keys for the providers you want to use:
 
-- **OpenAI**: GPT models (gpt-4, gpt-3.5-turbo, etc.)
-- **Anthropic**: Claude models (claude-3-opus, claude-3-sonnet, etc.)
-- **Google**: Gemini models
-- **DeepSeek**: DeepSeek models
-- **Xai**: Grok models
-- **OpenRouter**: Access to multiple models through one API
+- **OpenAI**: GPT models (gpt-4o, gpt-4o-mini, gpt-3.5-turbo, etc.)
+- **Anthropic**: Claude models (claude-3.5-sonnet, claude-3-opus, claude-3-haiku, etc.)
+- **Google**: Gemini models (gemini-pro, gemini-1.5-pro, etc.)
+- **DeepSeek**: DeepSeek models (deepseek-chat, deepseek-coder, etc.)
+- **Xai**: Grok models (grok-beta, etc.)
+- **OpenRouter**: Access to hundreds of models through one unified API including many open-source options
 
 ## 🏗️ Project Structure
 
