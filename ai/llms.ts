@@ -177,16 +177,8 @@ export async function handleLLMRequestStreaming(
   provider: string,
   modelId: string,
   apiKey: string,
-  conversationId: string,
   signal?: AbortSignal
 ): Promise<ReadableStream> {
-  console.log("🚀 Handling streaming LLM request:", {
-    provider,
-    model: modelId,
-    conversationId,
-    messageCount: messages.length,
-  });
-
   // Add system message if not present
   const messagesWithSystem = messages.some((m) => m.role === "system")
     ? messages
@@ -324,10 +316,10 @@ async function callOpenRouterStreaming(
                 if (delta) {
                   // Handle different reasoning content formats
                   // OpenAI o1/o4 models might use different field names
-                  const reasoningContent = 
-                    delta.reasoning || 
-                    delta.reasoning_content || 
-                    delta.thought || 
+                  const reasoningContent =
+                    delta.reasoning ||
+                    delta.reasoning_content ||
+                    delta.thought ||
                     delta.thinking;
 
                   if (reasoningContent) {
@@ -715,7 +707,7 @@ async function callGoogleNonStreaming(
 ): Promise<string> {
   // Remove both "google/" prefix and ":thinking" suffix
   const cleanModelId = modelId.replace("google/", "").replace(":thinking", "");
-  
+
   const ai = new GoogleGenAI({ apiKey });
 
   try {
@@ -770,7 +762,8 @@ export async function generateTitle(
   const titlePrompt: Message[] = [
     {
       role: "system",
-      content: "Generate a concise, descriptive title (3-6 words) for this conversation based on the user's first message. Return only the title, no quotes or additional text.",
+      content:
+        "Generate a concise, descriptive title (3-6 words) for this conversation based on the user's first message. Return only the title, no quotes or additional text.",
       timestamp: new Date(),
     },
     {
@@ -782,16 +775,21 @@ export async function generateTitle(
 
   try {
     let title: string;
-    
+
     // If model has a "/" in it, it's an OpenRouter model regardless of provider
     const actualProvider = modelId.includes("/") ? "openrouter" : provider;
-    
+
     // Map complex reasoning models to simpler alternatives for title generation
     let titleModelId = modelId;
-    
+
     if (actualProvider === "openrouter") {
       // Map OpenRouter reasoning models to simpler alternatives
-      if (modelId.includes("o1") || modelId.includes("o4") || modelId.includes("reasoning") || modelId.includes("qwq")) {
+      if (
+        modelId.includes("o1") ||
+        modelId.includes("o4") ||
+        modelId.includes("reasoning") ||
+        modelId.includes("qwq")
+      ) {
         titleModelId = "openai/gpt-4o-mini"; // Fast, reliable OpenAI model via OpenRouter
       } else if (modelId.includes("claude") && modelId.includes("3.5")) {
         titleModelId = "anthropic/claude-3-5-haiku-20241022"; // Fast Claude model
@@ -818,25 +816,37 @@ export async function generateTitle(
           break;
       }
     }
-    
+
     switch (actualProvider.toLowerCase()) {
       case "openai":
         title = await callOpenAINonStreaming(titlePrompt, titleModelId, apiKey);
         break;
       case "anthropic":
-        title = await callAnthropicNonStreaming(titlePrompt, titleModelId, apiKey);
+        title = await callAnthropicNonStreaming(
+          titlePrompt,
+          titleModelId,
+          apiKey
+        );
         break;
       case "google":
         title = await callGoogleNonStreaming(titlePrompt, titleModelId, apiKey);
         break;
       case "deepseek":
-        title = await callDeepSeekNonStreaming(titlePrompt, titleModelId, apiKey);
+        title = await callDeepSeekNonStreaming(
+          titlePrompt,
+          titleModelId,
+          apiKey
+        );
         break;
       case "xai":
       case "openrouter":
       default:
         // Route unsupported providers through OpenRouter
-        title = await callOpenRouterNonStreaming(titlePrompt, titleModelId, apiKey);
+        title = await callOpenRouterNonStreaming(
+          titlePrompt,
+          titleModelId,
+          apiKey
+        );
         break;
     }
 
@@ -845,7 +855,7 @@ export async function generateTitle(
     if (title.length > 50) {
       title = title.substring(0, 47) + "...";
     }
-    
+
     return title || "New Conversation";
   } catch (error) {
     console.error("❌ Title generation error:", error);

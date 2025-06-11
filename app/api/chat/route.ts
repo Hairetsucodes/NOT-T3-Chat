@@ -34,7 +34,14 @@ export async function POST(req: Request) {
     // For unsupported providers (not openai, anthropic, google, xai, deepseek), use OpenRouter
     if (
       !providerKey &&
-      !["openai", "anthropic", "google", "xai", "deepseek", "openrouter"].includes(provider)
+      ![
+        "openai",
+        "anthropic",
+        "google",
+        "xai",
+        "deepseek",
+        "openrouter",
+      ].includes(provider)
     ) {
       providerKey = apiKeys.find((key) => key.provider === "openrouter");
       if (!providerKey) {
@@ -105,7 +112,7 @@ export async function POST(req: Request) {
       provider,
       modelId,
       providerKey.key,
-      currentConversationId || ""
+      new AbortController().signal
     );
 
     // Wrap the stream to accumulate content and save to database when complete
