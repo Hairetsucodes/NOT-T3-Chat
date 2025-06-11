@@ -165,7 +165,7 @@ export const Chat = ({
         }
       );
     },
-    [conversationId, append, setInput, addConversation, activeUser?.id]
+    [conversationId, append, addConversation, activeUser?.id]
   );
 
   const toggleSidebar = () => {
