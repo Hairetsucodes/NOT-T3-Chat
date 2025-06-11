@@ -1,6 +1,6 @@
 # OSS T3 Chat
 
-A modern AI chat application built with the T3 stack (Next.js, Prisma, NextAuth) supporting multiple AI providers including OpenAI, Anthropic, Google, and more.
+A modern AI chat application built with Next.js, Prisma, NextAuth supporting multiple AI providers including OpenAI, Anthropic, Google, and more.
 
 ## ✨ Features
 
@@ -17,34 +17,38 @@ A modern AI chat application built with the T3 stack (Next.js, Prisma, NextAuth)
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - pnpm (recommended) or npm
 - Git
 
 ### Installation
 
 1. **Clone the repository:**
+
    ```bash
    git clone <repository-url>
    cd oss-t3-chat
    ```
 
 2. **Install dependencies:**
+
    ```bash
    pnpm install
    ```
 
 3. **Set up environment variables:**
+
    ```bash
    cp .env.example .env
    ```
-   
+
    Configure your `.env` file with the required API keys and database URL:
+
    ```env
    DATABASE_URL="file:./dev.db"
    NEXTAUTH_SECRET="your-secret-key"
    NEXTAUTH_URL="http://localhost:3000"
-   
+
    # AI Provider API Keys (add as needed)
    OPENAI_API_KEY="your-openai-key"
    ANTHROPIC_API_KEY="your-anthropic-key"
@@ -52,6 +56,7 @@ A modern AI chat application built with the T3 stack (Next.js, Prisma, NextAuth)
    ```
 
 4. **Initialize the database:**
+
    ```bash
    pnpm setup
    ```
@@ -66,12 +71,14 @@ Visit [http://localhost:3000](http://localhost:3000) to see the application.
 ## 📦 Available Scripts
 
 ### Development
+
 - `pnpm dev` - Start development server with Turbopack
 - `pnpm build` - Build for production
 - `pnpm start` - Start production server
 - `pnpm lint` - Run ESLint
 
 ### Database Management
+
 - `pnpm setup` - **Quick setup** (generate + push schema)
 - `pnpm db:generate` - Generate Prisma client
 - `pnpm db:push` - Push schema to database (development)
@@ -85,19 +92,24 @@ Visit [http://localhost:3000](http://localhost:3000) to see the application.
 This project uses SQLite for local development and Prisma as the ORM.
 
 ### First-time Setup
+
 ```bash
 pnpm setup
 ```
 
 ### Schema Changes
+
 After modifying `prisma/schema.prisma`:
+
 ```bash
 pnpm db:generate
 pnpm db:push
 ```
 
 ### Database Management
+
 Open Prisma Studio to manage your data:
+
 ```bash
 pnpm db:studio
 ```
@@ -153,18 +165,22 @@ The application supports multiple AI providers. Configure the API keys for the p
 ## 🚀 Deployment
 
 ### Build for Production
+
 ```bash
 pnpm build
 ```
 
 ### Environment Setup for Production
+
 Ensure all environment variables are properly configured for your production environment, especially:
+
 - `DATABASE_URL` (consider PostgreSQL for production)
 - `NEXTAUTH_SECRET` (use a secure random string)
 - `NEXTAUTH_URL` (your production domain)
 - AI provider API keys
 
 ### Database Migration for Production
+
 ```bash
 pnpm db:migrate
 ```
