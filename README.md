@@ -51,7 +51,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
    npx auth secret
    ```
 
-   Configure your `.env` or `.env.local` file with the required API keys and database URL:
+   Configure your `.env` file with the required API keys and database URL:
 
    ```env
    DATABASE_URL="file:../dev.db"
