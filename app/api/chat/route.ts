@@ -20,8 +20,13 @@ export async function POST(req: Request) {
     const apiKeys = await getAPIKeys(userId);
 
     // Determine provider from selectedModel or default to openai
-    const provider = selectedModel?.provider || "openai";
+    let provider = selectedModel?.provider || "openai";
     const modelId = selectedModel?.model || "gpt-4o-mini";
+
+    // If model has a "/" in it, it's an OpenRouter model regardless of provider
+    if (modelId.includes("/")) {
+      provider = "openrouter";
+    }
 
     // Find the appropriate API key for the provider
     let providerKey = apiKeys.find((key) => key.provider === provider);
@@ -29,7 +34,7 @@ export async function POST(req: Request) {
     // For unsupported providers (not openai, anthropic, google, xai, deepseek), use OpenRouter
     if (
       !providerKey &&
-      !["openai", "anthropic", "google", "xai", "deepseek"].includes(provider)
+      !["openai", "anthropic", "google", "xai", "deepseek", "openrouter"].includes(provider)
     ) {
       providerKey = apiKeys.find((key) => key.provider === "openrouter");
       if (!providerKey) {

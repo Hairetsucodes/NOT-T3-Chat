@@ -247,9 +247,12 @@ export default function ModelSelector() {
   const handleModelSelect = useCallback((modelId: string) => {
     const selectedModelData = availableModels.find((model) => model.id === modelId);
     if (selectedModelData) {
+      // If model has a "/" in it, it's an OpenRouter model regardless of stored provider
+      const actualProvider = modelId.includes("/") ? "openrouter" : selectedModelData.provider;
+      
       setSelectedModel({
         model: modelId,
-        provider: selectedModelData.provider,
+        provider: actualProvider,
       });
     }
     setIsOpen(false);

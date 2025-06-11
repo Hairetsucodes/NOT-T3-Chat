@@ -196,7 +196,10 @@ export async function handleLLMRequestStreaming(
         ...messages,
       ];
 
-  switch (provider.toLowerCase()) {
+  // If model has a "/" in it, it's an OpenRouter model regardless of provider
+  const actualProvider = modelId.includes("/") ? "openrouter" : provider;
+
+  switch (actualProvider.toLowerCase()) {
     case "openai":
       return await callOpenAIStreaming(
         messagesWithSystem,
@@ -230,6 +233,7 @@ export async function handleLLMRequestStreaming(
       );
 
     case "xai":
+    case "openrouter":
     default:
       // Route unsupported providers through OpenRouter
       return await callOpenRouterStreaming(
@@ -775,7 +779,10 @@ export async function generateTitle(
   try {
     let title: string;
     
-    switch (provider.toLowerCase()) {
+    // If model has a "/" in it, it's an OpenRouter model regardless of provider
+    const actualProvider = modelId.includes("/") ? "openrouter" : provider;
+    
+    switch (actualProvider.toLowerCase()) {
       case "openai":
         title = await callOpenAINonStreaming(titlePrompt, modelId, apiKey);
         break;
@@ -789,6 +796,7 @@ export async function generateTitle(
         title = await callDeepSeekNonStreaming(titlePrompt, modelId, apiKey);
         break;
       case "xai":
+      case "openrouter":
       default:
         // Route unsupported providers through OpenRouter
         title = await callOpenRouterNonStreaming(titlePrompt, modelId, apiKey);
