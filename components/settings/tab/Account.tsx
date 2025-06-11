@@ -94,7 +94,7 @@ export function AccountTab() {
             <div className="flex items-center gap-3">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
               <span className="text-foreground/80 font-medium">
-                Loading profile...
+                Loading account settings...
               </span>
             </div>
           </CardContent>
@@ -126,7 +126,7 @@ export function AccountTab() {
                 </svg>
               </div>
               <p className="text-muted-foreground">
-                Please sign in to manage your account
+                Please sign in to manage your account settings
               </p>
             </div>
           </CardContent>
@@ -138,10 +138,8 @@ export function AccountTab() {
   return (
     <AccountBackground>
       <Card className="relative z-10 h-full flex flex-col bg-gradient-chat-overlay border-chat-border/50 backdrop-blur-sm">
-        <CardHeader className="flex-shrink-0 pb-6">
-          <CardTitle className="text-foreground/90 text-xl">
-            Account Settings
-          </CardTitle>
+        <CardHeader className="flex-shrink-0 pb-2">
+          <CardTitle className="text-foreground/90 text-xl">Account</CardTitle>
           <CardDescription className="text-foreground/70">
             Manage your account information and preferences.
           </CardDescription>

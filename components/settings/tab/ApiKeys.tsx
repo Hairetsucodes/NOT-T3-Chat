@@ -145,7 +145,10 @@ export function ApiKeysTab() {
     return (
       <Card className="h-full flex flex-col">
         <CardContent className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin" />
+          <div className="flex items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="text-muted-foreground">Loading API keys...</span>
+          </div>
         </CardContent>
       </Card>
     );
@@ -157,7 +160,7 @@ export function ApiKeysTab() {
       <Card className="h-full flex flex-col">
         <CardContent className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">
-            Please sign in to manage API keys
+            Please sign in to manage your API keys
           </p>
         </CardContent>
       </Card>
@@ -166,9 +169,9 @@ export function ApiKeysTab() {
 
   return (
     <Card className="h-full flex flex-col bg-chat-background">
-      <CardHeader className="flex-shrink-0">
-        <CardTitle>API Keys</CardTitle>
-        <CardDescription>
+      <CardHeader className="flex-shrink-0 pb-2">
+        <CardTitle className="text-foreground/90 text-xl">API Keys</CardTitle>
+        <CardDescription className="text-foreground/70">
           Manage your API keys for different AI services.
         </CardDescription>
       </CardHeader>
@@ -268,7 +271,12 @@ export function ApiKeysTab() {
         {/* Active Providers Section */}
         {isLoadingKeys ? (
           <div className="flex items-center justify-center p-8">
-            <Loader2 className="h-6 w-6 animate-spin" />
+            <div className="flex items-center gap-3">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span className="text-sm text-muted-foreground">
+                Loading active providers...
+              </span>
+            </div>
           </div>
         ) : (
           <ActiveProviders

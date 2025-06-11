@@ -290,7 +290,7 @@ export function HistoryTab() {
             <div className="flex items-center gap-3">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
               <span className="text-foreground/80 font-medium">
-                Loading history information...
+                Loading history settings...
               </span>
             </div>
           </CardContent>
@@ -310,7 +310,7 @@ export function HistoryTab() {
                 <BarChart3 className="w-8 h-8 text-muted-foreground" />
               </div>
               <p className="text-muted-foreground">
-                Please sign in to manage your chat history
+                Please sign in to manage your chat history settings
               </p>
             </div>
           </CardContent>
@@ -322,8 +322,8 @@ export function HistoryTab() {
   return (
     <HistoryBackground>
       <Card className="relative z-10 h-full flex flex-col bg-gradient-chat-overlay border-chat-border/50 backdrop-blur-sm">
-        <CardHeader className="flex-shrink-0">
-          <CardTitle className="text-foreground/90">History & Sync</CardTitle>
+        <CardHeader className="flex-shrink-0 pb-6">
+          <CardTitle className="text-foreground/90 text-xl">History</CardTitle>
           <CardDescription className="text-foreground/70">
             Manage your chat history and synchronization settings.
           </CardDescription>

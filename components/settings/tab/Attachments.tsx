@@ -14,9 +14,11 @@ import { Switch } from "@/components/ui/switch";
 export function AttachmentsTab() {
   return (
     <Card className="h-full flex flex-col bg-chat-background">
-      <CardHeader className="flex-shrink-0">
-        <CardTitle>Attachments</CardTitle>
-        <CardDescription>
+      <CardHeader className="flex-shrink-0 pb-2">
+        <CardTitle className="text-foreground/90 text-xl">
+          Attachments
+        </CardTitle>
+        <CardDescription className="text-foreground/70">
           Configure file upload and attachment settings.
         </CardDescription>
       </CardHeader>

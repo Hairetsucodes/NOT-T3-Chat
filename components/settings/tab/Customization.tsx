@@ -1,7 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -364,7 +370,7 @@ export function CustomizationTab() {
             <div className="flex items-center gap-3">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
               <span className="text-foreground/80 font-medium">
-                Loading preferences...
+                Loading customization settings...
               </span>
             </div>
           </CardContent>
@@ -376,353 +382,355 @@ export function CustomizationTab() {
   return (
     <CustomizationBackground>
       <Card className="relative z-10 h-full flex flex-col bg-gradient-chat-overlay border-chat-border/50 backdrop-blur-sm">
-        <CardContent className="flex-1 overflow-auto p-6">
-          <div className="space-y-12">
-            {/* Customize OSS T3 Chat Section */}
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-foreground/90">
-                Customize OSS T3 Chat
-              </h2>
-              <form
-                className="grid gap-6 py-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSavePreferences();
-                }}
-              >
-                {/* Name Input */}
-                <div className="relative grid gap-2">
+        <CardHeader className="flex-shrink-0 pb-2">
+          <CardTitle className="text-foreground/90 text-xl">
+            Customization
+          </CardTitle>
+          <CardDescription className="text-foreground/70">
+            Customize your OSS T3 Chat experience.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex-1 overflow-auto">
+          {/* Customization Section */}
+          <div className="">
+            <form
+              className="grid gap-6 py-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSavePreferences();
+              }}
+            >
+              {/* Name Input */}
+              <div className="relative grid gap-2">
+                <Label className="text-base font-medium text-foreground/80">
+                  What should OSS T3 Chat call you?
+                </Label>
+                <Input
+                  placeholder="Enter your name"
+                  maxLength={50}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={isLoading}
+                  className="p-2 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-9 transition-colors"
+                />
+                <span className="pointer-events-none absolute bottom-2 right-2 text-xs font-normal text-muted-foreground">
+                  {name.length}/50
+                </span>
+              </div>
+
+              {/* Occupation Input */}
+              <div className="relative grid gap-2">
+                <Label className="text-base font-medium text-foreground/80">
+                  What do you do?
+                </Label>
+                <Input
+                  placeholder="Engineer, student, etc."
+                  maxLength={100}
+                  value={occupation}
+                  onChange={(e) => setOccupation(e.target.value)}
+                  disabled={isLoading}
+                  className="p-2 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-9 transition-colors"
+                />
+                <span className="pointer-events-none absolute bottom-2 right-2 text-xs font-normal text-muted-foreground">
+                  {occupation.length}/100
+                </span>
+              </div>
+
+              {/* Traits Section */}
+              <div className="grid gap-2">
+                <div className="flex items-center gap-2">
                   <Label className="text-base font-medium text-foreground/80">
-                    What should OSS T3 Chat call you?
-                  </Label>
-                  <Input
-                    placeholder="Enter your name"
-                    maxLength={50}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    disabled={isLoading}
-                    className="p-2 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-9 transition-colors"
-                  />
-                  <span className="pointer-events-none absolute bottom-2 right-2 text-xs font-normal text-muted-foreground">
-                    {name.length}/50
-                  </span>
-                </div>
-
-                {/* Occupation Input */}
-                <div className="relative grid gap-2">
-                  <Label className="text-base font-medium text-foreground/80">
-                    What do you do?
-                  </Label>
-                  <Input
-                    placeholder="Engineer, student, etc."
-                    maxLength={100}
-                    value={occupation}
-                    onChange={(e) => setOccupation(e.target.value)}
-                    disabled={isLoading}
-                    className="p-2 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-9 transition-colors"
-                  />
-                  <span className="pointer-events-none absolute bottom-2 right-2 text-xs font-normal text-muted-foreground">
-                    {occupation.length}/100
-                  </span>
-                </div>
-
-                {/* Traits Section */}
-                <div className="grid gap-2">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-base font-medium text-foreground/80">
-                      What traits should OSS T3 Chat have?
-                      <span className="ml-2 text-xs font-normal text-muted-foreground">
-                        (up to 50, max 100 chars each)
-                      </span>
-                    </Label>
-                  </div>
-
-                  <div className="relative">
-                    <Input
-                      placeholder="Type a trait and press Enter or Tab..."
-                      maxLength={100}
-                      value={traitInput}
-                      onChange={(e) => setTraitInput(e.target.value)}
-                      onKeyDown={handleTraitInputKeyPress}
-                      disabled={isLoading}
-                      className="p-2 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-9 transition-colors"
-                    />
-                    <span className="pointer-events-none absolute bottom-2 right-2 text-xs font-normal text-muted-foreground">
-                      {traits.length}/50
+                    What traits should OSS T3 Chat have?
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      (up to 50, max 100 chars each)
                     </span>
-                  </div>
+                  </Label>
+                </div>
 
-                  {/* Suggested Traits */}
-                  <div className="mb-2 flex flex-wrap gap-2">
-                    {SUGGESTED_TRAITS.map((trait) => (
-                      <button
+                <div className="relative">
+                  <Input
+                    placeholder="Type a trait and press Enter or Tab..."
+                    maxLength={100}
+                    value={traitInput}
+                    onChange={(e) => setTraitInput(e.target.value)}
+                    onKeyDown={handleTraitInputKeyPress}
+                    disabled={isLoading}
+                    className="p-2 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-9 transition-colors"
+                  />
+                  <span className="pointer-events-none absolute bottom-2 right-2 text-xs font-normal text-muted-foreground">
+                    {traits.length}/50
+                  </span>
+                </div>
+
+                {/* Suggested Traits */}
+                <div className="mb-2 flex flex-wrap gap-2">
+                  {SUGGESTED_TRAITS.map((trait) => (
+                    <button
+                      key={trait}
+                      type="button"
+                      onClick={() => addTrait(trait)}
+                      disabled={
+                        traits.includes(trait) ||
+                        traits.length >= 50 ||
+                        isLoading
+                      }
+                      className="rounded-md border px-2.5 py-0.5 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80 flex select-none items-center gap-1 text-xs font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {trait}
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  ))}
+                </div>
+
+                {/* Selected Traits */}
+                {traits.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {traits.map((trait) => (
+                      <div
                         key={trait}
-                        type="button"
-                        onClick={() => addTrait(trait)}
-                        disabled={
-                          traits.includes(trait) ||
-                          traits.length >= 50 ||
-                          isLoading
-                        }
-                        className="rounded-md border px-2.5 py-0.5 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80 flex select-none items-center gap-1 text-xs font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="rounded-md border px-2.5 py-0.5 transition-colors border-primary/20 bg-primary/10 text-primary flex select-none items-center gap-1 text-xs font-medium"
                       >
                         {trait}
-                        <Plus className="h-4 w-4" />
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => removeTrait(trait)}
+                          disabled={isLoading}
+                          className="hover:bg-primary/20 rounded p-0.5 disabled:opacity-50"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
                     ))}
                   </div>
+                )}
+              </div>
 
-                  {/* Selected Traits */}
-                  {traits.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {traits.map((trait) => (
-                        <div
-                          key={trait}
-                          className="rounded-md border px-2.5 py-0.5 transition-colors border-primary/20 bg-primary/10 text-primary flex select-none items-center gap-1 text-xs font-medium"
-                        >
-                          {trait}
-                          <button
-                            type="button"
-                            onClick={() => removeTrait(trait)}
-                            disabled={isLoading}
-                            className="hover:bg-primary/20 rounded p-0.5 disabled:opacity-50"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+              {/* Additional Info */}
+              <div className="relative grid gap-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-base font-medium text-foreground/80">
+                    Anything else OSS T3 Chat should know about you?
+                  </Label>
+                </div>
+                <Textarea
+                  placeholder="Interests, values, or preferences to keep in mind"
+                  maxLength={3000}
+                  value={additionalInfo}
+                  onChange={(e) => setAdditionalInfo(e.target.value)}
+                  disabled={isLoading}
+                  className="min-h-[100px] p-2 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 transition-colors"
+                />
+                <span className="pointer-events-none absolute bottom-2 right-2 text-xs font-normal text-muted-foreground">
+                  {additionalInfo.length}/3000
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-row items-center gap-2 justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleResetSettings}
+                  disabled={isLoading}
+                  className="bg-background hover:bg-input/60 border-chat-border/60 text-foreground"
+                >
+                  Reset to Defaults
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isLoading || !hasChanges}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground border-reflect button-reflect relative disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Preferences"
                   )}
-                </div>
+                </Button>
+              </div>
+            </form>
+          </div>
 
-                {/* Additional Info */}
-                <div className="relative grid gap-2">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-base font-medium text-foreground/80">
-                      Anything else OSS T3 Chat should know about you?
-                    </Label>
-                  </div>
-                  <Textarea
-                    placeholder="Interests, values, or preferences to keep in mind"
-                    maxLength={3000}
-                    value={additionalInfo}
-                    onChange={(e) => setAdditionalInfo(e.target.value)}
-                    disabled={isLoading}
-                    className="min-h-[100px] p-2 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 transition-colors"
-                  />
-                  <span className="pointer-events-none absolute bottom-2 right-2 text-xs font-normal text-muted-foreground">
-                    {additionalInfo.length}/3000
-                  </span>
+          {/* Visual Options Section */}
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-foreground/90">
+              Visual Options
+            </h2>
+            <div className="space-y-6 py-2">
+              {/* Theme Toggles */}
+              <div className="flex items-center justify-between gap-x-1">
+                <div className="space-y-0.5">
+                  <Label className="font-medium text-base text-foreground/80">
+                    Boring Theme
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    If you think the pink is too much, turn this on to tone it
+                    down.
+                  </p>
                 </div>
+                <Switch
+                  checked={boringTheme}
+                  onCheckedChange={handleBoringThemeChange}
+                  disabled={isLoading}
+                />
+              </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-row items-center gap-2 justify-between">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleResetSettings}
-                    disabled={isLoading}
-                    className="bg-background hover:bg-input/60 border-chat-border/60 text-foreground"
-                  >
-                    Reset to Defaults
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isLoading || !hasChanges}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground border-reflect button-reflect relative disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Preferences"
-                    )}
-                  </Button>
+              <div className="flex items-center justify-between gap-x-1">
+                <div className="space-y-0.5">
+                  <Label className="font-medium text-base text-foreground/80">
+                    Hide Personal Information
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Hides your name and email from the UI.
+                  </p>
                 </div>
-              </form>
-            </div>
+                <Switch
+                  checked={hidePersonalInfo}
+                  onCheckedChange={handleHidePersonalInfoChange}
+                  disabled={isLoading}
+                />
+              </div>
 
-            {/* Visual Options Section */}
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-foreground/90">
-                Visual Options
-              </h2>
-              <div className="space-y-6 py-2">
-                {/* Theme Toggles */}
-                <div className="flex items-center justify-between gap-x-1">
-                  <div className="space-y-0.5">
-                    <Label className="font-medium text-base text-foreground/80">
-                      Boring Theme
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      If you think the pink is too much, turn this on to tone it
-                      down.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={boringTheme}
-                    onCheckedChange={handleBoringThemeChange}
-                    disabled={isLoading}
-                  />
+              <div className="flex items-center justify-between gap-x-1">
+                <div className="space-y-0.5">
+                  <Label className="font-medium text-base text-foreground/80">
+                    Disable Thematic Breaks
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Hides horizontal lines in chat messages. (Some browsers have
+                    trouble rendering these, turn off if you have bugs with
+                    duplicated lines)
+                  </p>
                 </div>
+                <Switch
+                  checked={disableThematicBreaks}
+                  onCheckedChange={handleDisableThematicBreaksChange}
+                  disabled={isLoading}
+                />
+              </div>
 
-                <div className="flex items-center justify-between gap-x-1">
-                  <div className="space-y-0.5">
-                    <Label className="font-medium text-base text-foreground/80">
-                      Hide Personal Information
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Hides your name and email from the UI.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={hidePersonalInfo}
-                    onCheckedChange={handleHidePersonalInfoChange}
-                    disabled={isLoading}
-                  />
+              <div className="flex items-center justify-between gap-x-1">
+                <div className="space-y-0.5">
+                  <Label className="font-medium text-base text-foreground/80">
+                    Stats for Nerds
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enables more insights into message stats including tokens
+                    per second, time to first token, and estimated tokens in the
+                    message.
+                  </p>
                 </div>
+                <Switch
+                  checked={statsForNerds}
+                  onCheckedChange={handleStatsForNerdsChange}
+                  disabled={isLoading}
+                />
+              </div>
 
-                <div className="flex items-center justify-between gap-x-1">
-                  <div className="space-y-0.5">
-                    <Label className="font-medium text-base text-foreground/80">
-                      Disable Thematic Breaks
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Hides horizontal lines in chat messages. (Some browsers
-                      have trouble rendering these, turn off if you have bugs
-                      with duplicated lines)
-                    </p>
-                  </div>
-                  <Switch
-                    checked={disableThematicBreaks}
-                    onCheckedChange={handleDisableThematicBreaksChange}
-                    disabled={isLoading}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between gap-x-1">
-                  <div className="space-y-0.5">
-                    <Label className="font-medium text-base text-foreground/80">
-                      Stats for Nerds
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Enables more insights into message stats including tokens
-                      per second, time to first token, and estimated tokens in
-                      the message.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={statsForNerds}
-                    onCheckedChange={handleStatsForNerdsChange}
-                    disabled={isLoading}
-                  />
-                </div>
-
-                {/* Font Selection */}
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                    <div className="space-y-4">
-                      <div className="space-y-1.5">
-                        <div className="space-y-0.5">
-                          <Label className="font-medium text-base text-foreground/80">
-                            Main Text Font
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            Used in general text throughout the app.
-                          </p>
-                        </div>
-                        <Select
-                          value={mainFont}
-                          onValueChange={handleMainFontChange}
-                          disabled={isLoading}
-                        >
-                          <SelectTrigger className="w-full bg-chat-input-background/80 border-chat-border/60 text-foreground">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Inter">
-                              Inter{" "}
-                              <span className="text-xs text-muted-foreground">
-                                (default)
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="Proxima Vara">
-                              Proxima Vara
-                            </SelectItem>
-                            <SelectItem value="System Font">
-                              System Font
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
+              {/* Font Selection */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <div className="space-y-0.5">
+                        <Label className="font-medium text-base text-foreground/80">
+                          Main Text Font
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Used in general text throughout the app.
+                        </p>
                       </div>
-
-                      <div className="space-y-1.5">
-                        <div className="space-y-0.5">
-                          <Label className="font-medium text-base text-foreground/80">
-                            Code Font
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            Used in code blocks and inline code in chat
-                            messages.
-                          </p>
-                        </div>
-                        <Select
-                          value={codeFont}
-                          onValueChange={handleCodeFontChange}
-                          disabled={isLoading}
-                        >
-                          <SelectTrigger className="w-full bg-chat-input-background/80 border-chat-border/60 text-foreground">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="mono">
-                              System Monospace Font
-                            </SelectItem>
-                            <SelectItem value="fira">Fira Code</SelectItem>
-                            <SelectItem value="jetbrains">
-                              JetBrains Mono
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <Select
+                        value={mainFont}
+                        onValueChange={handleMainFontChange}
+                        disabled={isLoading}
+                      >
+                        <SelectTrigger className="w-full bg-chat-input-background/80 border-chat-border/60 text-foreground">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Inter">
+                            Inter{" "}
+                            <span className="text-xs text-muted-foreground">
+                              (default)
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="Proxima Vara">
+                            Proxima Vara
+                          </SelectItem>
+                          <SelectItem value="System Font">
+                            System Font
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
-                    {/* Font Preview */}
-                    <div>
-                      <h3 className="text-base font-medium text-foreground/80 mb-4">
-                        Fonts Preview
-                      </h3>
-                      <div className="rounded-lg border border-dashed border-input p-4 bg-gradient-chat-overlay/30">
-                        <div className="space-y-4">
-                          {/* User message */}
-                          <div className="flex justify-end">
-                            <div className="group relative inline-block max-w-[80%] break-words rounded-xl border border-secondary/50 bg-secondary/50 px-4 py-3 text-left text-foreground">
-                              Can you write me a simple hello world program?
-                            </div>
-                          </div>
+                    <div className="space-y-1.5">
+                      <div className="space-y-0.5">
+                        <Label className="font-medium text-base text-foreground/80">
+                          Code Font
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Used in code blocks and inline code in chat messages.
+                        </p>
+                      </div>
+                      <Select
+                        value={codeFont}
+                        onValueChange={handleCodeFontChange}
+                        disabled={isLoading}
+                      >
+                        <SelectTrigger className="w-full bg-chat-input-background/80 border-chat-border/60 text-foreground">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mono">
+                            System Monospace Font
+                          </SelectItem>
+                          <SelectItem value="fira">Fira Code</SelectItem>
+                          <SelectItem value="jetbrains">
+                            JetBrains Mono
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-                          {/* Assistant message */}
-                          <div className="mb-2 mt-4">
-                            <div className="max-w-[80%] text-foreground">
-                              Sure, here you go:
-                            </div>
+                  {/* Font Preview */}
+                  <div>
+                    <h3 className="text-base font-medium text-foreground/80 mb-4">
+                      Fonts Preview
+                    </h3>
+                    <div className="rounded-lg border border-dashed border-input p-4 bg-gradient-chat-overlay/30">
+                      <div className="space-y-4">
+                        {/* User message */}
+                        <div className="flex justify-end">
+                          <div className="group relative inline-block max-w-[80%] break-words rounded-xl border border-secondary/50 bg-secondary/50 px-4 py-3 text-left text-foreground">
+                            Can you write me a simple hello world program?
                           </div>
+                        </div>
 
-                          {/* Code block */}
-                          <div className="relative flex w-full flex-col">
-                            <div className="rounded-t bg-secondary px-4 py-2 text-sm text-secondary-foreground">
-                              <span className="font-mono">typescript</span>
-                            </div>
-                            <div className="bg-chat-accent text-sm text-secondary-foreground rounded-b p-4">
-                              <pre className="font-mono text-sm">
-                                {`function greet(name: string) {
+                        {/* Assistant message */}
+                        <div className="mb-2 mt-4">
+                          <div className="max-w-[80%] text-foreground">
+                            Sure, here you go:
+                          </div>
+                        </div>
+
+                        {/* Code block */}
+                        <div className="relative flex w-full flex-col">
+                          <div className="rounded-t bg-secondary px-4 py-2 text-sm text-secondary-foreground">
+                            <span className="font-mono">typescript</span>
+                          </div>
+                          <div className="bg-chat-accent text-sm text-secondary-foreground rounded-b p-4">
+                            <pre className="font-mono text-sm">
+                              {`function greet(name: string) {
   console.log(\`Hello, \${name}!\`);
   return true;
 }`}
-                              </pre>
-                            </div>
+                            </pre>
                           </div>
                         </div>
                       </div>

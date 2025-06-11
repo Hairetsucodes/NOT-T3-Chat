@@ -22,9 +22,11 @@ import {
 export function BugReportTab() {
   return (
     <Card className="h-full flex flex-col bg-chat-background rounded-lg border-chat-border/50">
-      <CardHeader className="flex-shrink-0">
-        <CardTitle>Bug Report</CardTitle>
-        <CardDescription>
+      <CardHeader className="flex-shrink-0 pb-2">
+        <CardTitle className="text-foreground/90 text-xl">
+          Bug Reports
+        </CardTitle>
+        <CardDescription className="text-foreground/70">
           Report issues or provide feedback about the application.
         </CardDescription>
       </CardHeader>
