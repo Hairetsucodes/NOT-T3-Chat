@@ -230,11 +230,12 @@ pnpm db:migrate
 
 ### TODO
 
+- WebSearch
 - Attachments
 - Bug Reports
 - User Customization
 - Image Gen / Analysis
-- Refactor x1000 
+- Refactor x1000
 - Tweaks
 - Extra Credit: Voice 2 Voice over websockets.
 
