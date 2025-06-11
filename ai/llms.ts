@@ -138,7 +138,10 @@ async function callAnthropicStreaming(
 
           for (const line of lines) {
             if (line.startsWith("data: ")) {
-              const data = line.slice(6);
+              const data = line.slice(6).trim();
+
+              // Skip empty data or malformed chunks
+              if (!data || data.length === 0) continue;
 
               try {
                 const parsed = JSON.parse(data);
@@ -154,9 +157,9 @@ async function callAnthropicStreaming(
                     )
                   );
                 }
-              } catch (e) {
-                console.error("❌ Anthropic API error:", e);
-                // Skip invalid JSON
+              } catch {
+                // Skip invalid JSON chunks silently - this is normal in streaming
+                continue;
               }
             }
           }

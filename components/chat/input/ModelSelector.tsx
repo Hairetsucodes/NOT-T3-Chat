@@ -176,17 +176,23 @@ export default function ModelSelector() {
   // Memoize available models conversion
   const availableModels = useMemo(
     () =>
-      dbModels.map((model) => ({
-        id: model.modelId,
-        name: model.name,
-        subtitle: model.modelFamily || "",
-        icon: getProviderIcon(model.provider),
-        capabilities: [],
-        provider: model.provider,
-        isPro: isProModel(model.name, model.pricing),
-        isDisabled: false,
-        isFavorite: preferredModelIds.has(model.modelId),
-      })),
+      dbModels.map((model) => {
+        // Determine the correct icon: OpenRouter if not direct or has "/" in modelId
+        const shouldUseOpenRouter = !model.direct || model.modelId.includes("/");
+        const icon = shouldUseOpenRouter ? <OpenRouterIcon /> : getProviderIcon(model.provider);
+
+        return {
+          id: model.modelId,
+          name: model.name,
+          subtitle: model.modelFamily || "",
+          icon: icon,
+          capabilities: [],
+          provider: model.provider,
+          isPro: isProModel(model.name, model.pricing),
+          isDisabled: false,
+          isFavorite: preferredModelIds.has(model.modelId),
+        };
+      }),
     [dbModels, preferredModelIds]
   );
 
