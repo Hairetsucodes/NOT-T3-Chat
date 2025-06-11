@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { getAPIKeys } from "@/data/apikeys";
 import { createMessage } from "@/data/messages";
-import { handleLLMRequestStreaming } from "@/ai/llms";
+import { handleLLMRequestStreaming, generateTitle } from "@/ai/llms";
 
 export const maxDuration = 30;
 
@@ -54,11 +54,22 @@ export async function POST(req: Request) {
     if (!conversationId && messages.length > 0) {
       const lastUserMessage = messages[messages.length - 1];
       if (lastUserMessage?.role === "user") {
-        // Simple title generation based on first few words
-        const words = lastUserMessage.content.split(" ").slice(0, 4);
-        generatedTitle =
-          words.join(" ") +
-          (lastUserMessage.content.split(" ").length > 4 ? "..." : "");
+        try {
+          // Use LLM to generate a meaningful title
+          generatedTitle = await generateTitle(
+            lastUserMessage.content,
+            provider,
+            modelId,
+            providerKey.key
+          );
+        } catch (error) {
+          console.error("❌ Title generation failed, using fallback:", error);
+          // Fallback to simple title generation
+          const words = lastUserMessage.content.split(" ").slice(0, 4);
+          generatedTitle =
+            words.join(" ") +
+            (lastUserMessage.content.split(" ").length > 4 ? "..." : "");
+        }
       }
     }
 

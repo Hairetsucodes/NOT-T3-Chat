@@ -1,8 +1,6 @@
 import { Message } from "@/types/chat";
 import { GoogleGenAI } from "@google/genai";
 
-
-
 // Streaming LLM communication functions
 async function callOpenAIStreaming(
   messages: Message[],
@@ -560,4 +558,254 @@ async function callGoogleStreaming(
       }
     },
   });
+}
+
+// Non-streaming LLM functions for title generation
+async function callOpenAINonStreaming(
+  messages: Message[],
+  modelId: string,
+  apiKey: string,
+  maxTokens: number = 50
+): Promise<string> {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: modelId,
+      messages: messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      })),
+      temperature: 0.3,
+      max_tokens: maxTokens,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content?.trim() || "";
+}
+
+async function callAnthropicNonStreaming(
+  messages: Message[],
+  modelId: string,
+  apiKey: string,
+  maxTokens: number = 50
+): Promise<string> {
+  // Convert messages for Anthropic format
+  const systemMessage = messages.find((m) => m.role === "system");
+  const conversationMessages = messages.filter((m) => m.role !== "system");
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: modelId,
+      max_tokens: maxTokens,
+      system: systemMessage?.content || "You are a helpful assistant.",
+      messages: conversationMessages.map((msg) => ({
+        role: msg.role === "assistant" ? "assistant" : "user",
+        content: msg.content,
+      })),
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Anthropic API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.content?.[0]?.text?.trim() || "";
+}
+
+async function callOpenRouterNonStreaming(
+  messages: Message[],
+  modelId: string,
+  apiKey: string,
+  maxTokens: number = 50
+): Promise<string> {
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer":
+          process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+        "X-Title": "OSS T3 Chat",
+      },
+      body: JSON.stringify({
+        model: modelId,
+        messages: messages.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+        temperature: 0.3,
+        max_tokens: maxTokens,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content?.trim() || "";
+}
+
+async function callDeepSeekNonStreaming(
+  messages: Message[],
+  modelId: string,
+  apiKey: string,
+  maxTokens: number = 50
+): Promise<string> {
+  const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: modelId,
+      messages: messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      })),
+      temperature: 0.3,
+      max_tokens: maxTokens,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content?.trim() || "";
+}
+
+async function callGoogleNonStreaming(
+  messages: Message[],
+  modelId: string,
+  apiKey: string
+): Promise<string> {
+  // Remove both "google/" prefix and ":thinking" suffix
+  const cleanModelId = modelId.replace("google/", "").replace(":thinking", "");
+  
+  const ai = new GoogleGenAI({ apiKey });
+
+  try {
+    // Convert messages to Google format
+    const systemMessage = messages.find((m) => m.role === "system");
+    const conversationMessages = messages.filter((m) => m.role !== "system");
+
+    // Create the prompt from messages
+    let prompt = "";
+    if (systemMessage) {
+      prompt += systemMessage.content + "\n\n";
+    }
+
+    // Add conversation history
+    for (const msg of conversationMessages) {
+      if (msg.role === "user") {
+        prompt += `User: ${msg.content}\n`;
+      } else if (msg.role === "assistant") {
+        prompt += `Assistant: ${msg.content}\n`;
+      }
+    }
+
+    // Use the generateContent method for non-streaming
+    const response = await ai.models.generateContent({
+      model: cleanModelId,
+      contents: prompt.trim(),
+    });
+
+    // Extract the text from the response
+    const candidate = response.candidates?.[0];
+    if (candidate?.content?.parts) {
+      for (const part of candidate.content.parts) {
+        if (part.text) {
+          return part.text.trim();
+        }
+      }
+    }
+
+    return "";
+  } catch (error) {
+    console.error("❌ Google API error:", error);
+    throw new Error(`Google API error: ${error}`);
+  }
+}
+
+export async function generateTitle(
+  userMessage: string,
+  provider: string,
+  modelId: string,
+  apiKey: string
+): Promise<string> {
+  const titlePrompt: Message[] = [
+    {
+      role: "system",
+      content: "Generate a concise, descriptive title (3-6 words) for this conversation based on the user's first message. Return only the title, no quotes or additional text.",
+      timestamp: new Date(),
+    },
+    {
+      role: "user",
+      content: `User message: "${userMessage}"`,
+      timestamp: new Date(),
+    },
+  ];
+
+  try {
+    let title: string;
+    
+    switch (provider.toLowerCase()) {
+      case "openai":
+        title = await callOpenAINonStreaming(titlePrompt, modelId, apiKey);
+        break;
+      case "anthropic":
+        title = await callAnthropicNonStreaming(titlePrompt, modelId, apiKey);
+        break;
+      case "google":
+        title = await callGoogleNonStreaming(titlePrompt, modelId, apiKey);
+        break;
+      case "deepseek":
+        title = await callDeepSeekNonStreaming(titlePrompt, modelId, apiKey);
+        break;
+      case "xai":
+      default:
+        // Route unsupported providers through OpenRouter
+        title = await callOpenRouterNonStreaming(titlePrompt, modelId, apiKey);
+        break;
+    }
+
+    // Clean up the title (remove quotes, limit length)
+    title = title.replace(/^["']|["']$/g, "").trim();
+    if (title.length > 50) {
+      title = title.substring(0, 47) + "...";
+    }
+    
+    return title || "New Conversation";
+  } catch (error) {
+    console.error("❌ Title generation error:", error);
+    // Fallback to simple title generation
+    const words = userMessage.split(" ").slice(0, 4);
+    return words.join(" ") + (userMessage.split(" ").length > 4 ? "..." : "");
+  }
 }
