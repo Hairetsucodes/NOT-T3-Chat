@@ -231,6 +231,7 @@ pnpm db:migrate
 ### TODO
 
 - WebSearch
+- Ollama Local
 - Attachments
 - Bug Reports
 - User Customization
