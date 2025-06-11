@@ -228,6 +228,16 @@ pnpm db:migrate
 - Review the [Discussions](https://github.com/your-repo/discussions) section
 - Consult the documentation for [Next.js](https://nextjs.org/docs), [Prisma](https://prisma.io/docs), and [NextAuth](https://next-auth.js.org/)
 
+### TODO
+
+- Attachments
+- Bug Reports
+- User Customization
+- Image Gen / Analysis
+- Refactor x1000 
+- Tweaks
+- Extra Credit: Voice 2 Voice over websockets.
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
