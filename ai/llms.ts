@@ -561,6 +561,3 @@ async function callGoogleStreaming(
     },
   });
 }
-
-// Note: The old chatRequest function has been replaced with handleLLMRequest
-// which takes the API key directly instead of calling back to the API route
