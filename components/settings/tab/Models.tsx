@@ -176,7 +176,14 @@ type FilterType =
   | "code"
   | "experimental"
   | "premium"
-  | "fast";
+  | "fast"
+  | "direct"
+  | "openrouter"
+  | "google"
+  | "openai"
+  | "anthropic"
+  | "xai"
+  | "deepseek";
 
 export default function Models() {
   const { availableModels } = useContext(ChatContext);
@@ -252,6 +259,20 @@ export default function Models() {
                 type.label === "Premium Model" ||
                 type.label === "Premium Pricing"
             );
+          case "direct":
+            return model.direct === true;
+          case "openrouter":
+            return model.direct === false;
+          case "google":
+            return model.provider.toLowerCase() === "google";
+          case "openai":
+            return model.provider.toLowerCase() === "openai";
+          case "anthropic":
+            return model.provider.toLowerCase() === "anthropic";
+          case "xai":
+            return model.provider.toLowerCase() === "xai";
+          case "deepseek":
+            return model.provider.toLowerCase() === "deepseek";
           default:
             return false;
         }
@@ -470,7 +491,7 @@ export default function Models() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="whitespace-nowrap">
                   <Filter className="mr-2 h-4 w-4" />
-                  Filter by features
+                  Filter features/providers
                   <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -522,6 +543,104 @@ export default function Models() {
                 >
                   <Gem className="mr-2 h-4 w-4" />
                   Premium
+                </DropdownMenuCheckboxItem>
+                <div className="border-t my-1" />
+                <DropdownMenuCheckboxItem
+                  checked={selectedFilters.includes("direct")}
+                  onCheckedChange={() => toggleFilter("direct")}
+                >
+                  <Key className="mr-2 h-4 w-4" />
+                  Direct API
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={selectedFilters.includes("openrouter")}
+                  onCheckedChange={() => toggleFilter("openrouter")}
+                >
+                  <Globe className="mr-2 h-4 w-4" />
+                  OpenRouter
+                </DropdownMenuCheckboxItem>
+                <div className="border-t my-1" />
+                <DropdownMenuCheckboxItem
+                  checked={selectedFilters.includes("openai")}
+                  onCheckedChange={() => toggleFilter("openai")}
+                >
+                  <div className="mr-2 h-4 w-4">
+                    <svg
+                      className="h-full w-full"
+                      viewBox="0 0 16 16"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="currentColor"
+                    >
+                      <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM5.78 2.438a6.518 6.518 0 0 1 4.44 0l-.89 1.422a4.35 4.35 0 0 0-2.66 0l-.89-1.422Zm4.44 11.124a6.518 6.518 0 0 1-4.44 0l.89-1.422a4.35 4.35 0 0 0 2.66 0l.89 1.422Z" />
+                    </svg>
+                  </div>
+                  OpenAI
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={selectedFilters.includes("google")}
+                  onCheckedChange={() => toggleFilter("google")}
+                >
+                  <div className="mr-2 h-4 w-4">
+                    <svg
+                      className="h-full w-full"
+                      viewBox="0 0 16 16"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="currentColor"
+                    >
+                      <path d="M16 8.016A8.16 8.16 0 0 0 8.016 0C3.576 0 0 3.58 0 8.016c0 4.436 3.576 8.016 8.016 8.016s8.016-3.58 8.016-8.016zm-1.672 4.636c-1.016 1.816-2.908 3.068-5.092 3.248V8.016h4.936c.032.544-.076 1.092-.276 1.604l-1.568.032z" />
+                    </svg>
+                  </div>
+                  Google
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={selectedFilters.includes("anthropic")}
+                  onCheckedChange={() => toggleFilter("anthropic")}
+                >
+                  <div className="mr-2 h-4 w-4">
+                    <svg
+                      className="h-full w-full"
+                      viewBox="0 0 16 16"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="currentColor"
+                    >
+                      <path d="M8 0L5.5 4.5h5L8 0zM3 16l2.5-6h5L13 16H3z" />
+                    </svg>
+                  </div>
+                  Anthropic
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={selectedFilters.includes("xai")}
+                  onCheckedChange={() => toggleFilter("xai")}
+                >
+                  <div className="mr-2 h-4 w-4">
+                    <svg
+                      className="h-full w-full"
+                      viewBox="0 0 16 16"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="currentColor"
+                    >
+                      <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" strokeWidth="2" fill="none" />
+                    </svg>
+                  </div>
+                  xAI
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={selectedFilters.includes("deepseek")}
+                  onCheckedChange={() => toggleFilter("deepseek")}
+                >
+                  <div className="mr-2 h-4 w-4">
+                    <svg
+                      className="h-full w-full"
+                      viewBox="0 0 16 16"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="currentColor"
+                    >
+                      <circle cx="8" cy="4" r="2" />
+                      <circle cx="8" cy="12" r="2" />
+                      <path d="M8 6v4" stroke="currentColor" strokeWidth="2" />
+                    </svg>
+                  </div>
+                  DeepSeek
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>

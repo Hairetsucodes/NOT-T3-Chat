@@ -16,6 +16,7 @@ import { updateUser } from "@/data/user";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { ChatContext } from "@/context/ChatContext";
+import { useSession, signOut } from "next-auth/react";
 
 // Background component to avoid repetition
 const AccountBackground = ({ children }: { children: React.ReactNode }) => (
@@ -26,6 +27,7 @@ const AccountBackground = ({ children }: { children: React.ReactNode }) => (
 
 export function AccountTab() {
   const { activeUser } = useContext(ChatContext);
+  const { data: session } = useSession();
   const [name, setName] = useState(activeUser?.name || "");
   const [username, setUsername] = useState(activeUser?.username || "");
   const [originalName, setOriginalName] = useState(activeUser?.name || "");
@@ -82,6 +84,16 @@ export function AccountTab() {
       toast.error("Failed to update profile. Please try again.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut({ callbackUrl: "/" });
+      toast.success("Signed out successfully");
+    } catch (error) {
+      console.error("Failed to sign out:", error);
+      toast.error("Failed to sign out. Please try again.");
     }
   };
 
@@ -197,6 +209,31 @@ export function AccountTab() {
             <p className="text-sm text-muted-foreground">
               Email cannot be changed from here.
             </p>
+          </div>
+
+          {/* Session Management */}
+
+          <div className="space-y-3 pt-4 border-t border-chat-border/30">
+            <Label className="text-foreground/80 font-medium">
+              Session Management
+            </Label>
+            <div className="flex items-center justify-between p-4 bg-muted/20 rounded-lg border border-chat-border/40">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-foreground/80">
+                  Sign out of your account
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  You will be redirected to the home page
+                </p>
+              </div>
+              <Button
+                onClick={handleSignOut}
+                variant="outline"
+                className="bg-transparent border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 h-9 px-4 font-medium transition-all"
+              >
+                Sign Out
+              </Button>
+            </div>
           </div>
         </CardContent>
 

@@ -51,7 +51,7 @@ export default function SignIn() {
           setSuccess(result.success);
           // Wait a moment to show success message, then redirect
           setTimeout(() => {
-            router.push("/dashboard");
+            router.push("/chat");
             router.refresh();
           }, 1000);
         }
