@@ -16,7 +16,7 @@ import { updateUser } from "@/data/user";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { ChatContext } from "@/context/ChatContext";
-import { useSession, signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
 
 // Background component to avoid repetition
 const AccountBackground = ({ children }: { children: React.ReactNode }) => (
@@ -27,7 +27,6 @@ const AccountBackground = ({ children }: { children: React.ReactNode }) => (
 
 export function AccountTab() {
   const { activeUser } = useContext(ChatContext);
-  const { data: session } = useSession();
   const [name, setName] = useState(activeUser?.name || "");
   const [username, setUsername] = useState(activeUser?.username || "");
   const [originalName, setOriginalName] = useState(activeUser?.name || "");
