@@ -1,83 +1,74 @@
-import { createOpenAI } from "@ai-sdk/openai";
-import { streamText, wrapLanguageModel, generateText } from "ai";
 import { auth } from "@/auth";
 import { getAPIKeys } from "@/data/apikeys";
-import { createCacheMiddleware } from "@/lib/middleware/cache";
 import { createMessage } from "@/data/messages";
+import { handleLLMRequestStreaming } from "@/app/ai/llms";
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const { messages, conversationId } = await req.json();
-
+  const { messages, conversationId, selectedModel } = await req.json();
+  console.log(selectedModel);
   const session = await auth();
 
   if (!session?.user?.id) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  try {
-    const apiKeys = await getAPIKeys(session.user.id);
-    const openaiKey = apiKeys.find((key) => key.provider === "openai");
+  const userId = session.user.id;
 
-    if (!openaiKey) {
+  try {
+    const apiKeys = await getAPIKeys(userId);
+
+    // Determine provider from selectedModel or default to openai
+    const provider = selectedModel?.provider || "openai";
+    const modelId = selectedModel?.model || "gpt-4o-mini";
+
+    // Find the appropriate API key for the provider
+    let providerKey = apiKeys.find((key) => key.provider === provider);
+
+    // For unsupported providers (not openai, anthropic, google, xai, deepseek), use OpenRouter
+    if (!providerKey && !["openai", "anthropic", "google", "xai", "deepseek"].includes(provider)) {
+      providerKey = apiKeys.find((key) => key.provider === "openrouter");
+      if (!providerKey) {
+        return new Response(
+          "OpenRouter API key not found. This model requires an OpenRouter API key. Please add your OpenRouter API key in settings.",
+          { status: 400 }
+        );
+      }
+    } else if (!providerKey) {
       return new Response(
-        "OpenAI API key not found. Please add your OpenAI API key in settings.",
+        `${
+          provider.charAt(0).toUpperCase() + provider.slice(1)
+        } API key not found. Please add your ${
+          provider.charAt(0).toUpperCase() + provider.slice(1)
+        } API key in settings.`,
         { status: 400 }
       );
     }
-
-    const openai = createOpenAI({
-      apiKey: openaiKey.key,
-    });
-
-    const baseModel = openai("gpt-4o");
-    const cachedModel = wrapLanguageModel({
-      model: baseModel,
-      middleware: [createCacheMiddleware(session.user.id)],
-    });
 
     // Generate title for new conversations (without conversationId)
     let generatedTitle = null;
     if (!conversationId && messages.length > 0) {
       const lastUserMessage = messages[messages.length - 1];
       if (lastUserMessage?.role === "user") {
-        try {
-          const titleResult = await generateText({
-            model: baseModel,
-            messages: [
-              {
-                role: "system",
-                content:
-                  "Generate a short, concise title (3-6 words) for this conversation based on the user's message. Only return the title, nothing else.",
-              },
-              {
-                role: "user",
-                content: lastUserMessage.content,
-              },
-            ],
-            maxTokens: 20,
-            temperature: 0.3,
-          });
-          generatedTitle = titleResult.text;
-        } catch (error) {
-          console.error("Title generation failed:", error);
-          // Fallback to a default title
-          generatedTitle = "New Conversation";
-        }
+        // Simple title generation based on first few words
+        const words = lastUserMessage.content.split(" ").slice(0, 4);
+        generatedTitle =
+          words.join(" ") +
+          (lastUserMessage.content.split(" ").length > 4 ? "..." : "");
       }
     }
 
     // Save the user message and create/get conversation
     let currentConversationId: string | undefined = conversationId;
     const lastUserMessage = messages[messages.length - 1];
-    
+
     if (lastUserMessage?.role === "user") {
       const savedMessage = await createMessage(
-        session.user.id,
+        userId,
         lastUserMessage.content,
         "user",
-        "openai",
+        provider,
         "",
         currentConversationId,
         generatedTitle || undefined
@@ -88,46 +79,82 @@ export async function POST(req: Request) {
       }
     }
 
-    const optimizedMessages = [
-      {
-        role: "system" as const,
-        content: "You are a helpful assistant.",
-      },
-      ...messages,
-    ];
+    // Get streaming response from handleLLMRequestStreaming
+    const stream = await handleLLMRequestStreaming(
+      messages,
+      provider,
+      modelId,
+      providerKey.key,
+      currentConversationId || ""
+    );
 
-    const result = streamText({
-      model: cachedModel,
-      messages: optimizedMessages,
-      temperature: 0.7,
-      maxTokens: 4000,
-      onFinish: async (result) => {
-        // Save the assistant's response when streaming finishes
-        try {
-          if (currentConversationId && result.text) {
-            await createMessage(
-              session.user.id,
-              result.text,
-              "assistant",
-              "openai",
-              "",
-              currentConversationId
-            );
+    // Wrap the stream to accumulate content and save to database when complete
+    let fullContent = "";
+    const transformedStream = new ReadableStream({
+      start(controller) {
+        const reader = stream.getReader();
+        const decoder = new TextDecoder();
+
+        async function pump() {
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) {
+                // Save assistant response when streaming is complete
+                if (currentConversationId && fullContent) {
+                  await createMessage(
+                    userId,
+                    fullContent,
+                    "assistant",
+                    provider,
+                    "", // No reasoning content for now in streaming
+                    currentConversationId
+                  );
+                }
+                controller.close();
+                break;
+              }
+
+              const chunk = decoder.decode(value, { stream: true });
+
+              // Extract content from SSE format to accumulate
+              if (chunk.includes("data: ")) {
+                try {
+                  const lines = chunk.split("\n");
+                  for (const line of lines) {
+                    if (line.startsWith("data: ")) {
+                      const data = line.slice(6);
+                      const parsed = JSON.parse(data);
+                      if (parsed.content) {
+                        fullContent += parsed.content;
+                      }
+                    }
+                  }
+                } catch {
+                  // Skip invalid JSON
+                }
+              }
+
+              controller.enqueue(value);
+            }
+          } catch (error) {
+            controller.error(error);
           }
-        } catch (error) {
-          console.error("Failed to save assistant message:", error);
         }
+
+        pump();
       },
     });
 
-    // Create response headers with conversation data immediately
+    // Return streaming response with conversation metadata in headers
     const responseHeaders: Record<string, string> = {
+      "Content-Type": "text/plain; charset=utf-8",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
-      "X-Cache-Optimized": "true",
+      "X-Accel-Buffering": "no",
     };
 
-    // Include generated title and conversation ID in response headers immediately
+    // Include generated title and conversation ID in response headers
     if (generatedTitle) {
       responseHeaders["X-Generated-Title"] = generatedTitle;
     }
@@ -135,7 +162,8 @@ export async function POST(req: Request) {
       responseHeaders["X-Conversation-Id"] = currentConversationId;
     }
 
-    return result.toDataStreamResponse({
+    return new Response(transformedStream, {
+      status: 200,
       headers: responseHeaders,
     });
   } catch (error) {

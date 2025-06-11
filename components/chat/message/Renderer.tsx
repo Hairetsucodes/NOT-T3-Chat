@@ -1,8 +1,9 @@
 "use client";
 
-import { Message } from "@ai-sdk/react";
-import { lazy, Suspense, useState, useRef, JSX, useEffect } from "react";
+import { Message } from "@/types/chat";
+import { lazy, Suspense, useState, useRef, JSX, useEffect, useCallback } from "react";
 import { processMarkdown } from "@/lib/markdownProcessor";
+import { ReasoningDisplay } from "./ReasoningDisplay";
 
 // Lazy load the syntax highlighter
 const SyntaxHighlightedCode = lazy(() =>
@@ -22,7 +23,7 @@ export function MessageRenderer({ message }: MessageRendererProps) {
   const processingRef = useRef<boolean>(false);
   const isUser = message.role === "user";
 
-  const renderContent = async (content: string) => {
+  const renderContent = useCallback(async (content: string) => {
     if (isUser) {
       return [
         <div key="user-message" className="text-sm">
@@ -141,7 +142,7 @@ export function MessageRenderer({ message }: MessageRendererProps) {
     lastProcessedContentRef.current = content;
     processingRef.current = false;
     return parts;
-  };
+  }, [isUser, renderedContent]);
 
   useEffect(() => {
     const content = message.content || "";
@@ -169,7 +170,7 @@ export function MessageRenderer({ message }: MessageRendererProps) {
         clearTimeout(renderTimeoutRef.current);
       }
     };
-  }, [message.content]); // Only depend on message.content, not lastProcessedContent
+  }, [message.content, renderContent]);
 
   return (
     <div
@@ -179,6 +180,13 @@ export function MessageRenderer({ message }: MessageRendererProps) {
           : "text-foreground w-full"
       }`}
     >
+      {/* Show reasoning display for assistant messages at the top */}
+      {message.role === "assistant" && message.reasoning_content && (
+        <ReasoningDisplay
+          reasoning={message.reasoning_content}
+          isStreaming={false}
+        />
+      )}
       {renderedContent.length > 0 ? renderedContent : message.content}
     </div>
   );

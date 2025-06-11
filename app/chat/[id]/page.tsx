@@ -2,6 +2,7 @@ import React from "react";
 import { getMessagesByConversationId } from "@/data/messages";
 import { redirect } from "next/navigation";
 import { Chat } from "@/components/chat/Chat";
+import { ChatWrapper } from "@/components/chat/ChatWrapper";
 
 export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -11,12 +12,19 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     redirect("/chat");
   }
 
-  // Transform database messages to AI SDK Message format
-  const messages = dbMessages.map((msg) => ({
-    id: msg.id,
-    role: msg.role as "user" | "assistant" | "system" | "data",
-    content: msg.content,
-  }));
+  // Transform database messages to Message format, filtering out unsupported roles
+  const messages = dbMessages
+    .filter((msg) => ["user", "assistant", "system"].includes(msg.role))
+    .map((msg) => ({
+      id: msg.id,
+      role: msg.role as "user" | "assistant" | "system",
+      content: msg.content,
+      reasoning_content: msg.reasoningContent || undefined,
+    }));
 
-  return <Chat messages={messages} conversationId={params.id} />;
+  return (
+    <ChatWrapper initialMessages={messages} initialConversationId={params.id}>
+      <Chat />
+    </ChatWrapper>
+  );
 }

@@ -5,7 +5,7 @@ import { WelcomeScreen } from "./welcome/Welcome";
 import { ChatHeader } from "./ui/Header";
 import CornerDecorator from "./ui/CornerDecorator";
 import { MessageRenderer } from "./message/Renderer";
-import { Message } from "@ai-sdk/react";
+import { Message } from "@/types/chat";
 import { ChangeEvent, useEffect } from "react";
 import { disposeHighlighter } from "@/lib/shikiHighlighter";
 
@@ -65,8 +65,8 @@ export function ChatContainer({
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex ${
-                  message.role === "user" ? "justify-end" : "justify-start"
+                className={`flex flex-col ${
+                  message.role === "user" ? "items-end" : "items-start"
                 }`}
               >
                 <MessageRenderer message={message} />

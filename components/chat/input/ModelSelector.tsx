@@ -158,9 +158,8 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function ModelSelector() {
-  const { preferredModels, availableModels: dbModels } =
+  const { preferredModels, availableModels: dbModels, selectedModel, setSelectedModel } =
     useContext(ChatContext);
-  const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [showAllModels, setShowAllModels] = useState(false);
@@ -204,7 +203,7 @@ export default function ModelSelector() {
     };
   }, [availableModels]);
 
-    // Memoize search filtered models
+  // Memoize search filtered models
   const filteredModels = useMemo(() => {
     const modelsToShow = showAllModels ? availableModels : favoriteModels;
     return modelsToShow.filter((model) =>
@@ -220,13 +219,13 @@ export default function ModelSelector() {
     const others = otherModels.filter((model) =>
       model.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
     );
-    
+
     return { filteredFavorites: favorites, filteredOthers: others };
   }, [favoriteModels, otherModels, debouncedSearchQuery]);
 
   // Memoize selected model data
   const selectedModelData = useMemo(
-    () => availableModels.find((model) => model.id === selectedModel),
+    () => availableModels.find((model) => model.id === selectedModel.model),
     [availableModels, selectedModel]
   );
 
@@ -234,18 +233,28 @@ export default function ModelSelector() {
   useEffect(() => {
     if (
       enabledModels.length > 0 &&
-      !enabledModels.find((model) => model.id === selectedModel)
+      !enabledModels.find((model) => model.id === selectedModel.model)
     ) {
-      setSelectedModel(enabledModels[0].id);
+      const firstModel = enabledModels[0];
+      setSelectedModel({
+        model: firstModel.id,
+        provider: firstModel.provider,
+      });
     }
-  }, [enabledModels, selectedModel]);
+  }, [enabledModels, selectedModel, setSelectedModel]);
 
   // Memoize handlers
   const handleModelSelect = useCallback((modelId: string) => {
-    setSelectedModel(modelId);
+    const selectedModelData = availableModels.find((model) => model.id === modelId);
+    if (selectedModelData) {
+      setSelectedModel({
+        model: modelId,
+        provider: selectedModelData.provider,
+      });
+    }
     setIsOpen(false);
     setSearchQuery("");
-  }, []);
+  }, [availableModels, setSelectedModel]);
 
   const toggleShowAll = useCallback(() => {
     setShowAllModels(!showAllModels);
@@ -332,7 +341,7 @@ export default function ModelSelector() {
                   <ModelCard
                     key={model.id}
                     model={model}
-                    isSelected={selectedModel === model.id}
+                    isSelected={selectedModel.model === model.id}
                     onSelect={handleModelSelect}
                   />
                 ))}
@@ -347,7 +356,7 @@ export default function ModelSelector() {
                       <ModelCard
                         key={model.id}
                         model={model}
-                        isSelected={selectedModel === model.id}
+                        isSelected={selectedModel.model === model.id}
                         onSelect={handleModelSelect}
                       />
                     ))}

@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Pin, X, Loader2 } from "lucide-react";
-import { Message } from "ai";
+import { Message } from "@/types/chat";
 import { Conversation } from "@prisma/client";
 import { ChatContext } from "@/context/ChatContext";
 import { useRouter, usePathname } from "next/navigation";
