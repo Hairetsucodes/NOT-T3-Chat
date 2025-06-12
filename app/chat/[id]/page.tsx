@@ -2,6 +2,7 @@ import React from "react";
 import { getMessagesByConversationId } from "@/data/messages";
 import { Chat } from "@/components/chat/Chat";
 import { ChatWrapper } from "@/components/chat/ChatWrapper";
+import { redirect } from "next/navigation";
 
 export default async function Page(props: {
   params: Promise<{ id: string }>;
@@ -11,7 +12,9 @@ export default async function Page(props: {
 
   const { provider, model } = await props.searchParams;
   const dbMessages = await getMessagesByConversationId(id);
-
+  if (!dbMessages) {
+    redirect("/chat");
+  }
   // Transform database messages to Message format, filtering out unsupported roles
   const messages = dbMessages
     .filter((msg) => ["user", "assistant", "system"].includes(msg.role))

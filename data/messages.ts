@@ -69,44 +69,50 @@ export const getConversations = async (userId: string) => {
 };
 
 export const getMessagesByConversationId = async (conversationId: string) => {
-  const conversation = await prisma.conversation.findUnique({
-    where: {
-      id: conversationId,
-    },
-  });
-  if (!conversation) {
-    throw new Error("Conversation not found");
-  }
-
-  if (conversation.branchedIds && conversation.branchedIds !== "null") {
-    // This is a branched conversation - get messages from all conversations in the branch chain
-    const branchedIds: string[] = JSON.parse(conversation.branchedIds);
-    const allConversationIds = Array.isArray(branchedIds)
-      ? [...branchedIds, conversationId]
-      : [conversationId];
-
-    const allMessages = await prisma.message.findMany({
+  try {
+    const conversation = await prisma.conversation.findUnique({
       where: {
-        conversationId: {
-          in: allConversationIds,
+        id: conversationId,
+      },
+    });
+    if (!conversation) {
+      throw new Error("Conversation not found");
+    }
+
+    if (conversation.branchedIds && conversation.branchedIds !== "null") {
+      // This is a branched conversation - get messages from all conversations in the branch chain
+      const branchedIds: string[] = JSON.parse(conversation.branchedIds);
+      const allConversationIds = Array.isArray(branchedIds)
+        ? [...branchedIds, conversationId]
+        : [conversationId];
+
+      const allMessages = await prisma.message.findMany({
+        where: {
+          conversationId: {
+            in: allConversationIds,
+          },
         },
+        orderBy: {
+          createdAt: "asc",
+        },
+      });
+
+      return allMessages;
+    }
+
+    // Regular conversation or original conversation
+    const messages = await prisma.message.findMany({
+      where: {
+        conversationId,
       },
       orderBy: {
         createdAt: "asc",
       },
     });
-
-    return allMessages;
+    return messages;
+  } catch (error) {
+    console.error("Error getting messages by conversation ID:", error);
+    console.log("conversationId", conversationId);
+    return null;
   }
-
-  // Regular conversation or original conversation
-  const messages = await prisma.message.findMany({
-    where: {
-      conversationId,
-    },
-    orderBy: {
-      createdAt: "asc",
-    },
-  });
-  return messages;
 };
