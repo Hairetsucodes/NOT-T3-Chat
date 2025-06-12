@@ -1,5 +1,9 @@
 "use client";
-import { Conversation, PreferredModel } from "@prisma/client";
+import {
+  Conversation,
+  PreferredModel,
+  UserCustomization,
+} from "@prisma/client";
 import { createContext, useState, useCallback, useRef } from "react";
 import { UnifiedModel } from "@/data/models";
 import { getPreferredModels } from "@/data/models";
@@ -28,6 +32,8 @@ interface ChatContextType {
   ) => void;
   removeLoadingConversation: (id: string) => void;
   activeUser: ChatUser;
+  userSettings: UserCustomization | null;
+  setUserSettings: (settings: UserCustomization) => void;
   activeProviders: {
     id: string;
     provider: string;
@@ -74,6 +80,8 @@ export const ChatContext = createContext<ChatContextType>({
   updateConversation: () => {},
   removeLoadingConversation: () => {},
   activeUser: null,
+  userSettings: null,
+  setUserSettings: () => {},
   activeProviders: [],
   setActiveProviders: () => {},
   currentProvider: null,
@@ -107,6 +115,7 @@ export const ChatProvider = ({
   preferredModels: initialPreferredModels,
   initialMessages,
   initialConversationId,
+  initialUserSettings,
   children,
 }: {
   activeUser: ChatUser;
@@ -120,6 +129,7 @@ export const ChatProvider = ({
   preferredModels: PreferredModel[];
   initialMessages?: Message[];
   initialConversationId?: string;
+  initialUserSettings: UserCustomization | null;
   children: React.ReactNode;
 }) => {
   const [conversations, setConversations] =
@@ -146,6 +156,9 @@ export const ChatProvider = ({
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(
     initialConversationId ?? null
+  );
+  const [userSettings, setUserSettings] = useState<UserCustomization | null>(
+    initialUserSettings
   );
   const [conversationTitle, setConversationTitle] = useState<string | null>(
     null
@@ -460,6 +473,8 @@ export const ChatProvider = ({
         updateConversation,
         removeLoadingConversation,
         activeUser,
+        userSettings,
+        setUserSettings,
         activeProviders,
         setActiveProviders,
         currentProvider,

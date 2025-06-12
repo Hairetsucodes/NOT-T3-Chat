@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState, useEffect, useContext } from "react";
+import { useState, useContext } from "react";
 import { toast } from "sonner";
 import { Loader2, Plus, X } from "lucide-react";
 import { ChatContext } from "@/context/ChatContext";
@@ -52,53 +52,37 @@ const SUGGESTED_TRAITS = [
 ];
 
 export function CustomizationTab() {
-  const { activeUser } = useContext(ChatContext);
+  const { activeUser, userSettings, setUserSettings } = useContext(ChatContext);
 
-  // Form state
-  const [name, setName] = useState("");
-  const [occupation, setOccupation] = useState("");
-  const [traits, setTraits] = useState<string[]>([]);
+  // Local state for form fields
+  const [name, setName] = useState(userSettings?.displayName || "");
+  const [occupation, setOccupation] = useState(userSettings?.userRole || "");
+  const [traits, setTraits] = useState<string[]>(
+    userSettings?.userTraits
+      ? userSettings.userTraits.split(", ").filter(Boolean)
+      : []
+  );
   const [traitInput, setTraitInput] = useState("");
-  const [additionalInfo, setAdditionalInfo] = useState("");
-
-  // Visual options state
-  const [boringTheme, setBoringTheme] = useState(false);
-  const [hidePersonalInfo, setHidePersonalInfo] = useState(false);
-  const [disableThematicBreaks, setDisableThematicBreaks] = useState(false);
-  const [statsForNerds, setStatsForNerds] = useState(false);
-  const [mainFont, setMainFont] = useState("Inter");
-  const [codeFont, setCodeFont] = useState("mono");
-
-  // Loading states
+  const [additionalInfo, setAdditionalInfo] = useState(
+    userSettings?.additionalContext || ""
+  );
+  const [boringTheme, setBoringTheme] = useState(
+    userSettings?.isBoringTheme || false
+  );
+  const [hidePersonalInfo, setHidePersonalInfo] = useState(
+    userSettings?.hidePersonalInfo || false
+  );
+  const [disableThematicBreaks, setDisableThematicBreaks] = useState(
+    userSettings?.disableThematicBreaks || false
+  );
+  const [statsForNerds, setStatsForNerds] = useState(
+    userSettings?.showStatsForNerds || false
+  );
+  const [mainFont, setMainFont] = useState(
+    userSettings?.mainTextFont || "Inter"
+  );
+  const [codeFont, setCodeFont] = useState(userSettings?.codeFont || "mono");
   const [isLoading, setIsLoading] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
-
-  // Original values for change detection
-  const [originalValues, setOriginalValues] = useState({
-    name: "",
-    occupation: "",
-    traits: [] as string[],
-    additionalInfo: "",
-    boringTheme: false,
-    hidePersonalInfo: false,
-    disableThematicBreaks: false,
-    statsForNerds: false,
-    mainFont: "Inter",
-    codeFont: "mono",
-  });
-
-  // Track changes (only for text-based customization settings, visual options save automatically)
-  useEffect(() => {
-    const traitsChanged =
-      JSON.stringify(traits.sort()) !==
-      JSON.stringify(originalValues.traits.sort());
-    setHasChanges(
-      name !== originalValues.name ||
-        occupation !== originalValues.occupation ||
-        traitsChanged ||
-        additionalInfo !== originalValues.additionalInfo
-    );
-  }, [name, occupation, traits, additionalInfo, originalValues]);
 
   const addTrait = (trait: string) => {
     if (trait.trim() && !traits.includes(trait.trim()) && traits.length < 50) {
@@ -126,13 +110,10 @@ export function CustomizationTab() {
 
     setIsLoading(true);
     try {
-      // Convert traits array to comma-separated string
-      const traitsString = traits.join(", ");
-
       const settingsData = {
         displayName: name.trim(),
         userRole: occupation.trim(),
-        userTraits: traitsString,
+        userTraits: traits.join(", "),
         additionalContext: additionalInfo.trim(),
         isBoringTheme: boringTheme,
         hidePersonalInfo: hidePersonalInfo,
@@ -149,95 +130,18 @@ export function CustomizationTab() {
         return;
       }
 
+      // Update the context state with the saved values
+      if (userSettings && result && typeof result === "object" && "id" in result) {
+        setUserSettings(result);
+      }
+
       toast.success("Preferences saved successfully");
-
-      // Update original values
-      setOriginalValues({
-        name: name.trim(),
-        occupation: occupation.trim(),
-        traits: [...traits],
-        additionalInfo: additionalInfo.trim(),
-        boringTheme,
-        hidePersonalInfo,
-        disableThematicBreaks,
-        statsForNerds,
-        mainFont,
-        codeFont,
-      });
-
-      setHasChanges(false);
     } catch (error) {
       console.error("Failed to save preferences:", error);
       toast.error("Failed to save preferences");
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Handler for visual option updates (saves immediately)
-  const updateVisualOption = async (field: string, value: boolean | string) => {
-    if (!activeUser?.id) {
-      toast.error("Please sign in to save preferences");
-      return;
-    }
-
-    try {
-      const settingsData = {
-        [field]: value,
-      };
-
-      const result = await updateUserSettings(activeUser.id, settingsData);
-
-      if (result && "error" in result) {
-        toast.error(result.error);
-        return;
-      }
-
-      // Update original values for this specific field
-      setOriginalValues((prev) => ({
-        ...prev,
-        [field === "isBoringTheme"
-          ? "boringTheme"
-          : field === "showStatsForNerds"
-          ? "statsForNerds"
-          : field === "mainTextFont"
-          ? "mainFont"
-          : field]: value,
-      }));
-    } catch (error) {
-      console.error("Failed to save visual option:", error);
-      toast.error("Failed to save setting");
-    }
-  };
-
-  const handleBoringThemeChange = (value: boolean) => {
-    setBoringTheme(value);
-    updateVisualOption("isBoringTheme", value);
-  };
-
-  const handleHidePersonalInfoChange = (value: boolean) => {
-    setHidePersonalInfo(value);
-    updateVisualOption("hidePersonalInfo", value);
-  };
-
-  const handleDisableThematicBreaksChange = (value: boolean) => {
-    setDisableThematicBreaks(value);
-    updateVisualOption("disableThematicBreaks", value);
-  };
-
-  const handleStatsForNerdsChange = (value: boolean) => {
-    setStatsForNerds(value);
-    updateVisualOption("showStatsForNerds", value);
-  };
-
-  const handleMainFontChange = (value: string) => {
-    setMainFont(value);
-    updateVisualOption("mainTextFont", value);
-  };
-
-  const handleCodeFontChange = (value: string) => {
-    setCodeFont(value);
-    updateVisualOption("codeFont", value);
   };
 
   const handleResetSettings = async () => {
@@ -255,7 +159,7 @@ export function CustomizationTab() {
         return;
       }
 
-      // Reset to default values
+      // Reset local state
       setName("");
       setOccupation("");
       setTraits([]);
@@ -267,22 +171,12 @@ export function CustomizationTab() {
       setMainFont("Inter");
       setCodeFont("mono");
 
-      const defaultValues = {
-        name: "",
-        occupation: "",
-        traits: [] as string[],
-        additionalInfo: "",
-        boringTheme: false,
-        hidePersonalInfo: false,
-        disableThematicBreaks: false,
-        statsForNerds: false,
-        mainFont: "Inter",
-        codeFont: "mono",
-      };
-      setOriginalValues(defaultValues);
-
+      // Update context state
+      if (result && typeof result === "object" && "id" in result) {
+        setUserSettings(result);
+      }
+      
       toast.success("Settings reset to defaults");
-      setHasChanges(false);
     } catch (error) {
       console.error("Failed to reset settings:", error);
       toast.error("Failed to reset settings");
@@ -450,7 +344,7 @@ export function CustomizationTab() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isLoading || !hasChanges}
+                  disabled={isLoading}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground border-reflect button-reflect relative disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all"
                 >
                   {isLoading ? (
@@ -485,7 +379,7 @@ export function CustomizationTab() {
                 </div>
                 <Switch
                   checked={boringTheme}
-                  onCheckedChange={handleBoringThemeChange}
+                  onCheckedChange={(value) => setBoringTheme(value)}
                   disabled={isLoading}
                 />
               </div>
@@ -501,7 +395,7 @@ export function CustomizationTab() {
                 </div>
                 <Switch
                   checked={hidePersonalInfo}
-                  onCheckedChange={handleHidePersonalInfoChange}
+                  onCheckedChange={(value) => setHidePersonalInfo(value)}
                   disabled={isLoading}
                 />
               </div>
@@ -519,7 +413,7 @@ export function CustomizationTab() {
                 </div>
                 <Switch
                   checked={disableThematicBreaks}
-                  onCheckedChange={handleDisableThematicBreaksChange}
+                  onCheckedChange={(value) => setDisableThematicBreaks(value)}
                   disabled={isLoading}
                 />
               </div>
@@ -537,7 +431,7 @@ export function CustomizationTab() {
                 </div>
                 <Switch
                   checked={statsForNerds}
-                  onCheckedChange={handleStatsForNerdsChange}
+                  onCheckedChange={(value) => setStatsForNerds(value)}
                   disabled={isLoading}
                 />
               </div>
@@ -557,7 +451,7 @@ export function CustomizationTab() {
                       </div>
                       <Select
                         value={mainFont}
-                        onValueChange={handleMainFontChange}
+                        onValueChange={(value) => setMainFont(value)}
                         disabled={isLoading}
                       >
                         <SelectTrigger className="w-full bg-chat-input-background/80 border-chat-border/60 text-foreground">
@@ -591,7 +485,7 @@ export function CustomizationTab() {
                       </div>
                       <Select
                         value={codeFont}
-                        onValueChange={handleCodeFontChange}
+                        onValueChange={(value) => setCodeFont(value)}
                         disabled={isLoading}
                       >
                         <SelectTrigger className="w-full bg-chat-input-background/80 border-chat-border/60 text-foreground">

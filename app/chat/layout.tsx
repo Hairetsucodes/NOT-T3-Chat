@@ -6,6 +6,7 @@ import { getUserById } from "@/data/user";
 import { getProviders } from "@/data/apikeys";
 import { getAvailableModels, getPreferredModels } from "@/data/models";
 import { UnifiedModel } from "@/data/models";
+import { getUserSettings } from "@/data/settings";
 
 export default async function ChatLayout({
   children,
@@ -24,16 +25,18 @@ export default async function ChatLayout({
   }
   const conversations = await getConversations(user.user.id);
   const providers = await getProviders(user.user.id);
-
-  // Only fetch models if OpenRouter is available
+  const userSettings = await getUserSettings(user.user.id);
   let models: UnifiedModel[] = [];
-  if (providers.map((p) => p.provider.toLowerCase()).includes("openrouter")) {
+  if (providers.length > 0) {
     models = await getAvailableModels();
   }
   const preferredModels = await getPreferredModels(user.user.id);
   return (
     <ChatProvider
       activeUser={userData}
+      initialUserSettings={
+        userSettings && "error" in userSettings ? null : userSettings
+      }
       initialConversations={conversations}
       initialActiveProviders={providers}
       currentProvider={providers[0]?.provider || null}
