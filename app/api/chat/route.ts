@@ -2,12 +2,43 @@ import { auth } from "@/auth";
 import { getAPIKeys } from "@/data/apikeys";
 import { createMessage } from "@/data/messages";
 import { handleLLMRequestStreaming, generateTitle } from "@/ai/index";
+import { ChatRequestSchema } from "@/schemas/chatEndpoint";
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const { messages, conversationId, selectedModel } = await req.json();
+  // Parse and validate JSON body
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid JSON format" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  // Validate request body structure
+  const validationResult = ChatRequestSchema.safeParse(body);
+  if (!validationResult.success) {
+    return new Response(
+      JSON.stringify({
+        error: "Invalid request format",
+        details: validationResult.error.errors.map((err) => ({
+          field: err.path.join("."),
+          message: err.message,
+        })),
+      }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+
+  const { messages, conversationId, selectedModel } = validationResult.data;
   console.log(selectedModel);
+
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -45,18 +76,29 @@ export async function POST(req: Request) {
       providerKey = apiKeys.find((key) => key.provider === "openrouter");
       if (!providerKey) {
         return new Response(
-          "OpenRouter API key not found. This model requires an OpenRouter API key. Please add your OpenRouter API key in settings.",
-          { status: 400 }
+          JSON.stringify({
+            error:
+              "OpenRouter API key not found. This model requires an OpenRouter API key. Please add your OpenRouter API key in settings.",
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          }
         );
       }
     } else if (!providerKey) {
       return new Response(
-        `${
-          provider.charAt(0).toUpperCase() + provider.slice(1)
-        } API key not found. Please add your ${
-          provider.charAt(0).toUpperCase() + provider.slice(1)
-        } API key in settings.`,
-        { status: 400 }
+        JSON.stringify({
+          error: `${
+            provider.charAt(0).toUpperCase() + provider.slice(1)
+          } API key not found. Please add your ${
+            provider.charAt(0).toUpperCase() + provider.slice(1)
+          } API key in settings.`,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
       );
     }
 
@@ -85,7 +127,7 @@ export async function POST(req: Request) {
     }
 
     // Save the user message and create/get conversation
-    let currentConversationId: string | undefined = conversationId;
+    let currentConversationId: string | undefined = conversationId || undefined;
     const lastUserMessage = messages[messages.length - 1];
 
     if (lastUserMessage?.role === "user") {
