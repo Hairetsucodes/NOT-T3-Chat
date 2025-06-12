@@ -15,6 +15,8 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 - 📱 Responsive design
 - 🔧 Customizable user settings and prompts
 - 🎯 Syntax highlighting for code blocks
+- 🌳 Conversation branching support
+- 🔄 Retry responses with same or different models
 
 ## 📸 Screenshots
 
@@ -224,6 +226,22 @@ The application supports multiple AI providers. Configure the API keys for the p
 - **DeepSeek**: DeepSeek models (deepseek-chat, deepseek-coder, etc.)
 - **Xai**: Grok models (grok-beta, etc.)
 - **OpenRouter**: Access to hundreds of models through one unified API including many open-source options
+
+### Conversation Features
+
+#### Branching
+The application supports conversation branching, allowing users to:
+- Create alternative conversation paths from any message
+- Explore different responses while preserving the original thread
+- Switch between branches seamlessly
+- Compare different conversation trajectories
+
+#### Retry Functionality
+Users can retry any AI response with:
+- The same model for different variations
+- A different model to compare responses
+- Modified parameters (temperature, tokens, etc.)
+- Preserved context from the original conversation
 
 ## 🏗️ Project Structure
 
