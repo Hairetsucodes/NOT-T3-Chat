@@ -230,14 +230,18 @@ The application supports multiple AI providers. Configure the API keys for the p
 ### Conversation Features
 
 #### Branching
+
 The application supports conversation branching, allowing users to:
+
 - Create alternative conversation paths from any message
 - Explore different responses while preserving the original thread
 - Switch between branches seamlessly
 - Compare different conversation trajectories
 
 #### Retry Functionality
+
 Users can retry any AI response with:
+
 - The same model for different variations
 - A different model to compare responses
 - Modified parameters (temperature, tokens, etc.)
@@ -321,13 +325,22 @@ pnpm db:migrate
 ### TODO
 
 - WebSearch
-- Ollama Local
+- Refactor x10
+- Tweaks
 - Attachments
+- Refactor x100
+- Tweaks
 - Bug Reports
 - Image Gen / Analysis
-- Production Deployment / postGres
 - Refactor x1000
 - Tweaks
+- Production Deployment / postGres
+- Refactor x9000
+- Tweaks
+- Dockerize
+- Github Actions
+- Tweaks
+- Ollama Local
 - Extra Credit: Voice 2 Voice over websockets.
 
 ## 📄 License
