@@ -19,6 +19,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 ## 📸 Screenshots
 
 ### Authentication & Registration
+
 <table>
   <tr>
     <td align="center">
@@ -33,6 +34,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 </table>
 
 ### Chat Interface
+
 <table>
   <tr>
     <td align="center">
@@ -55,6 +57,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 </table>
 
 ### Configuration & Settings
+
 <table>
   <tr>
     <td align="center">
@@ -79,6 +82,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 </table>
 
 ### Additional Features
+
 <table>
   <tr>
     <td align="center">
@@ -208,14 +212,6 @@ DATABASE_URL="file:./dev.db"
 # NextAuth
 NEXTAUTH_SECRET="your-nextauth-secret"
 NEXTAUTH_URL="http://localhost:3000"
-
-# AI Providers (configure as needed)
-OPENAI_API_KEY="your-openai-api-key"
-ANTHROPIC_API_KEY="your-anthropic-api-key"
-GOOGLE_GENERATIVE_AI_API_KEY="your-google-api-key"
-DEEPSEEK_API_KEY="your-deepseek-api-key"
-XAI_API_KEY="your-xai-api-key"
-OPENROUTER_API_KEY="your-openrouter-api-key"
 ```
 
 ### AI Provider Setup
@@ -282,7 +278,7 @@ pnpm db:migrate
 ## 📚 Tech Stack
 
 - **Framework**: Next.js 15 with App Router
-- **Database**: Prisma ORM with SQLite (dev) / PostgreSQL (prod)
+- **Database**: Prisma ORM with SQLite (dev) / MSSQL (prod)
 - **Authentication**: NextAuth.js
 - **Styling**: Tailwind CSS + Radix UI
 - **AI Integration**: Multiple providers via AI SDK
@@ -312,6 +308,7 @@ pnpm db:migrate
 - Bug Reports
 - User Customization
 - Image Gen / Analysis
+- Production Deployment / postGres
 - Refactor x1000
 - Tweaks
 - Extra Credit: Voice 2 Voice over websockets.

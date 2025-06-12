@@ -271,7 +271,7 @@ async function callProviderStreaming(
 
           // Append new chunk to buffer
           buffer += decoder.decode(value, { stream: true });
-          
+
           // Process complete lines
           const lines = buffer.split("\n");
           // Keep the last potentially incomplete line in buffer
@@ -321,7 +321,10 @@ async function callProviderStreaming(
               } catch (e) {
                 // Only log JSON parsing errors for debugging, but continue processing
                 if (process.env.NODE_ENV === "development") {
-                  console.debug(`⚠️ ${providerName} JSON parse error (likely incomplete chunk):`, (e as Error).message);
+                  console.debug(
+                    `⚠️ ${providerName} JSON parse error (likely incomplete chunk):`,
+                    (e as Error).message
+                  );
                 }
                 // Skip invalid JSON chunks - normal in streaming
                 continue;
@@ -363,11 +366,14 @@ async function callProviderStreaming(
                     );
                   }
                 }
-                             } catch (e) {
-                 // Final chunk might be incomplete, ignore parsing errors
-                 if (process.env.NODE_ENV === "development") {
-                   console.debug(`⚠️ ${providerName} final chunk parse error:`, (e as Error).message);
-                 }
+              } catch (e) {
+                // Final chunk might be incomplete, ignore parsing errors
+                if (process.env.NODE_ENV === "development") {
+                  console.debug(
+                    `⚠️ ${providerName} final chunk parse error:`,
+                    (e as Error).message
+                  );
+                }
               }
             }
           }
@@ -650,9 +656,12 @@ export async function generateTitle(
       title = await callGoogleNonStreaming(titlePrompt, titleModelId, apiKey);
     } else {
       // Use generic provider non-streaming for all other providers
-      const config = PROVIDER_CONFIGS[actualProvider.toLowerCase()] || PROVIDER_CONFIGS.openrouter;
-      const providerName = actualProvider.charAt(0).toUpperCase() + actualProvider.slice(1);
-      
+      const config =
+        PROVIDER_CONFIGS[actualProvider.toLowerCase()] ||
+        PROVIDER_CONFIGS.openrouter;
+      const providerName =
+        actualProvider.charAt(0).toUpperCase() + actualProvider.slice(1);
+
       title = await callProviderNonStreaming(
         titlePrompt,
         titleModelId,
