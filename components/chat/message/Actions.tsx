@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext, useState, useMemo } from "react";
-import { CopyIcon, GitBranch, RefreshCcw, ChevronRight } from "lucide-react";
+import { CopyIcon, GitBranch, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { branchConversation, createRetryConversation } from "@/data/convo";
@@ -267,10 +267,9 @@ export function MessageActions({
               <DropdownMenuSub key={provider}>
                 <DropdownMenuSubTrigger className="flex items-center gap-2 px-3 py-2">
                   <div className="flex items-center gap-4 pr-8">
-                    {getProviderIcon(provider, "size-4 text-color-heading")}
+                    {getProviderIcon(provider, "size-6 text-color-heading")}
                     {displayName}
                   </div>
-                  <ChevronRight className="ml-auto size-4" />
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent className="min-w-[16rem] max-h-60 overflow-y-auto">
                   {models.map((modelData) => (
@@ -287,13 +286,8 @@ export function MessageActions({
                       className="flex flex-col items-start gap-1 p-3 cursor-default"
                     >
                       <div className="flex w-full items-center justify-between">
-                        <div className="flex items-center gap-2 pr-2 font-medium text-muted-foreground transition-colors">
-                          {getProviderIcon(
-                            provider,
-                            "size-4 text-color-heading"
-                          )}
-                          <span className="w-fit">{modelData.name}</span>
-                        </div>
+                        {getProviderIcon(provider, "text-color-heading")}
+                        <span className="w-fit">{modelData.name}</span>
                       </div>
                     </DropdownMenuItem>
                   ))}
