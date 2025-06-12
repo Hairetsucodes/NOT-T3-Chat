@@ -21,17 +21,27 @@ export const branchConversation = async (
     throw new Error("Conversation not found");
   }
 
+  // Get all conversation IDs that should be included in the new branch
+  let branchedIds: string[];
+
+  if (conversation.branchedIds) {
+    // This conversation already has a branch chain, include all of them plus this one
+    const existingIds = JSON.parse(conversation.branchedIds);
+    branchedIds = [...existingIds, conversationId];
+  } else {
+    // This is the original conversation, just include this one
+    branchedIds = [conversationId];
+  }
+
   const branchedConversation = await prisma.conversation.create({
     data: {
       userId,
       title: conversation.title,
       branchedFromConvoId: conversationId,
+      branchedIds: JSON.stringify(branchedIds),
     },
   });
 
-  if (!conversation) {
-    throw new Error("Conversation not found");
-  }
   console.log("branchedConversation", branchedConversation);
   return branchedConversation;
 };

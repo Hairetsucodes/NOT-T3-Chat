@@ -85,6 +85,7 @@ model Conversation {
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
   branchedFromConvoId   String?
+  branchedIds           String?        // JSON array of all conversation IDs in the branch chain
   user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   branchedFromConvo     Conversation?  @relation("ConversationBranch", fields: [branchedFromConvoId], references: [id])
   branchedConversations Conversation[] @relation("ConversationBranch")
