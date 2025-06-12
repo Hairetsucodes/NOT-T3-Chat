@@ -3,6 +3,7 @@ import { useContext, useEffect, useRef } from "react";
 import { Message } from "@/types/chat";
 import { ChatContext } from "@/context/ChatContext";
 import { useSearchParams } from "next/navigation";
+import { ChatSettings } from "@prisma/client";
 
 interface ChatWrapperProps {
   initialMessages: Message[];
@@ -23,9 +24,9 @@ export function ChatWrapper({
     setMessages,
     setConversationId,
     sendMessage,
-    setSelectedModel,
+    setChatSettings,
     messages,
-    selectedModel,
+    chatSettings,
   } = useContext(ChatContext);
 
   const searchParams = useSearchParams();
@@ -56,7 +57,11 @@ export function ChatWrapper({
 
     // Update selected model/provider when provided in query
     if (retryModel && retryProvider) {
-      setSelectedModel({ model: retryModel, provider: retryProvider });
+      setChatSettings({
+        ...chatSettings,
+        model: retryModel,
+        provider: retryProvider,
+      } as ChatSettings);
     }
 
     const userMessage: Message = {
@@ -68,8 +73,8 @@ export function ChatWrapper({
     // Fire off the retry request
     sendMessage(userMessage, {
       conversationId: initialConversationId,
-      selectedModel: initialModel || selectedModel.model,
-      provider: initialProvider || selectedModel.provider,
+      selectedModel: initialModel || chatSettings?.model,
+      provider: initialProvider || chatSettings?.provider,
     });
 
     hasRetriedRef.current = true;
@@ -77,9 +82,9 @@ export function ChatWrapper({
     searchParams,
     messages,
     sendMessage,
-    setSelectedModel,
+    setChatSettings,
     initialConversationId,
-    selectedModel,
+    chatSettings,
     initialMessages,
     initialProvider,
     initialModel,

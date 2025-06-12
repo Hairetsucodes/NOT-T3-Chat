@@ -3,6 +3,7 @@ import {
   Conversation,
   PreferredModel,
   UserCustomization,
+  ChatSettings,
 } from "@prisma/client";
 import { createContext, useState, useCallback, useRef } from "react";
 import { UnifiedModel } from "@/data/models";
@@ -33,6 +34,8 @@ interface ChatContextType {
   removeLoadingConversation: (id: string) => void;
   activeUser: ChatUser;
   userSettings: UserCustomization | null;
+  chatSettings: ChatSettings | null;
+  setChatSettings: (settings: ChatSettings) => void;
   setUserSettings: (settings: UserCustomization) => void;
   activeProviders: {
     id: string;
@@ -49,10 +52,6 @@ interface ChatContextType {
   preferredModels: PreferredModel[];
   setPreferredModels: (models: PreferredModel[]) => void;
   refreshPreferredModels: () => Promise<void>;
-  selectedModel: {
-    [key: string]: string;
-  };
-  setSelectedModel: (model: { [key: string]: string }) => void;
   messages: Message[];
   setMessages: (messages: Message[]) => void;
   input: string;
@@ -86,6 +85,8 @@ export const ChatContext = createContext<ChatContextType>({
   removeLoadingConversation: () => {},
   activeUser: null,
   userSettings: null,
+  chatSettings: null,
+  setChatSettings: () => {},
   setUserSettings: () => {},
   activeProviders: [],
   setActiveProviders: () => {},
@@ -94,8 +95,6 @@ export const ChatContext = createContext<ChatContextType>({
   preferredModels: [],
   setPreferredModels: () => {},
   refreshPreferredModels: async () => {},
-  selectedModel: {},
-  setSelectedModel: () => {},
   messages: [],
   setMessages: () => {},
   input: "",
@@ -121,6 +120,7 @@ export const ChatProvider = ({
   initialMessages,
   initialConversationId,
   initialUserSettings,
+  initialChatSettings,
   children,
 }: {
   activeUser: ChatUser;
@@ -135,6 +135,7 @@ export const ChatProvider = ({
   initialMessages?: Message[];
   initialConversationId?: string;
   initialUserSettings: UserCustomization | null;
+  initialChatSettings: ChatSettings | null;
   children: React.ReactNode;
 }) => {
   const [conversations, setConversations] =
@@ -148,13 +149,9 @@ export const ChatProvider = ({
       provider: string;
     }[]
   >(initialActiveProviders);
-  const [selectedModel, setSelectedModel] = useState<{
-    [key: string]: string;
-  }>({
-    model: "gpt-4o-mini",
-    provider: "openai",
-  });
-
+  const [chatSettings, setChatSettings] = useState<ChatSettings | null>(
+    initialChatSettings
+  );
   // New chat messaging state
   const [messages, setMessages] = useState<Message[]>(initialMessages || []);
   const [input, setInput] = useState("");
@@ -236,8 +233,8 @@ export const ChatProvider = ({
               conversationId: options.conversationId,
             }),
             selectedModel: {
-              provider: options?.provider || selectedModel.provider || "openai",
-              model: options?.model || selectedModel.model || "gpt-4o-mini",
+              provider: options?.provider || chatSettings?.provider || "openai",
+              model: options?.model || chatSettings?.model || "gpt-4o-mini",
             },
           }),
           signal: abortControllerRef.current.signal,
@@ -302,8 +299,8 @@ export const ChatProvider = ({
           role: "assistant",
           content: "",
           reasoning_content: "",
-          provider: options?.provider || selectedModel.provider || "openai",
-          model: options?.model || selectedModel.model || "gpt-4o-mini",
+          provider: options?.provider || chatSettings?.provider || "openai",
+          model: options?.model || chatSettings?.model || "gpt-4o-mini",
         };
 
         setMessages([...newMessages, assistantMessage]);
@@ -382,7 +379,7 @@ export const ChatProvider = ({
       messages,
       conversationId,
       conversationTitle,
-      selectedModel,
+      chatSettings,
       addConversation,
       updateConversation,
       removeLoadingConversation,
@@ -492,6 +489,8 @@ export const ChatProvider = ({
         removeLoadingConversation,
         activeUser,
         userSettings,
+        chatSettings,
+        setChatSettings,
         setUserSettings,
         activeProviders,
         setActiveProviders,
@@ -500,8 +499,6 @@ export const ChatProvider = ({
         preferredModels,
         setPreferredModels,
         refreshPreferredModels,
-        selectedModel,
-        setSelectedModel,
         messages,
         setMessages,
         input,

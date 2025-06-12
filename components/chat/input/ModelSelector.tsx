@@ -13,6 +13,8 @@ import { ModelCard } from "./ModelCard";
 import { ModelListItem } from "./ModelListItem";
 import { ChatContext } from "@/context/ChatContext";
 import { getProviderIcon } from "@/components/ui/provider-images";
+import { ChatSettings } from "@prisma/client";
+import { updateChatSettings } from "@/data/settings";
 
 // Helper function to detect if model is pro/premium
 const isProModel = (name: string, pricing: unknown): boolean => {
@@ -56,8 +58,9 @@ export default function ModelSelector() {
   const {
     preferredModels,
     availableModels: dbModels,
-    selectedModel,
-    setSelectedModel,
+    chatSettings,
+    setChatSettings,
+    activeUser,
   } = useContext(ChatContext);
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -128,23 +131,24 @@ export default function ModelSelector() {
 
   // Memoize selected model data
   const selectedModelData = useMemo(
-    () => availableModels.find((model) => model.id === selectedModel.model),
-    [availableModels, selectedModel]
+    () => availableModels.find((model) => model.id === chatSettings?.model),
+    [availableModels, chatSettings]
   );
 
   // Ensure selected model is available, otherwise select first available
   useEffect(() => {
     if (
       enabledModels.length > 0 &&
-      !enabledModels.find((model) => model.id === selectedModel.model)
+      !enabledModels.find((model) => model.id === chatSettings?.model)
     ) {
       const firstModel = enabledModels[0];
-      setSelectedModel({
+      setChatSettings({
+        ...chatSettings,
         model: firstModel.id,
         provider: firstModel.provider,
-      });
+      } as ChatSettings);
     }
-  }, [enabledModels, selectedModel, setSelectedModel]);
+  }, [enabledModels, chatSettings, setChatSettings]);
 
   // Memoize handlers
   const handleModelSelect = useCallback(
@@ -152,21 +156,23 @@ export default function ModelSelector() {
       const selectedModelData = availableModels.find(
         (model) => model.id === modelId
       );
-      if (selectedModelData) {
-        // If model has a "/" in it, it's an OpenRouter model regardless of stored provider
-        const actualProvider = modelId.includes("/")
-          ? "openrouter"
-          : selectedModelData.provider;
-
-        setSelectedModel({
+      if (selectedModelData && activeUser) {
+        setChatSettings({
+          ...chatSettings,
           model: modelId,
-          provider: actualProvider,
-        });
+          provider: selectedModelData.provider,
+        } as ChatSettings);
+        setChatSettings({
+          ...chatSettings,
+          model: modelId,
+          provider: selectedModelData.provider,
+        } as ChatSettings);
+        updateChatSettings(activeUser.id, modelId, selectedModelData.provider);
       }
       setIsOpen(false);
       setSearchQuery("");
     },
-    [availableModels, setSelectedModel]
+    [availableModels, setChatSettings, chatSettings, activeUser]
   );
 
   const toggleShowAll = useCallback(() => {
@@ -256,7 +262,7 @@ export default function ModelSelector() {
                   <ModelCard
                     key={model.id}
                     model={model}
-                    isSelected={selectedModel.model === model.id}
+                    isSelected={chatSettings?.model === model.id}
                     onSelect={handleModelSelect}
                   />
                 ))}
@@ -271,7 +277,7 @@ export default function ModelSelector() {
                       <ModelCard
                         key={model.id}
                         model={model}
-                        isSelected={selectedModel.model === model.id}
+                        isSelected={chatSettings?.model === model.id}
                         onSelect={handleModelSelect}
                       />
                     ))}

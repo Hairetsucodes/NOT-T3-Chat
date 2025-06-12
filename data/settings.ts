@@ -308,3 +308,32 @@ export const getChatSettings = async (userId: string) => {
 
   return chatSettings;
 };
+
+export async function updateChatSettings(
+  userId: string,
+  model: string,
+  provider: string
+) {
+  const { success } = await checkUser({ userId });
+  if (!success) {
+    throw new Error("Unauthorized");
+  }
+  try {
+    const existingSettings = await prisma.chatSettings.findFirst({
+      where: { userId },
+    });
+    if (existingSettings) {
+      return await prisma.chatSettings.update({
+        where: { id: existingSettings.id },
+        data: { model, provider, updatedAt: new Date() },
+      });
+    } else {
+      return await prisma.chatSettings.create({
+        data: { userId, model, provider },
+      });
+    }
+  } catch (error) {
+    console.error("Error updating chat settings:", error);
+    throw error;
+  }
+}

@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MessageActionsProps } from "@/types/chat";
 import { getProviderIcon } from "@/components/ui/provider-images";
+import { updateChatSettings } from "@/data/settings";
+import { ChatSettings } from "@prisma/client";
 
 // Provider display names and order
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
@@ -64,8 +66,8 @@ export function MessageActions({
     availableModels,
     setMessages,
     setConversationId,
-    selectedModel,
-    setSelectedModel,
+    chatSettings,
+    setChatSettings,
   } = useContext(ChatContext);
 
   // Group models by provider
@@ -134,10 +136,11 @@ export function MessageActions({
       return;
     }
     if (selectedRetryModel || selectedRetryProvider) {
-      setSelectedModel({
+      setChatSettings({
+        ...chatSettings,
         model: newModelId || message.model || "",
         provider: newProvider || message.provider || "",
-      });
+      } as ChatSettings);
     }
     try {
       // Create new conversations
@@ -155,8 +158,8 @@ export function MessageActions({
       setConversationId(newConversation.id);
 
       // Determine model and provider to use (fallback to currently selected)
-      const modelToUse = newModelId || selectedModel.model;
-      const providerToUse = newProvider || selectedModel.provider;
+      const modelToUse = newModelId || chatSettings?.model;
+      const providerToUse = newProvider || chatSettings?.provider;
       console.log("modelToUse", modelToUse);
       console.log("providerToUse", providerToUse);
       console.log("selectedRetryModel", selectedRetryModel);
@@ -273,9 +276,14 @@ export function MessageActions({
                   {models.map((modelData) => (
                     <DropdownMenuItem
                       key={modelData.modelId}
-                      onClick={() =>
-                        handleRetry(modelData.modelId, modelData.provider)
-                      }
+                      onClick={() => {
+                        updateChatSettings(
+                          userId,
+                          modelData.modelId,
+                          modelData.provider
+                        );
+                        handleRetry(modelData.modelId, modelData.provider);
+                      }}
                       className="flex flex-col items-start gap-1 p-3 cursor-default"
                     >
                       <div className="flex w-full items-center justify-between">

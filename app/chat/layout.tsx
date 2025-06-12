@@ -6,7 +6,7 @@ import { getUserById } from "@/data/user";
 import { getProviders } from "@/data/apikeys";
 import { getAvailableModels, getPreferredModels } from "@/data/models";
 import { UnifiedModel } from "@/data/models";
-import { getUserSettings } from "@/data/settings";
+import { getChatSettings, getUserSettings } from "@/data/settings";
 
 export default async function ChatLayout({
   children,
@@ -25,6 +25,7 @@ export default async function ChatLayout({
   }
   const conversations = await getConversations(user.user.id);
   const providers = await getProviders(user.user.id);
+  const chatSettings = await getChatSettings(user.user.id);
   const userSettings = await getUserSettings(user.user.id);
   let models: UnifiedModel[] = [];
   if (providers.length > 0) {
@@ -42,6 +43,9 @@ export default async function ChatLayout({
       currentProvider={providers[0]?.provider || null}
       availableModels={models}
       preferredModels={preferredModels}
+      initialChatSettings={
+        chatSettings && "error" in chatSettings ? null : chatSettings
+      }
     >
       <div className="">{children}</div>
     </ChatProvider>
