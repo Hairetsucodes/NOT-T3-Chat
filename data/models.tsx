@@ -65,7 +65,7 @@ export async function getAvailableModels(): Promise<UnifiedModel[]> {
       id: model.id,
       modelId: model.modelId,
       name: model.name,
-      provider: model.provider,
+      provider: "openrouter",
       description: model.description,
       contextLength: model.contextLength,
       pricing: model.pricing,

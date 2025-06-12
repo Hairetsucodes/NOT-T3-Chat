@@ -40,6 +40,14 @@ function mapToTitleModel(modelId: string, provider: string): string {
           return "deepseek-chat";
         }
         break;
+      case "google":
+        // Map premium/experimental Google models to free alternatives
+        if (modelId.includes("2.5") || modelId.includes("preview") || modelId.includes("exp")) {
+          return "gemini-1.5-flash"; // Fast, free Google model
+        } else if (modelId.includes("pro") && !modelId.includes("1.0")) {
+          return "gemini-1.0-pro"; // Free pro model
+        }
+        break;
     }
   }
 
