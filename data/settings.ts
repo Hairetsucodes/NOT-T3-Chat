@@ -3,6 +3,7 @@
 import { checkUser } from "@/lib/auth/check";
 import { prisma } from "@/prisma";
 import { UserCustomization } from "@prisma/client";
+import { generateAndApplyPersonalizedPrompt } from "@/ai/utils/prompt-generation";
 
 export const getUserSettings = async (userId: string) => {
   const { success } = await checkUser({ userId });
@@ -111,6 +112,34 @@ export const updateUserSettings = async (
       });
     }
 
+    // Check if prompt-relevant fields were updated
+    const promptRelevantFields = [
+      "displayName",
+      "userRole",
+      "userTraits",
+      "additionalContext",
+    ];
+    const hasPromptRelevantChanges = promptRelevantFields.some(
+      (field) => settings[field as keyof UserCustomization] !== undefined
+    );
+
+    // If prompt-relevant fields were updated and user has any customization data, generate new prompt
+    if (hasPromptRelevantChanges) {
+      const hasAnyCustomization =
+        updatedSettings.displayName ||
+        updatedSettings.userRole ||
+        updatedSettings.userTraits ||
+        updatedSettings.additionalContext;
+
+      if (hasAnyCustomization) {
+        // Generate personalized prompt in the background
+        // Don't await this to avoid blocking the settings update
+        generatePersonalizedPromptBackground(userId).catch((error) => {
+          console.error("Background prompt generation failed:", error);
+        });
+      }
+    }
+
     return updatedSettings;
   } catch (error) {
     console.error("Error updating user settings:", error);
@@ -121,6 +150,68 @@ export const updateUserSettings = async (
     return { error: "Failed to update settings" };
   }
 };
+
+// Background function to generate personalized prompt
+async function generatePersonalizedPromptBackground(userId: string) {
+  try {
+    let provider = "openai";
+    let model = "gpt-4o-mini";
+
+    // Try to get user's preferred model/provider, but handle schema mismatch gracefully
+    try {
+      const userChatSettings = await prisma.chatSettings.findFirst({
+        where: { userId },
+        select: {
+          provider: true,
+          model: true,
+        },
+        orderBy: { updatedAt: "desc" },
+      });
+
+      if (userChatSettings) {
+        provider = userChatSettings.provider;
+        model = userChatSettings.model;
+      }
+    } catch (schemaError) {
+      console.log(
+        `Using default provider/model due to schema mismatch for user ${userId}:`,
+        schemaError instanceof Error ? schemaError.message : "Unknown error"
+      );
+    }
+
+    // Get API key for the provider
+    const apiKeyRecord = await prisma.apiKey.findFirst({
+      where: { userId, provider },
+    });
+
+    if (!apiKeyRecord) {
+      console.log(
+        `No API key found for provider ${provider}, skipping prompt generation for user ${userId}`
+      );
+      return;
+    }
+
+    // Generate and apply the personalized prompt
+    const promptId = await generateAndApplyPersonalizedPrompt(
+      userId,
+      provider,
+      model,
+      apiKeyRecord.key
+    );
+
+    if (promptId) {
+      console.log(
+        `✅ Successfully generated personalized prompt ${promptId} for user ${userId}`
+      );
+    } else {
+      console.log(
+        `❌ Failed to generate personalized prompt for user ${userId}`
+      );
+    }
+  } catch (error) {
+    console.error("Error in background prompt generation:", error);
+  }
+}
 
 export const deleteUserSettings = async (userId: string) => {
   const { success } = await checkUser({ userId });
@@ -190,4 +281,30 @@ export const resetUserSettings = async (userId: string) => {
     }
     return { error: "Failed to reset settings" };
   }
+};
+
+export const getPrompt = async (promptId: string, userId: string) => {
+  const { success } = await checkUser({ userId });
+  if (!success) {
+    return { error: "Unauthorized" };
+  }
+
+  const prompt = await prisma.prompt.findFirst({
+    where: { id: promptId, userId },
+  });
+
+  return prompt;
+};
+
+export const getChatSettings = async (userId: string) => {
+  const { success } = await checkUser({ userId });
+  if (!success) {
+    return { error: "Unauthorized" };
+  }
+
+  const chatSettings = await prisma.chatSettings.findFirst({
+    where: { userId },
+  });
+
+  return chatSettings;
 };

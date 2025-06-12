@@ -39,7 +39,7 @@ export interface ProviderConfig {
   endpoint: string;
   headers: (apiKey: string) => Record<string, string>;
   transformMessages?: (messages: Message[]) => unknown;
-  transformBody?: (messages: unknown, modelId: string) => unknown;
+  transformBody?: (messages: unknown, modelId: string, maxTokens?: number) => unknown;
   parseStreamContent?: (
     parsed: unknown
   ) => { content?: string; reasoning?: string } | null;

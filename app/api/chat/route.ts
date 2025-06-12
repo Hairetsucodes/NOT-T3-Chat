@@ -3,6 +3,8 @@ import { getAPIKeys } from "@/data/apikeys";
 import { createMessage } from "@/data/messages";
 import { handleLLMRequestStreaming, generateTitle } from "@/ai/index";
 import { ChatRequestSchema } from "@/schemas/chatEndpoint";
+import { getPrompt, getChatSettings } from "@/data/settings";
+import { getModelById } from "@/data/models";
 
 export const maxDuration = 30;
 
@@ -37,7 +39,6 @@ export async function POST(req: Request) {
   }
 
   const { messages, conversationId, selectedModel } = validationResult.data;
-  console.log(selectedModel);
 
   const session = await auth();
 
@@ -49,7 +50,11 @@ export async function POST(req: Request) {
 
   try {
     const apiKeys = await getAPIKeys(userId);
-
+    const settings = await getChatSettings(userId);
+    const prompt =
+      !settings || "error" in settings || !settings.promptId
+        ? null
+        : await getPrompt(settings.promptId, userId);
     // Determine provider from selectedModel or default to openai
     let provider = selectedModel?.provider || "openai";
     const modelId = selectedModel?.model || "gpt-4o-mini";
@@ -147,13 +152,19 @@ export async function POST(req: Request) {
       }
     }
 
+    // Get model information to determine max tokens
+    const modelInfo = await getModelById(modelId);
+    const maxTokens = modelInfo?.maxOutput || undefined;
+
     // Get streaming response from handleLLMRequestStreaming
     const stream = await handleLLMRequestStreaming(
       messages,
       provider,
       modelId,
       providerKey.key,
-      new AbortController().signal
+      (prompt && "prompt" in prompt ? prompt.prompt : "") || "",
+      new AbortController().signal,
+      maxTokens
     );
 
     // Wrap the stream to accumulate content and save to database when complete

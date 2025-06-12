@@ -1,12 +1,12 @@
-import { Message } from '@/types/chat';
+import { Message } from "@/types/chat";
 
 /**
  * Transform messages for OpenAI-compatible providers
  */
 export function transformOpenAIMessages(messages: Message[]) {
-  return messages.map((msg) => ({ 
-    role: msg.role, 
-    content: msg.content 
+  return messages.map((msg) => ({
+    role: msg.role,
+    content: msg.content,
   }));
 }
 
@@ -16,7 +16,7 @@ export function transformOpenAIMessages(messages: Message[]) {
 export function transformAnthropicMessages(messages: Message[]) {
   const systemMessage = messages.find((m) => m.role === "system");
   const conversationMessages = messages.filter((m) => m.role !== "system");
-  
+
   return {
     system: systemMessage?.content || "You are a helpful assistant.",
     messages: conversationMessages.map((msg) => ({
@@ -54,28 +54,38 @@ export function transformGoogleMessages(messages: Message[]): string {
  * Create request body for OpenAI-compatible providers
  */
 export function createOpenAIBody(messages: unknown, modelId: string) {
-  return {
+  const body: {
+    model: string;
+    messages: unknown;
+    temperature?: number;
+    stream?: boolean;
+    max_tokens?: number;
+  } = {
     model: modelId,
     messages,
     temperature: 0.7,
-    max_tokens: 4000,
     stream: true,
   };
+
+  return body;
 }
 
 /**
  * Create request body for Anthropic
  */
-export function createAnthropicBody(messages: unknown, modelId: string) {
+export function createAnthropicBody(
+  messages: unknown,
+  modelId: string,
+  maxTokens?: number
+) {
   const { system, messages: msgs } = messages as {
     system: string;
     messages: unknown;
   };
-  
   return {
     model: modelId,
-    max_tokens: 4000,
     system,
+    max_tokens: maxTokens || 4000,
     messages: msgs,
     stream: true,
   };
@@ -84,7 +94,11 @@ export function createAnthropicBody(messages: unknown, modelId: string) {
 /**
  * Create request body for Google Gemini
  */
-export function createGoogleBody(prompt: string, modelId: string, isThinking = false) {
+export function createGoogleBody(
+  prompt: string,
+  modelId: string,
+  isThinking = false
+) {
   const requestConfig: {
     model: string;
     contents: string;
@@ -108,4 +122,4 @@ export function createGoogleBody(prompt: string, modelId: string, isThinking = f
   }
 
   return requestConfig;
-} 
+}

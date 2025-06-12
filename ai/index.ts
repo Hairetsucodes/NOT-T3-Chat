@@ -4,7 +4,11 @@ import {
   getProviderName,
   callGoogleStreaming,
 } from "./providers";
-import { createProviderStream, ensureSystemMessage } from "./utils/streaming";
+import {
+  createProviderStream,
+  ensureCustomSystemMessage,
+  ensureSystemMessage,
+} from "./utils/streaming";
 import { generateTitle } from "./utils/title-generation";
 
 /**
@@ -15,10 +19,14 @@ export async function handleLLMRequestStreaming(
   provider: string,
   modelId: string,
   apiKey: string,
-  signal?: AbortSignal
+  prompt: string,
+  signal?: AbortSignal,
+  maxTokens?: number
 ): Promise<ReadableStream> {
-  // Add system message if not present
-  const messagesWithSystem = ensureSystemMessage(messages);
+  // Use custom prompt or ensure system message
+  const messagesWithSystem = prompt
+    ? ensureCustomSystemMessage(messages, prompt)
+    : ensureSystemMessage(messages);
 
   // Handle Google separately due to different SDK
   if (provider.toLowerCase() === "google") {
@@ -40,7 +48,9 @@ export async function handleLLMRequestStreaming(
     apiKey,
     config,
     providerName,
-    signal
+    undefined, // Don't pass prompt again since we already processed it in messagesWithSystem
+    signal,
+    maxTokens
   );
 }
 
