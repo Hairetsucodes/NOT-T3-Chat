@@ -84,3 +84,28 @@ export const createRetryConversation = async (
 
   return retryConversation;
 };
+
+export const pinConversation = async (
+  userId: string,
+  conversationId: string
+) => {
+  const user = await checkUser({ userId });
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  const conversation = await prisma.conversation.findUnique({
+    where: {
+      id: conversationId,
+    },
+  });
+
+  if (!conversation) {
+    throw new Error("Conversation not found");
+  }
+
+  await prisma.conversation.update({
+    where: { id: conversationId },
+    data: { isPinned: !conversation.isPinned },
+  });
+};

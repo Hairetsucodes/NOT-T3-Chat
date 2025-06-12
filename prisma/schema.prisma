@@ -82,10 +82,11 @@ model Conversation {
   id                    String         @id @default(cuid())
   userId                String
   title                 String
+  isPinned              Boolean        @default(false)
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
   branchedFromConvoId   String?
-  branchedIds           String?        // JSON array of all conversation IDs in the branch chain
+  branchedIds           String? // JSON array of all conversation IDs in the branch chain
   user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   branchedFromConvo     Conversation?  @relation("ConversationBranch", fields: [branchedFromConvoId], references: [id])
   branchedConversations Conversation[] @relation("ConversationBranch")
