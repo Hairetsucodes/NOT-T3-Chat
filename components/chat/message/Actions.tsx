@@ -157,21 +157,13 @@ export function MessageActions({
       setMessages([]);
       setConversationId(newConversation.id);
 
-      // Determine model and provider to use (fallback to currently selected)
-      const modelToUse = newModelId || chatSettings?.model;
-      const providerToUse = newProvider || chatSettings?.provider;
-      console.log("modelToUse", modelToUse);
-      console.log("providerToUse", providerToUse);
-      console.log("selectedRetryModel", selectedRetryModel);
-      console.log("selectedRetryProvider", selectedRetryProvider);
       const retryParams = new URLSearchParams({
         retry: "true",
-        message: inputMessage,
+        message: inputMessage,  
         ...(newModelId && { model: newModelId }),
         ...(newProvider && { provider: newProvider }),
       });
-
-      router.replace(`/chat/${newConversation.id}?${retryParams.toString()}`);
+      router.push(`/chat/${newConversation.id}?${retryParams.toString()}`);
     } catch (error) {
       console.error("Error during retry:", error);
       toast.error("Failed to retry message");

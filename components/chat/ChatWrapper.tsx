@@ -33,8 +33,6 @@ export function ChatWrapper({
   const hasRetriedRef = useRef(false);
 
   useEffect(() => {
-    // Always load conversation data when initialConversationId changes
-    // This ensures conversations load when navigating between them
     setMessages(initialMessages);
     setConversationId(initialConversationId);
   }, [initialConversationId, initialMessages, setMessages, setConversationId]);
@@ -42,8 +40,7 @@ export function ChatWrapper({
   useEffect(() => {
     const retryModel = searchParams.get("model");
     const retryProvider = searchParams.get("provider");
-    console.log("retryModel", retryModel);
-    console.log("retryProvider", retryProvider);
+
     if (initialMessages.length > 0) return;
     if (hasRetriedRef.current) return;
 
