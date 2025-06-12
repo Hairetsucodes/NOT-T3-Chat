@@ -1,17 +1,13 @@
 "use client";
 
-import { useContext, useState, useMemo, useEffect } from "react";
+import { useContext, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatContext } from "@/context/ChatContext";
 import { useSession } from "next-auth/react";
-import {
-  addPreferredModel,
-  removePreferredModel,
-  getUserPreferredModels,
-} from "@/data/models";
+import { addPreferredModel, removePreferredModel } from "@/data/models";
 import {
   Search,
   Filter,
@@ -28,6 +24,15 @@ import {
   Loader2,
 } from "lucide-react";
 import {
+  getProviderIcon,
+  GeminiIcon,
+  OpenAIIcon,
+  AnthropicIcon,
+  GrokIcon,
+  DeepSeekIcon,
+  OpenRouterIcon,
+} from "@/components/ui/provider-images";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
@@ -40,47 +45,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-// Provider icons mapping
-const getProviderIcon = (provider: string) => {
-  switch (provider) {
-    case "google":
-      return (
-        <svg
-          className="h-full w-full"
-          viewBox="0 0 16 16"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="currentColor"
-        >
-          <path d="M16 8.016A8.16 8.16 0 0 0 8.016 0C3.576 0 0 3.58 0 8.016c0 4.436 3.576 8.016 8.016 8.016s8.016-3.58 8.016-8.016zm-1.672 4.636c-1.016 1.816-2.908 3.068-5.092 3.248V8.016h4.936c.032.544-.076 1.092-.276 1.604l-1.568.032z" />
-        </svg>
-      );
-    case "openai":
-      return (
-        <svg
-          className="h-full w-full"
-          viewBox="0 0 16 16"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="currentColor"
-        >
-          <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM5.78 2.438a6.518 6.518 0 0 1 4.44 0l-.89 1.422a4.35 4.35 0 0 0-2.66 0l-.89-1.422Zm4.44 11.124a6.518 6.518 0 0 1-4.44 0l.89-1.422a4.35 4.35 0 0 0 2.66 0l.89 1.422Z" />
-        </svg>
-      );
-    case "anthropic":
-      return (
-        <svg
-          className="h-full w-full"
-          viewBox="0 0 16 16"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="currentColor"
-        >
-          <path d="M8 0L5.5 4.5h5L8 0zM3 16l2.5-6h5L13 16H3z" />
-        </svg>
-      );
-    default:
-      return <Globe className="h-full w-full" />;
-  }
-};
 
 // Capability mapping
 const getCapabilities = (
@@ -194,33 +158,6 @@ export default function Models() {
   const [selectedFilters, setSelectedFilters] = useState<FilterType[]>(["all"]);
   const [displayedCount, setDisplayedCount] = useState(50);
   const [loading, setLoading] = useState(false);
-  const [loadingPreferences, setLoadingPreferences] = useState(true);
-
-  // Load user's preferred models on component mount
-  useEffect(() => {
-    const loadPreferredModels = async () => {
-      if (!session?.user?.id) {
-        setLoadingPreferences(false);
-        return;
-      }
-
-      try {
-        const result = await getUserPreferredModels(session.user.id);
-        if (result && !("error" in result)) {
-          const preferredModelIds = new Set(
-            result.map((model: { model: string }) => model.model)
-          );
-          setEnabledModels(preferredModelIds);
-        }
-      } catch (error) {
-        console.error("Failed to load preferred models:", error);
-      } finally {
-        setLoadingPreferences(false);
-      }
-    };
-
-    loadPreferredModels();
-  }, [session?.user?.id]);
 
   const filteredModels = useMemo(() => {
     if (!availableModels) return [];
@@ -404,21 +341,6 @@ export default function Models() {
     return length.toString();
   };
 
-  if (loadingPreferences) {
-    return (
-      <Card className="relative z-10 h-full flex flex-col bg-gradient-chat-overlay border-chat-border/50 backdrop-blur-sm">
-        <CardContent className="flex-1 flex items-center justify-center">
-          <div className="flex items-center gap-3">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span className="text-foreground/80 font-medium">
-              Loading models...
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   if (!availableModels || availableModels.length === 0) {
     return (
       <div className="flex h-full flex-col space-y-6">
@@ -556,7 +478,7 @@ export default function Models() {
                   checked={selectedFilters.includes("openrouter")}
                   onCheckedChange={() => toggleFilter("openrouter")}
                 >
-                  <Globe className="mr-2 h-4 w-4" />
+                  <OpenRouterIcon className="mr-2 h-4 w-4" />
                   OpenRouter
                 </DropdownMenuCheckboxItem>
                 <div className="border-t my-1" />
@@ -565,14 +487,7 @@ export default function Models() {
                   onCheckedChange={() => toggleFilter("openai")}
                 >
                   <div className="mr-2 h-4 w-4">
-                    <svg
-                      className="h-full w-full"
-                      viewBox="0 0 16 16"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="currentColor"
-                    >
-                      <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM5.78 2.438a6.518 6.518 0 0 1 4.44 0l-.89 1.422a4.35 4.35 0 0 0-2.66 0l-.89-1.422Zm4.44 11.124a6.518 6.518 0 0 1-4.44 0l.89-1.422a4.35 4.35 0 0 0 2.66 0l.89 1.422Z" />
-                    </svg>
+                    <OpenAIIcon className="h-4 w-4" />
                   </div>
                   OpenAI
                 </DropdownMenuCheckboxItem>
@@ -581,14 +496,7 @@ export default function Models() {
                   onCheckedChange={() => toggleFilter("google")}
                 >
                   <div className="mr-2 h-4 w-4">
-                    <svg
-                      className="h-full w-full"
-                      viewBox="0 0 16 16"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="currentColor"
-                    >
-                      <path d="M16 8.016A8.16 8.16 0 0 0 8.016 0C3.576 0 0 3.58 0 8.016c0 4.436 3.576 8.016 8.016 8.016s8.016-3.58 8.016-8.016zm-1.672 4.636c-1.016 1.816-2.908 3.068-5.092 3.248V8.016h4.936c.032.544-.076 1.092-.276 1.604l-1.568.032z" />
-                    </svg>
+                    <GeminiIcon className="h-4 w-4" />
                   </div>
                   Google
                 </DropdownMenuCheckboxItem>
@@ -597,14 +505,7 @@ export default function Models() {
                   onCheckedChange={() => toggleFilter("anthropic")}
                 >
                   <div className="mr-2 h-4 w-4">
-                    <svg
-                      className="h-full w-full"
-                      viewBox="0 0 16 16"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="currentColor"
-                    >
-                      <path d="M8 0L5.5 4.5h5L8 0zM3 16l2.5-6h5L13 16H3z" />
-                    </svg>
+                    <AnthropicIcon className="h-4 w-4" />
                   </div>
                   Anthropic
                 </DropdownMenuCheckboxItem>
@@ -613,19 +514,7 @@ export default function Models() {
                   onCheckedChange={() => toggleFilter("xai")}
                 >
                   <div className="mr-2 h-4 w-4">
-                    <svg
-                      className="h-full w-full"
-                      viewBox="0 0 16 16"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="currentColor"
-                    >
-                      <path
-                        d="M2 2l12 12M14 2L2 14"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        fill="none"
-                      />
-                    </svg>
+                    <GrokIcon className="h-4 w-4" />
                   </div>
                   xAI
                 </DropdownMenuCheckboxItem>
@@ -634,16 +523,7 @@ export default function Models() {
                   onCheckedChange={() => toggleFilter("deepseek")}
                 >
                   <div className="mr-2 h-4 w-4">
-                    <svg
-                      className="h-full w-full"
-                      viewBox="0 0 16 16"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="currentColor"
-                    >
-                      <circle cx="8" cy="4" r="2" />
-                      <circle cx="8" cy="12" r="2" />
-                      <path d="M8 6v4" stroke="currentColor" strokeWidth="2" />
-                    </svg>
+                    <DeepSeekIcon className="h-4 w-4" />
                   </div>
                   DeepSeek
                 </DropdownMenuCheckboxItem>
@@ -695,8 +575,8 @@ export default function Models() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-3">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted">
-                          {getProviderIcon(model.provider)}
+                        <div className="flex h-8 w-8 shrink-0 rounded-md">
+                          {getProviderIcon(model.provider, "h-8 w-8")}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">

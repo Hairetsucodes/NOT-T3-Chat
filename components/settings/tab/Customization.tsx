@@ -23,12 +23,7 @@ import { useState, useEffect, useContext } from "react";
 import { toast } from "sonner";
 import { Loader2, Plus, X } from "lucide-react";
 import { ChatContext } from "@/context/ChatContext";
-import {
-  getUserSettings,
-  updateUserSettings,
-  resetUserSettings,
-} from "@/data/settings";
-import { UserCustomization } from "@prisma/client";
+import { updateUserSettings, resetUserSettings } from "@/data/settings";
 
 // Background component to match AccountTab
 const CustomizationBackground = ({
@@ -76,7 +71,6 @@ export function CustomizationTab() {
 
   // Loading states
   const [isLoading, setIsLoading] = useState(false);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
 
   // Original values for change detection
@@ -92,70 +86,6 @@ export function CustomizationTab() {
     mainFont: "Inter",
     codeFont: "mono",
   });
-
-  // Load user settings on mount
-  useEffect(() => {
-    const loadSettings = async () => {
-      if (!activeUser?.id) {
-        setIsInitialLoading(false);
-        return;
-      }
-
-      try {
-        const result = await getUserSettings(activeUser.id);
-
-        if (result && "error" in result) {
-          toast.error(result.error);
-          setIsInitialLoading(false);
-          return;
-        }
-
-        const settings = result as UserCustomization;
-
-        // Convert userTraits string to array
-        const traitsArray = settings.userTraits
-          ? settings.userTraits
-              .split(",")
-              .map((t) => t.trim())
-              .filter((t) => t.length > 0)
-          : [];
-
-        // Update state
-        setName(settings.displayName || "");
-        setOccupation(settings.userRole || "");
-        setTraits(traitsArray);
-        setAdditionalInfo(settings.additionalContext || "");
-        setBoringTheme(settings.isBoringTheme || false);
-        setHidePersonalInfo(settings.hidePersonalInfo || false);
-        setDisableThematicBreaks(settings.disableThematicBreaks || false);
-        setStatsForNerds(settings.showStatsForNerds || false);
-        setMainFont(settings.mainTextFont || "Inter");
-        setCodeFont(settings.codeFont || "mono");
-
-        // Set original values for change detection
-        const originalVals = {
-          name: settings.displayName || "",
-          occupation: settings.userRole || "",
-          traits: traitsArray,
-          additionalInfo: settings.additionalContext || "",
-          boringTheme: settings.isBoringTheme || false,
-          hidePersonalInfo: settings.hidePersonalInfo || false,
-          disableThematicBreaks: settings.disableThematicBreaks || false,
-          statsForNerds: settings.showStatsForNerds || false,
-          mainFont: settings.mainTextFont || "Inter",
-          codeFont: settings.codeFont || "mono",
-        };
-        setOriginalValues(originalVals);
-      } catch (error) {
-        console.error("Failed to load settings:", error);
-        toast.error("Failed to load settings");
-      } finally {
-        setIsInitialLoading(false);
-      }
-    };
-
-    loadSettings();
-  }, [activeUser?.id]);
 
   // Track changes (only for text-based customization settings, visual options save automatically)
   useEffect(() => {
@@ -360,24 +290,6 @@ export function CustomizationTab() {
       setIsLoading(false);
     }
   };
-
-  // Loading state
-  if (isInitialLoading) {
-    return (
-      <CustomizationBackground>
-        <Card className="relative z-10 h-full flex flex-col bg-gradient-chat-overlay border-chat-border/50 backdrop-blur-sm">
-          <CardContent className="flex-1 flex items-center justify-center">
-            <div className="flex items-center gap-3">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <span className="text-foreground/80 font-medium">
-                Loading customization settings...
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      </CustomizationBackground>
-    );
-  }
 
   return (
     <CustomizationBackground>

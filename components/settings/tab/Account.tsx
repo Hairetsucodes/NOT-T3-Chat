@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { useState, useEffect, useContext } from "react";
 import { updateUser } from "@/data/user";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, User } from "lucide-react";
 import { ChatContext } from "@/context/ChatContext";
 import { signOut } from "next-auth/react";
 
@@ -96,24 +96,6 @@ export function AccountTab() {
     }
   };
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <AccountBackground>
-        <Card className="relative z-10 h-full flex flex-col bg-gradient-chat-overlay border-chat-border/50 backdrop-blur-sm">
-          <CardContent className="flex-1 flex items-center justify-center">
-            <div className="flex items-center gap-3">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <span className="text-foreground/80 font-medium">
-                Loading account settings...
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      </AccountBackground>
-    );
-  }
-
   // No user state
   if (!activeUser) {
     return (
@@ -122,19 +104,7 @@ export function AccountTab() {
           <CardContent className="flex-1 flex items-center justify-center">
             <div className="text-center space-y-3">
               <div className="w-16 h-16 mx-auto rounded-full bg-muted/50 flex items-center justify-center">
-                <svg
-                  className="w-8 h-8 text-muted-foreground"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
+                <User className="w-8 h-8 text-muted-foreground" />
               </div>
               <p className="text-muted-foreground">
                 Please sign in to manage your account settings

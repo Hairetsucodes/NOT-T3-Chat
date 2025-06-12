@@ -27,7 +27,7 @@ export default async function ChatLayout({
 
   // Only fetch models if OpenRouter is available
   let models: UnifiedModel[] = [];
-  if (providers.map((p) => p.toLowerCase()).includes("openrouter")) {
+  if (providers.map((p) => p.provider.toLowerCase()).includes("openrouter")) {
     models = await getAvailableModels();
   }
   const preferredModels = await getPreferredModels(user.user.id);
@@ -36,8 +36,8 @@ export default async function ChatLayout({
     <ChatProvider
       activeUser={userData}
       initialConversations={conversations}
-      activeProviders={providers}
-      currentProvider={providers[0] || null}
+      initialActiveProviders={providers}
+      currentProvider={providers[0]?.provider || null}
       availableModels={models}
       preferredModels={preferredModels}
     >

@@ -16,54 +16,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useContext } from "react";
 import { useSession } from "next-auth/react";
-import { createAPIKey, getAPIKeys, deleteAPIKey } from "@/data/apikeys";
+import { createAPIKey, deleteAPIKey } from "@/data/apikeys";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import ActiveProviders from "@/components/settings/ActiveProviders";
-import { ApiKey } from "@prisma/client";
+import { ChatContext } from "@/context/ChatContext";
 
 export function ApiKeysTab() {
   const { data: session, status } = useSession();
   const [selectedProvider, setSelectedProvider] = useState("");
   const [customProviderName, setCustomProviderName] = useState("");
   const [apiKey, setApiKey] = useState("");
-  const [savedKeys, setSavedKeys] = useState<ApiKey[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingKeys, setIsLoadingKeys] = useState(true);
-
-  const fetchApiKeys = useCallback(async () => {
-    if (!session?.user?.id) return;
-
-    setIsLoadingKeys(true);
-    try {
-      const keys = await getAPIKeys(session.user.id);
-      setSavedKeys(keys);
-    } catch (error) {
-      console.error("Failed to fetch API keys:", error);
-      if (error instanceof Error) {
-        if (error.message.includes("Unauthorized")) {
-          toast.error("Session expired. Please sign in again");
-        } else if (error.message.includes("Invalid user ID")) {
-          toast.error("Invalid session. Please sign in again");
-        } else {
-          toast.error("Failed to load API keys");
-        }
-      } else {
-        toast.error("Failed to load API keys");
-      }
-    } finally {
-      setIsLoadingKeys(false);
-    }
-  }, [session?.user?.id]);
-
-  // Fetch API keys when component mounts or session changes
-  useEffect(() => {
-    if (session?.user?.id) {
-      fetchApiKeys();
-    }
-  }, [session?.user?.id, fetchApiKeys]);
+  const { activeUser, activeProviders, setActiveProviders } =
+    useContext(ChatContext);
 
   const handleSaveApiKey = async () => {
     const finalProvider =
@@ -71,7 +39,7 @@ export function ApiKeysTab() {
         ? customProviderName.trim()
         : selectedProvider;
 
-    if (!selectedProvider || !apiKey.trim() || !session?.user?.id) {
+    if (!selectedProvider || !apiKey.trim() || !activeUser?.id) {
       toast.error("Please select a provider and enter an API key");
       return;
     }
@@ -83,16 +51,16 @@ export function ApiKeysTab() {
 
     setIsLoading(true);
     try {
-      await createAPIKey(session.user.id, apiKey.trim(), finalProvider);
+      await createAPIKey(activeUser.id, apiKey.trim(), finalProvider);
       toast.success("API key saved successfully");
-
+      setActiveProviders([
+        ...activeProviders,
+        { id: apiKey.trim(), provider: finalProvider },
+      ]);
       // Reset form
       setApiKey("");
       setSelectedProvider("");
       setCustomProviderName("");
-
-      // Refresh the keys list
-      await fetchApiKeys();
     } catch (error) {
       console.error("Failed to save API key:", error);
       if (error instanceof Error) {
@@ -118,7 +86,9 @@ export function ApiKeysTab() {
     try {
       await deleteAPIKey(session.user.id, keyId);
       toast.success("API key deleted successfully");
-      await fetchApiKeys();
+      setActiveProviders(
+        activeProviders.filter((provider) => provider.id !== keyId)
+      );
     } catch (error) {
       console.error("Failed to delete API key:", error);
       if (error instanceof Error) {
@@ -270,41 +240,13 @@ export function ApiKeysTab() {
           <Label htmlFor="usage-alerts">Enable usage alerts</Label>
         </div>
 
-        {/* Active Providers Section */}
-        {isLoadingKeys ? (
-          <Card className="relative z-10 h-full flex flex-col bg-gradient-chat-overlay border-chat-border/50 backdrop-blur-sm">
-            <CardContent className="flex-1 flex items-center justify-center">
-              <div className="flex items-center gap-3">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span className="text-foreground/80 font-medium">
-                  Loading active providers...
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <ActiveProviders
-            apiKeys={savedKeys.map((key) => ({
-              id: key.id,
-              key: key.key,
-              provider: key.provider,
-            }))}
-            customModels={[]}
-            ollamaModels={[]}
-            localModels={[]}
-            onDeleteApiKey={handleDeleteApiKey}
-            providerIcons={{
-              openai: <div className="w-4 h-4 bg-green-500 rounded-full" />,
-              anthropic: <div className="w-4 h-4 bg-orange-500 rounded-full" />,
-              google: <div className="w-4 h-4 bg-blue-500 rounded-full" />,
-              deepseek: <div className="w-4 h-4 bg-purple-500 rounded-full" />,
-              xai: <div className="w-4 h-4 bg-blue-600 rounded-full" />,
-              custom: <div className="w-4 h-4 bg-purple-500 rounded-full" />,
-              openrouter: <div className="w-4 h-4 bg-gray-500 rounded-full" />,
-              local: <div className="w-4 h-4 bg-red-500 rounded-full" />,
-            }}
-          />
-        )}
+        <ActiveProviders
+          apiKeys={activeProviders}
+          customModels={[]}
+          ollamaModels={[]}
+          localModels={[]}
+          onDeleteApiKey={handleDeleteApiKey}
+        />
       </CardContent>
     </Card>
   );

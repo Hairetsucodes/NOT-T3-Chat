@@ -45,14 +45,12 @@ export function HistoryTab() {
   const [retentionPeriod, setRetentionPeriod] = useState("forever");
   const [stats, setStats] = useState<HistoryStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isStatsLoading, setIsStatsLoading] = useState(true);
   const [isDangerAction, setIsDangerAction] = useState(false);
 
   // Load history stats on mount
   useEffect(() => {
     const loadStats = async () => {
       if (!activeUser?.id) {
-        setIsStatsLoading(false);
         return;
       }
 
@@ -61,7 +59,6 @@ export function HistoryTab() {
 
         if (result && "error" in result) {
           toast.error(result.error);
-          setIsStatsLoading(false);
           return;
         }
 
@@ -69,8 +66,6 @@ export function HistoryTab() {
       } catch (error) {
         console.error("Failed to load history stats:", error);
         toast.error("Failed to load history statistics");
-      } finally {
-        setIsStatsLoading(false);
       }
     };
 
@@ -280,24 +275,6 @@ export function HistoryTab() {
       setIsLoading(false);
     }
   };
-
-  // Loading state
-  if (isStatsLoading) {
-    return (
-      <HistoryBackground>
-        <Card className="relative z-10 h-full flex flex-col bg-gradient-chat-overlay border-chat-border/50 backdrop-blur-sm">
-          <CardContent className="flex-1 flex items-center justify-center">
-            <div className="flex items-center gap-3">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <span className="text-foreground/80 font-medium">
-                Loading history settings...
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      </HistoryBackground>
-    );
-  }
 
   // No user state
   if (!activeUser) {

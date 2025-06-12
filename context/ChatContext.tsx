@@ -28,7 +28,16 @@ interface ChatContextType {
   ) => void;
   removeLoadingConversation: (id: string) => void;
   activeUser: ChatUser;
-  activeProviders: string[];
+  activeProviders: {
+    id: string;
+    provider: string;
+  }[];
+  setActiveProviders: (
+    providers: {
+      id: string;
+      provider: string;
+    }[]
+  ) => void;
   currentProvider: string | null;
   availableModels: UnifiedModel[];
   preferredModels: PreferredModel[];
@@ -66,6 +75,7 @@ export const ChatContext = createContext<ChatContextType>({
   removeLoadingConversation: () => {},
   activeUser: null,
   activeProviders: [],
+  setActiveProviders: () => {},
   currentProvider: null,
   availableModels: [],
   preferredModels: [],
@@ -91,7 +101,7 @@ export const ChatContext = createContext<ChatContextType>({
 export const ChatProvider = ({
   activeUser,
   initialConversations,
-  activeProviders,
+  initialActiveProviders,
   currentProvider,
   availableModels,
   preferredModels: initialPreferredModels,
@@ -101,7 +111,10 @@ export const ChatProvider = ({
 }: {
   activeUser: ChatUser;
   initialConversations: Conversation[];
-  activeProviders: string[];
+  initialActiveProviders: {
+    id: string;
+    provider: string;
+  }[];
   currentProvider: string | null;
   availableModels: UnifiedModel[];
   preferredModels: PreferredModel[];
@@ -114,6 +127,12 @@ export const ChatProvider = ({
   const [preferredModels, setPreferredModels] = useState<PreferredModel[]>(
     initialPreferredModels
   );
+  const [activeProviders, setActiveProviders] = useState<
+    {
+      id: string;
+      provider: string;
+    }[]
+  >(initialActiveProviders);
   const [selectedModel, setSelectedModel] = useState<{
     [key: string]: string;
   }>({
@@ -442,6 +461,7 @@ export const ChatProvider = ({
         removeLoadingConversation,
         activeUser,
         activeProviders,
+        setActiveProviders,
         currentProvider,
         availableModels,
         preferredModels,

@@ -166,8 +166,9 @@ export const getProviders = async (userId: string) => {
       userId: validatedUserId,
     },
     select: {
+      id: true,
       provider: true,
     },
   });
-  return providers.map((provider) => provider.provider);
+  return providers;
 };
