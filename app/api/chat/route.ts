@@ -27,7 +27,8 @@ export async function POST(req: Request) {
     if (modelId.includes("/")) {
       provider = "openrouter";
     }
-
+    console.log(provider);
+    console.log(apiKeys);
     // Find the appropriate API key for the provider
     let providerKey = apiKeys.find((key) => key.provider === provider);
 

@@ -278,6 +278,13 @@ export async function handleLLMRequestStreaming(
       );
 
     case "xai":
+      return await callXAIStreaming(
+        messagesWithSystem,
+        modelId,
+        apiKey,
+        signal
+      );
+
     case "openrouter":
     default:
       // Route unsupported providers through OpenRouter
@@ -557,6 +564,112 @@ async function callDeepSeekStreaming(
   });
 }
 
+async function callXAIStreaming(
+  messages: Message[],
+  modelId: string,
+  apiKey: string,
+  signal?: AbortSignal
+): Promise<ReadableStream> {
+  const response = await fetch("https://api.x.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: modelId,
+      messages: messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      })),
+      temperature: 0.7,
+      max_tokens: 4000,
+      stream: true,
+    }),
+    signal,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    // Parse the error to extract useful information for the user
+    let userFriendlyError = `XAI API error: ${response.status}`;
+    
+    try {
+      const errorData = JSON.parse(errorText);
+      if (errorData.error?.message) {
+        userFriendlyError = errorData.error.message;
+      }
+    } catch {
+      // If JSON parsing fails, use the raw error text
+      userFriendlyError = errorText || userFriendlyError;
+    }
+
+    // Return a ReadableStream that streams the error message
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue(
+          new TextEncoder().encode(
+            `data: ${JSON.stringify({
+              content: `❌ **Error**: ${userFriendlyError}`,
+            })}\n\n`
+          )
+        );
+        controller.close();
+      },
+    });
+  }
+
+  return new ReadableStream({
+    async start(controller) {
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        controller.error(new Error("No response body reader"));
+        return;
+      }
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split("\n").filter((line) => line.trim());
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+              if (data === "[DONE]") {
+                controller.close();
+                return;
+              }
+
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) {
+                  controller.enqueue(
+                    new TextEncoder().encode(
+                      `data: ${JSON.stringify({ content })}\n\n`
+                    )
+                  );
+                }
+              } catch (e) {
+                console.error("❌ XAI API error:", e);
+                // Skip invalid JSON
+              }
+            }
+          }
+        }
+        controller.close();
+      } catch (error) {
+        controller.error(error);
+      }
+    },
+  });
+}
+
 async function callGoogleStreaming(
   messages: Message[],
   modelId: string,
@@ -800,6 +913,38 @@ async function callDeepSeekNonStreaming(
   return data.choices?.[0]?.message?.content?.trim() || "";
 }
 
+async function callXAINonStreaming(
+  messages: Message[],
+  modelId: string,
+  apiKey: string,
+  maxTokens: number = 50
+): Promise<string> {
+  const response = await fetch("https://api.x.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: modelId,
+      messages: messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      })),
+      temperature: 0.3,
+      max_tokens: maxTokens,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`XAI API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content?.trim() || "";
+}
+
 async function callGoogleNonStreaming(
   messages: Message[],
   modelId: string,
@@ -939,6 +1084,12 @@ export async function generateTitle(
         );
         break;
       case "xai":
+        title = await callXAINonStreaming(
+          titlePrompt,
+          titleModelId,
+          apiKey
+        );
+        break;
       case "openrouter":
       default:
         // Route unsupported providers through OpenRouter
