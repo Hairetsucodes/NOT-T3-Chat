@@ -306,7 +306,6 @@ pnpm db:migrate
 - Ollama Local
 - Attachments
 - Bug Reports
-- User Customization
 - Image Gen / Analysis
 - Production Deployment / postGres
 - Refactor x1000
