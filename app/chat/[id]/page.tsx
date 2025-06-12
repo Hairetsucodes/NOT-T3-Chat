@@ -19,6 +19,8 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
       id: msg.id,
       role: msg.role as "user" | "assistant" | "system",
       content: msg.content,
+      provider: msg.provider,
+      model: msg.model || undefined,
       reasoning_content: msg.reasoningContent || undefined,
     }));
 

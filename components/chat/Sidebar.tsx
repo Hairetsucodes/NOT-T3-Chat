@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Pin, X, Loader2 } from "lucide-react";
+import { Search, Pin, X, Loader2, GitBranch } from "lucide-react";
 import { Conversation } from "@prisma/client";
 import { ChatContext } from "@/context/ChatContext";
 import { useRouter } from "next/navigation";
@@ -197,7 +197,12 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                                       onClick={() => onClose?.()}
                                     >
                                       <div className="relative flex w-full items-center">
-                                        <div className="relative w-full">
+                                        <div className="relative w-full flex items-center gap-2">
+                                          {thread.branchedFromConvoId && (
+                                            <span className="text-xs text-muted-foreground">
+                                              <GitBranch className="size-4" />
+                                            </span>
+                                          )}
                                           <input
                                             aria-label="Thread title"
                                             readOnly

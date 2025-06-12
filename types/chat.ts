@@ -11,4 +11,6 @@ export type Message = {
   reasoning_content?: string;
   timestamp?: Date;
   conversationId?: string;
+  provider?: string;
+  model?: string;
 };

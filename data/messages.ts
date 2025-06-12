@@ -69,6 +69,37 @@ export const getConversations = async (userId: string) => {
 };
 
 export const getMessagesByConversationId = async (conversationId: string) => {
+  const conversation = await prisma.conversation.findUnique({
+    where: {
+      id: conversationId,
+    },
+  });
+  if (!conversation) {
+    throw new Error("Conversation not found");
+  }
+  if (conversation.branchedFromConvoId) {
+    // Get messages from the original conversation
+    const originalMessages = await prisma.message.findMany({
+      where: {
+        conversationId: conversation.branchedFromConvoId,
+      },
+    });
+    
+    // Get messages from the current branched conversation
+    const branchedMessages = await prisma.message.findMany({
+      where: {
+        conversationId,
+      },
+    });
+    
+    // Combine and sort all messages by creation time
+    const allMessages = [...originalMessages, ...branchedMessages].sort(
+      (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+    );
+    
+    return allMessages;
+  }
+
   const messages = await prisma.message.findMany({
     where: {
       conversationId,
