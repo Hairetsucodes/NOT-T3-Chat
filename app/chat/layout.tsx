@@ -31,10 +31,6 @@ export default async function ChatLayout({
     models = await getAvailableModels();
   }
   const preferredModels = await getPreferredModels(user.user.id);
-  console.log(
-    "google models openrouter",
-    models.filter((model) => model.provider === "openrouter")
-  );
   return (
     <ChatProvider
       activeUser={userData}
