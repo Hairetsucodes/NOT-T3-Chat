@@ -1,361 +1,255 @@
 import { Message } from "@/types/chat";
 import { GoogleGenAI } from "@google/genai";
 
-// Streaming LLM communication functions
-async function callOpenAIStreaming(
-  messages: Message[],
-  modelId: string,
-  apiKey: string,
-  signal?: AbortSignal
-): Promise<ReadableStream> {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: modelId,
-      messages: messages.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })),
-      temperature: 0.7,
-      max_tokens: 4000,
-      stream: true,
-    }),
-    signal,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    // Parse the error to extract useful information for the user
-    let userFriendlyError = `OpenAI API error: ${response.status}`;
-    
-    try {
-      const errorData = JSON.parse(errorText);
-      if (errorData.error?.message) {
-        userFriendlyError = errorData.error.message;
-      }
-    } catch {
-      // If JSON parsing fails, use the raw error text
-      userFriendlyError = errorText || userFriendlyError;
-    }
-
-    // Return a ReadableStream that streams the error message
-    return new ReadableStream({
-      start(controller) {
-        controller.enqueue(
-          new TextEncoder().encode(
-            `data: ${JSON.stringify({
-              content: `❌ **Error**: ${userFriendlyError}`,
-            })}\n\n`
-          )
-        );
-        controller.close();
-      },
-    });
-  }
-
-  return new ReadableStream({
-    async start(controller) {
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (!reader) {
-        controller.error(new Error("No response body reader"));
-        return;
-      }
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n").filter((line) => line.trim());
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") {
-                controller.close();
-                return;
-              }
-
-              try {
-                const parsed = JSON.parse(data);
-                const content = parsed.choices?.[0]?.delta?.content;
-                if (content) {
-                  controller.enqueue(
-                    new TextEncoder().encode(
-                      `data: ${JSON.stringify({ content })}\n\n`
-                    )
-                  );
-                }
-              } catch (e) {
-                console.error("❌ OpenAI API error:", e);
-                // Skip invalid JSON
-              }
-            }
-          }
-        }
-        controller.close();
-      } catch (error) {
-        controller.error(error);
-      }
-    },
-  });
+// Types for API responses
+interface OpenAIStreamResponse {
+  choices?: Array<{
+    delta?: {
+      content?: string;
+      reasoning?: string;
+      reasoning_content?: string;
+      thought?: string;
+      thinking?: string;
+    };
+  }>;
 }
 
-async function callAnthropicStreaming(
-  messages: Message[],
-  modelId: string,
-  apiKey: string,
-  signal?: AbortSignal
-): Promise<ReadableStream> {
-  // Convert messages for Anthropic format
-  const systemMessage = messages.find((m) => m.role === "system");
-  const conversationMessages = messages.filter((m) => m.role !== "system");
+interface OpenAINonStreamResponse {
+  choices?: Array<{
+    message?: {
+      content?: string;
+    };
+  }>;
+}
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
+interface AnthropicStreamResponse {
+  type?: string;
+  delta?: {
+    text?: string;
+  };
+}
+
+interface AnthropicNonStreamResponse {
+  content?: Array<{
+    text?: string;
+  }>;
+}
+
+// Provider configuration
+interface ProviderConfig {
+  endpoint: string;
+  headers: (apiKey: string) => Record<string, string>;
+  transformMessages?: (messages: Message[]) => unknown;
+  transformBody?: (messages: unknown, modelId: string) => unknown;
+  parseStreamContent?: (
+    parsed: unknown
+  ) => { content?: string; reasoning?: string } | null;
+  parseNonStreamContent?: (data: unknown) => string;
+}
+
+// OpenAI-compatible providers (OpenAI, XAI, OpenRouter)
+const createOpenAICompatibleConfig = (
+  endpoint: string,
+  additionalHeaders: Record<string, string> = {},
+  customStreamParser?: (
+    parsed: unknown
+  ) => { content?: string; reasoning?: string } | null
+): ProviderConfig => ({
+  endpoint,
+  headers: (apiKey) => ({
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${apiKey}`,
+    ...additionalHeaders,
+  }),
+  transformMessages: (messages) =>
+    messages.map((msg) => ({ role: msg.role, content: msg.content })),
+  transformBody: (messages, modelId) => ({
+    model: modelId,
+    messages,
+    temperature: 0.7,
+    max_tokens: 4000,
+    stream: true,
+  }),
+  parseStreamContent:
+    customStreamParser ||
+    ((parsed: unknown) => {
+      const response = parsed as OpenAIStreamResponse;
+      const content = response.choices?.[0]?.delta?.content;
+      return content ? { content } : null;
+    }),
+  parseNonStreamContent: (data: unknown) => {
+    const response = data as OpenAINonStreamResponse;
+    return response.choices?.[0]?.message?.content?.trim() || "";
+  },
+});
+
+const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
+  // OpenAI-compatible providers
+  openai: createOpenAICompatibleConfig(
+    "https://api.openai.com/v1/chat/completions"
+  ),
+
+  xai: createOpenAICompatibleConfig("https://api.x.ai/v1/chat/completions"),
+
+  openrouter: createOpenAICompatibleConfig(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      "HTTP-Referer":
+        process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+      "X-Title": "OSS T3 Chat",
+    },
+    // Custom parser for OpenRouter reasoning content
+    (parsed: unknown) => {
+      const response = parsed as OpenAIStreamResponse;
+      const delta = response.choices?.[0]?.delta;
+      if (!delta) return null;
+
+      const result: { content?: string; reasoning?: string } = {};
+
+      // Handle different reasoning content formats
+      const reasoningContent =
+        delta.reasoning ||
+        delta.reasoning_content ||
+        delta.thought ||
+        delta.thinking;
+      if (reasoningContent) {
+        result.reasoning = reasoningContent;
+      }
+
+      if (delta.content) {
+        result.content = delta.content;
+      }
+
+      return Object.keys(result).length > 0 ? result : null;
+    }
+  ),
+
+  // Special providers with different APIs
+  anthropic: {
+    endpoint: "https://api.anthropic.com/v1/messages",
+    headers: (apiKey) => ({
       "Content-Type": "application/json",
       "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: modelId,
-      max_tokens: 4000,
-      system: systemMessage?.content || "You are a helpful assistant.",
-      messages: conversationMessages.map((msg) => ({
-        role: msg.role === "assistant" ? "assistant" : "user",
-        content: msg.content,
-      })),
-      stream: true,
     }),
-    signal,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    // Parse the error to extract useful information for the user
-    let userFriendlyError = `Anthropic API error: ${response.status}`;
-    
-    try {
-      const errorData = JSON.parse(errorText);
-      if (errorData.error?.message) {
-        userFriendlyError = errorData.error.message;
-      }
-    } catch {
-      // If JSON parsing fails, use the raw error text
-      userFriendlyError = errorText || userFriendlyError;
-    }
-
-    // Return a ReadableStream that streams the error message
-    return new ReadableStream({
-      start(controller) {
-        controller.enqueue(
-          new TextEncoder().encode(
-            `data: ${JSON.stringify({
-              content: `❌ **Error**: ${userFriendlyError}`,
-            })}\n\n`
-          )
-        );
-        controller.close();
-      },
-    });
-  }
-
-  return new ReadableStream({
-    async start(controller) {
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (!reader) {
-        controller.error(new Error("No response body reader"));
-        return;
-      }
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n").filter((line) => line.trim());
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6).trim();
-
-              // Skip empty data or malformed chunks
-              if (!data || data.length === 0) continue;
-
-              try {
-                const parsed = JSON.parse(data);
-                if (
-                  parsed.type === "content_block_delta" &&
-                  parsed.delta?.text
-                ) {
-                  controller.enqueue(
-                    new TextEncoder().encode(
-                      `data: ${JSON.stringify({
-                        content: parsed.delta.text,
-                      })}\n\n`
-                    )
-                  );
-                }
-              } catch {
-                // Skip invalid JSON chunks silently - this is normal in streaming
-                continue;
-              }
-            }
-          }
-        }
-        controller.close();
-      } catch (error) {
-        controller.error(error);
-      }
-    },
-  });
-}
-
-export async function handleLLMRequestStreaming(
-  messages: Message[],
-  provider: string,
-  modelId: string,
-  apiKey: string,
-  signal?: AbortSignal
-): Promise<ReadableStream> {
-  // Add system message if not present
-  const messagesWithSystem = messages.some((m) => m.role === "system")
-    ? messages
-    : [
-        {
-          role: "system",
-          content: "You are a helpful assistant.",
-          timestamp: new Date(),
-        } as Message,
-        ...messages,
-      ];
-
-  // If model has a "/" in it, it's an OpenRouter model regardless of provider
-  const actualProvider = modelId.includes("/") ? "openrouter" : provider;
-
-  switch (actualProvider.toLowerCase()) {
-    case "openai":
-      return await callOpenAIStreaming(
-        messagesWithSystem,
-        modelId,
-        apiKey,
-        signal
-      );
-
-    case "anthropic":
-      return await callAnthropicStreaming(
-        messagesWithSystem,
-        modelId,
-        apiKey,
-        signal
-      );
-
-    case "google":
-      return await callGoogleStreaming(
-        messagesWithSystem,
-        modelId,
-        apiKey,
-        signal
-      );
-
-    case "deepseek":
-      return await callDeepSeekStreaming(
-        messagesWithSystem,
-        modelId,
-        apiKey,
-        signal
-      );
-
-    case "xai":
-      return await callXAIStreaming(
-        messagesWithSystem,
-        modelId,
-        apiKey,
-        signal
-      );
-
-    case "openrouter":
-    default:
-      // Route unsupported providers through OpenRouter
-      return await callOpenRouterStreaming(
-        messagesWithSystem,
-        modelId,
-        apiKey,
-        signal
-      );
-  }
-}
-
-async function callOpenRouterStreaming(
-  messages: Message[],
-  modelId: string,
-  apiKey: string,
-  signal?: AbortSignal
-): Promise<ReadableStream> {
-  const response = await fetch(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer":
-          process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-        "X-Title": "OSS T3 Chat",
-      },
-      body: JSON.stringify({
-        model: modelId,
-        messages: messages.map((msg) => ({
-          role: msg.role,
+    transformMessages: (messages) => {
+      const systemMessage = messages.find((m) => m.role === "system");
+      const conversationMessages = messages.filter((m) => m.role !== "system");
+      return {
+        system: systemMessage?.content || "You are a helpful assistant.",
+        messages: conversationMessages.map((msg) => ({
+          role: msg.role === "assistant" ? "assistant" : "user",
           content: msg.content,
         })),
-        temperature: 0.7,
+      };
+    },
+    transformBody: (messages: unknown, modelId: string) => {
+      const { system, messages: msgs } = messages as {
+        system: string;
+        messages: unknown;
+      };
+      return {
+        model: modelId,
         max_tokens: 4000,
+        system,
+        messages: msgs,
         stream: true,
-      }),
-      signal,
+      };
+    },
+    parseStreamContent: (parsed: unknown) => {
+      const response = parsed as AnthropicStreamResponse;
+      if (response.type === "content_block_delta" && response.delta?.text) {
+        return { content: response.delta.text };
+      }
+      return null;
+    },
+    parseNonStreamContent: (data: unknown) => {
+      const response = data as AnthropicNonStreamResponse;
+      return response.content?.[0]?.text?.trim() || "";
+    },
+  },
+
+  deepseek: createOpenAICompatibleConfig(
+    "https://api.deepseek.com/v1/chat/completions",
+    {},
+    // Custom parser for DeepSeek reasoning content
+    (parsed: unknown) => {
+      const response = parsed as OpenAIStreamResponse;
+      const delta = response.choices?.[0]?.delta;
+      if (!delta) return null;
+
+      const result: { content?: string; reasoning?: string } = {};
+
+      if (delta.reasoning_content) {
+        result.reasoning = delta.reasoning_content;
+      }
+
+      if (delta.content) {
+        result.content = delta.content;
+      }
+
+      return Object.keys(result).length > 0 ? result : null;
     }
-  );
+  ),
+};
+
+// Common error handling
+function createErrorStream(
+  providerName: string,
+  status: number,
+  errorText: string
+): ReadableStream {
+  let userFriendlyError = `${providerName} API error: ${status}`;
+
+  try {
+    const errorData = JSON.parse(errorText);
+    if (errorData.error?.message) {
+      userFriendlyError = errorData.error.message;
+    }
+  } catch {
+    userFriendlyError = errorText || userFriendlyError;
+  }
+
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(
+        new TextEncoder().encode(
+          `data: ${JSON.stringify({
+            content: `❌ **Error**: ${userFriendlyError}`,
+          })}\n\n`
+        )
+      );
+      controller.close();
+    },
+  });
+}
+
+// Generic streaming function
+async function callProviderStreaming(
+  messages: Message[],
+  modelId: string,
+  apiKey: string,
+  config: ProviderConfig,
+  providerName: string,
+  signal?: AbortSignal
+): Promise<ReadableStream> {
+  const transformedMessages = config.transformMessages
+    ? config.transformMessages(messages)
+    : messages;
+  const body = config.transformBody
+    ? config.transformBody(transformedMessages, modelId)
+    : transformedMessages;
+
+  const response = await fetch(config.endpoint, {
+    method: "POST",
+    headers: config.headers(apiKey),
+    body: JSON.stringify(body),
+    signal,
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
-    // Parse the error to extract useful information for the user
-    let userFriendlyError = `OpenRouter API error: ${response.status}`;
-    
-    try {
-      const errorData = JSON.parse(errorText);
-      if (errorData.error?.message) {
-        userFriendlyError = errorData.error.message;
-      }
-    } catch {
-      // If JSON parsing fails, use the raw error text
-      userFriendlyError = errorText || userFriendlyError;
-    }
-
-    // Return a ReadableStream that streams the error message
-    return new ReadableStream({
-      start(controller) {
-        controller.enqueue(
-          new TextEncoder().encode(
-            `data: ${JSON.stringify({
-              content: `❌ **Error**: ${userFriendlyError}`,
-            })}\n\n`
-          )
-        );
-        controller.close();
-      },
-    });
+    return createErrorStream(providerName, response.status, errorText);
   }
 
   return new ReadableStream({
@@ -368,308 +262,167 @@ async function callOpenRouterStreaming(
         return;
       }
 
+      let buffer = ""; // Buffer for incomplete chunks
+
       try {
         while (true) {
           const { done, value } = await reader.read();
-          if (done) {
-            break;
-          }
+          if (done) break;
 
-          const chunk = decoder.decode(value, { stream: true });
-
-          const lines = chunk.split("\n").filter((line) => line.trim());
+          // Append new chunk to buffer
+          buffer += decoder.decode(value, { stream: true });
+          
+          // Process complete lines
+          const lines = buffer.split("\n");
+          // Keep the last potentially incomplete line in buffer
+          buffer = lines.pop() || "";
 
           for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6).trim();
+            const trimmedLine = line.trim();
+            if (!trimmedLine) continue;
+
+            if (trimmedLine.startsWith("data: ")) {
+              const data = trimmedLine.slice(6).trim();
 
               if (data === "[DONE]") {
                 controller.close();
                 return;
               }
 
-              // Skip empty data or malformed chunks
               if (!data || data.length === 0) continue;
 
               try {
                 const parsed = JSON.parse(data);
+                const result = config.parseStreamContent
+                  ? config.parseStreamContent(parsed)
+                  : null;
 
-                const delta = parsed.choices?.[0]?.delta;
-                if (delta) {
-                  // Handle different reasoning content formats
-                  // OpenAI o1/o4 models might use different field names
-                  const reasoningContent =
-                    delta.reasoning ||
-                    delta.reasoning_content ||
-                    delta.thought ||
-                    delta.thinking;
-
-                  if (reasoningContent) {
+                if (result) {
+                  if (result.reasoning) {
                     controller.enqueue(
                       new TextEncoder().encode(
                         `data: ${JSON.stringify({
-                          reasoning: reasoningContent,
+                          reasoning: result.reasoning,
                         })}\n\n`
                       )
                     );
                   }
 
-                  // Handle regular content
-                  if (delta.content) {
+                  if (result.content) {
                     controller.enqueue(
                       new TextEncoder().encode(
                         `data: ${JSON.stringify({
-                          content: delta.content,
+                          content: result.content,
                         })}\n\n`
                       )
                     );
                   }
                 }
-              } catch {
-                // Skip invalid JSON chunks silently - this is normal in streaming
+              } catch (e) {
+                // Only log JSON parsing errors for debugging, but continue processing
+                if (process.env.NODE_ENV === "development") {
+                  console.debug(`⚠️ ${providerName} JSON parse error (likely incomplete chunk):`, (e as Error).message);
+                }
+                // Skip invalid JSON chunks - normal in streaming
                 continue;
               }
             }
           }
         }
-        controller.close();
-      } catch (error) {
-        console.error("💥 OpenRouter stream error:", error);
-        controller.error(error);
-      }
-    },
-  });
-}
 
-async function callDeepSeekStreaming(
-  messages: Message[],
-  modelId: string,
-  apiKey: string,
-  signal?: AbortSignal
-): Promise<ReadableStream> {
-  const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: modelId,
-      messages: messages.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })),
-      temperature: 0.7,
-      max_tokens: 4000,
-      stream: true,
-    }),
-    signal,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    // Parse the error to extract useful information for the user
-    let userFriendlyError = `DeepSeek API error: ${response.status}`;
-    
-    try {
-      const errorData = JSON.parse(errorText);
-      if (errorData.error?.message) {
-        userFriendlyError = errorData.error.message;
-      }
-    } catch {
-      // If JSON parsing fails, use the raw error text
-      userFriendlyError = errorText || userFriendlyError;
-    }
-
-    // Return a ReadableStream that streams the error message
-    return new ReadableStream({
-      start(controller) {
-        controller.enqueue(
-          new TextEncoder().encode(
-            `data: ${JSON.stringify({
-              content: `❌ **Error**: ${userFriendlyError}`,
-            })}\n\n`
-          )
-        );
-        controller.close();
-      },
-    });
-  }
-
-  return new ReadableStream({
-    async start(controller) {
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (!reader) {
-        controller.error(new Error("No response body reader"));
-        return;
-      }
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n").filter((line) => line.trim());
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") {
-                controller.close();
-                return;
-              }
-
+        // Process any remaining data in buffer
+        if (buffer.trim()) {
+          const trimmedBuffer = buffer.trim();
+          if (trimmedBuffer.startsWith("data: ")) {
+            const data = trimmedBuffer.slice(6).trim();
+            if (data && data !== "[DONE]") {
               try {
                 const parsed = JSON.parse(data);
-                const delta = parsed.choices?.[0]?.delta;
+                const result = config.parseStreamContent
+                  ? config.parseStreamContent(parsed)
+                  : null;
 
-                if (delta) {
-                  // Handle reasoning content for deepseek-reasoner model
-                  if (delta.reasoning_content) {
+                if (result) {
+                  if (result.reasoning) {
                     controller.enqueue(
                       new TextEncoder().encode(
                         `data: ${JSON.stringify({
-                          reasoning: delta.reasoning_content,
+                          reasoning: result.reasoning,
                         })}\n\n`
                       )
                     );
                   }
 
-                  // Handle regular content
-                  if (delta.content) {
+                  if (result.content) {
                     controller.enqueue(
                       new TextEncoder().encode(
                         `data: ${JSON.stringify({
-                          content: delta.content,
+                          content: result.content,
                         })}\n\n`
                       )
                     );
                   }
                 }
-              } catch (e) {
-                console.error("❌ DeepSeek API error:", e);
-                // Skip invalid JSON
+                             } catch (e) {
+                 // Final chunk might be incomplete, ignore parsing errors
+                 if (process.env.NODE_ENV === "development") {
+                   console.debug(`⚠️ ${providerName} final chunk parse error:`, (e as Error).message);
+                 }
               }
             }
           }
         }
+
         controller.close();
       } catch (error) {
+        console.error(`💥 ${providerName} stream error:`, error);
         controller.error(error);
       }
     },
   });
 }
 
-async function callXAIStreaming(
+// Generic non-streaming function
+async function callProviderNonStreaming(
   messages: Message[],
   modelId: string,
   apiKey: string,
-  signal?: AbortSignal
-): Promise<ReadableStream> {
-  const response = await fetch("https://api.x.ai/v1/chat/completions", {
+  config: ProviderConfig,
+  providerName: string,
+  maxTokens: number = 50
+): Promise<string> {
+  const transformedMessages = config.transformMessages
+    ? config.transformMessages(messages)
+    : messages;
+  let body = config.transformBody
+    ? config.transformBody(transformedMessages, modelId)
+    : transformedMessages;
+
+  // Override max_tokens and temperature for title generation
+  if (typeof body === "object" && body !== null) {
+    body = { ...body, max_tokens: maxTokens, temperature: 0.3, stream: false };
+  }
+
+  const response = await fetch(config.endpoint, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: modelId,
-      messages: messages.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })),
-      temperature: 0.7,
-      max_tokens: 4000,
-      stream: true,
-    }),
-    signal,
+    headers: config.headers(apiKey),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    // Parse the error to extract useful information for the user
-    let userFriendlyError = `XAI API error: ${response.status}`;
-    
-    try {
-      const errorData = JSON.parse(errorText);
-      if (errorData.error?.message) {
-        userFriendlyError = errorData.error.message;
-      }
-    } catch {
-      // If JSON parsing fails, use the raw error text
-      userFriendlyError = errorText || userFriendlyError;
-    }
-
-    // Return a ReadableStream that streams the error message
-    return new ReadableStream({
-      start(controller) {
-        controller.enqueue(
-          new TextEncoder().encode(
-            `data: ${JSON.stringify({
-              content: `❌ **Error**: ${userFriendlyError}`,
-            })}\n\n`
-          )
-        );
-        controller.close();
-      },
-    });
+    throw new Error(
+      `${providerName} API error: ${response.status} - ${errorText}`
+    );
   }
 
-  return new ReadableStream({
-    async start(controller) {
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (!reader) {
-        controller.error(new Error("No response body reader"));
-        return;
-      }
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n").filter((line) => line.trim());
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") {
-                controller.close();
-                return;
-              }
-
-              try {
-                const parsed = JSON.parse(data);
-                const content = parsed.choices?.[0]?.delta?.content;
-                if (content) {
-                  controller.enqueue(
-                    new TextEncoder().encode(
-                      `data: ${JSON.stringify({ content })}\n\n`
-                    )
-                  );
-                }
-              } catch (e) {
-                console.error("❌ XAI API error:", e);
-                // Skip invalid JSON
-              }
-            }
-          }
-        }
-        controller.close();
-      } catch (error) {
-        controller.error(error);
-      }
-    },
-  });
+  const data = await response.json();
+  return config.parseNonStreamContent ? config.parseNonStreamContent(data) : "";
 }
 
+// Generic streaming function for all providers (except Google which uses different SDK)
+
+// Google streaming function (kept separate due to different SDK)
 async function callGoogleStreaming(
   messages: Message[],
   modelId: string,
@@ -773,177 +526,7 @@ async function callGoogleStreaming(
   });
 }
 
-// Non-streaming LLM functions for title generation
-async function callOpenAINonStreaming(
-  messages: Message[],
-  modelId: string,
-  apiKey: string,
-  maxTokens: number = 50
-): Promise<string> {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: modelId,
-      messages: messages.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })),
-      temperature: 0.3,
-      max_tokens: maxTokens,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content?.trim() || "";
-}
-
-async function callAnthropicNonStreaming(
-  messages: Message[],
-  modelId: string,
-  apiKey: string,
-  maxTokens: number = 50
-): Promise<string> {
-  // Convert messages for Anthropic format
-  const systemMessage = messages.find((m) => m.role === "system");
-  const conversationMessages = messages.filter((m) => m.role !== "system");
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: modelId,
-      max_tokens: maxTokens,
-      system: systemMessage?.content || "You are a helpful assistant.",
-      messages: conversationMessages.map((msg) => ({
-        role: msg.role === "assistant" ? "assistant" : "user",
-        content: msg.content,
-      })),
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Anthropic API error: ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
-  return data.content?.[0]?.text?.trim() || "";
-}
-
-async function callOpenRouterNonStreaming(
-  messages: Message[],
-  modelId: string,
-  apiKey: string,
-  maxTokens: number = 50
-): Promise<string> {
-  const response = await fetch(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer":
-          process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-        "X-Title": "OSS T3 Chat",
-      },
-      body: JSON.stringify({
-        model: modelId,
-        messages: messages.map((msg) => ({
-          role: msg.role,
-          content: msg.content,
-        })),
-        temperature: 0.3,
-        max_tokens: maxTokens,
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content?.trim() || "";
-}
-
-async function callDeepSeekNonStreaming(
-  messages: Message[],
-  modelId: string,
-  apiKey: string,
-  maxTokens: number = 50
-): Promise<string> {
-  const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: modelId,
-      messages: messages.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })),
-      temperature: 0.3,
-      max_tokens: maxTokens,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content?.trim() || "";
-}
-
-async function callXAINonStreaming(
-  messages: Message[],
-  modelId: string,
-  apiKey: string,
-  maxTokens: number = 50
-): Promise<string> {
-  const response = await fetch("https://api.x.ai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: modelId,
-      messages: messages.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })),
-      temperature: 0.3,
-      max_tokens: maxTokens,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`XAI API error: ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content?.trim() || "";
-}
+// Generic non-streaming function for all providers (except Google which uses different SDK)
 
 async function callGoogleNonStreaming(
   messages: Message[],
@@ -1062,43 +645,21 @@ export async function generateTitle(
       }
     }
 
-    switch (actualProvider.toLowerCase()) {
-      case "openai":
-        title = await callOpenAINonStreaming(titlePrompt, titleModelId, apiKey);
-        break;
-      case "anthropic":
-        title = await callAnthropicNonStreaming(
-          titlePrompt,
-          titleModelId,
-          apiKey
-        );
-        break;
-      case "google":
-        title = await callGoogleNonStreaming(titlePrompt, titleModelId, apiKey);
-        break;
-      case "deepseek":
-        title = await callDeepSeekNonStreaming(
-          titlePrompt,
-          titleModelId,
-          apiKey
-        );
-        break;
-      case "xai":
-        title = await callXAINonStreaming(
-          titlePrompt,
-          titleModelId,
-          apiKey
-        );
-        break;
-      case "openrouter":
-      default:
-        // Route unsupported providers through OpenRouter
-        title = await callOpenRouterNonStreaming(
-          titlePrompt,
-          titleModelId,
-          apiKey
-        );
-        break;
+    // Handle Google separately due to different SDK
+    if (actualProvider.toLowerCase() === "google") {
+      title = await callGoogleNonStreaming(titlePrompt, titleModelId, apiKey);
+    } else {
+      // Use generic provider non-streaming for all other providers
+      const config = PROVIDER_CONFIGS[actualProvider.toLowerCase()] || PROVIDER_CONFIGS.openrouter;
+      const providerName = actualProvider.charAt(0).toUpperCase() + actualProvider.slice(1);
+      
+      title = await callProviderNonStreaming(
+        titlePrompt,
+        titleModelId,
+        apiKey,
+        config,
+        providerName
+      );
     }
 
     // Clean up the title (remove quotes, limit length)
@@ -1114,4 +675,53 @@ export async function generateTitle(
     const words = userMessage.split(" ").slice(0, 4);
     return words.join(" ") + (userMessage.split(" ").length > 4 ? "..." : "");
   }
+}
+
+export async function handleLLMRequestStreaming(
+  messages: Message[],
+  provider: string,
+  modelId: string,
+  apiKey: string,
+  signal?: AbortSignal
+): Promise<ReadableStream> {
+  // Add system message if not present
+  const messagesWithSystem = messages.some((m) => m.role === "system")
+    ? messages
+    : [
+        {
+          role: "system",
+          content: "You are a helpful assistant.",
+          timestamp: new Date(),
+        } as Message,
+        ...messages,
+      ];
+
+  // If model has a "/" in it, it's an OpenRouter model regardless of provider
+  const actualProvider = modelId.includes("/") ? "openrouter" : provider;
+
+  // Handle Google separately due to different SDK
+  if (actualProvider.toLowerCase() === "google") {
+    return await callGoogleStreaming(
+      messagesWithSystem,
+      modelId,
+      apiKey,
+      signal
+    );
+  }
+
+  // Use generic provider streaming for all other providers
+  const config =
+    PROVIDER_CONFIGS[actualProvider.toLowerCase()] ||
+    PROVIDER_CONFIGS.openrouter;
+  const providerName =
+    actualProvider.charAt(0).toUpperCase() + actualProvider.slice(1);
+
+  return await callProviderStreaming(
+    messagesWithSystem,
+    modelId,
+    apiKey,
+    config,
+    providerName,
+    signal
+  );
 }
