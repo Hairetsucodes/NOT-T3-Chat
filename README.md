@@ -8,6 +8,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 - 🔐 Authentication with NextAuth
 - 💾 Persistent chat history with Prisma
 - 📤 History Sync Export/Import functionality
+- 📌 Pin important conversations for quick access
 - 🧠 Reasoning/thinking mode support
 - 🎨 Modern UI with Tailwind CSS and Radix UI
 - 🌙 Dark/Light mode support
