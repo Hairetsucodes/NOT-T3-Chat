@@ -29,7 +29,32 @@ async function callOpenAIStreaming(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+    // Parse the error to extract useful information for the user
+    let userFriendlyError = `OpenAI API error: ${response.status}`;
+    
+    try {
+      const errorData = JSON.parse(errorText);
+      if (errorData.error?.message) {
+        userFriendlyError = errorData.error.message;
+      }
+    } catch {
+      // If JSON parsing fails, use the raw error text
+      userFriendlyError = errorText || userFriendlyError;
+    }
+
+    // Return a ReadableStream that streams the error message
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue(
+          new TextEncoder().encode(
+            `data: ${JSON.stringify({
+              content: `❌ **Error**: ${userFriendlyError}`,
+            })}\n\n`
+          )
+        );
+        controller.close();
+      },
+    });
   }
 
   return new ReadableStream({
@@ -115,7 +140,32 @@ async function callAnthropicStreaming(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Anthropic API error: ${response.status} - ${errorText}`);
+    // Parse the error to extract useful information for the user
+    let userFriendlyError = `Anthropic API error: ${response.status}`;
+    
+    try {
+      const errorData = JSON.parse(errorText);
+      if (errorData.error?.message) {
+        userFriendlyError = errorData.error.message;
+      }
+    } catch {
+      // If JSON parsing fails, use the raw error text
+      userFriendlyError = errorText || userFriendlyError;
+    }
+
+    // Return a ReadableStream that streams the error message
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue(
+          new TextEncoder().encode(
+            `data: ${JSON.stringify({
+              content: `❌ **Error**: ${userFriendlyError}`,
+            })}\n\n`
+          )
+        );
+        controller.close();
+      },
+    });
   }
 
   return new ReadableStream({
@@ -273,7 +323,32 @@ async function callOpenRouterStreaming(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+    // Parse the error to extract useful information for the user
+    let userFriendlyError = `OpenRouter API error: ${response.status}`;
+    
+    try {
+      const errorData = JSON.parse(errorText);
+      if (errorData.error?.message) {
+        userFriendlyError = errorData.error.message;
+      }
+    } catch {
+      // If JSON parsing fails, use the raw error text
+      userFriendlyError = errorText || userFriendlyError;
+    }
+
+    // Return a ReadableStream that streams the error message
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue(
+          new TextEncoder().encode(
+            `data: ${JSON.stringify({
+              content: `❌ **Error**: ${userFriendlyError}`,
+            })}\n\n`
+          )
+        );
+        controller.close();
+      },
+    });
   }
 
   return new ReadableStream({
@@ -386,7 +461,32 @@ async function callDeepSeekStreaming(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+    // Parse the error to extract useful information for the user
+    let userFriendlyError = `DeepSeek API error: ${response.status}`;
+    
+    try {
+      const errorData = JSON.parse(errorText);
+      if (errorData.error?.message) {
+        userFriendlyError = errorData.error.message;
+      }
+    } catch {
+      // If JSON parsing fails, use the raw error text
+      userFriendlyError = errorText || userFriendlyError;
+    }
+
+    // Return a ReadableStream that streams the error message
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue(
+          new TextEncoder().encode(
+            `data: ${JSON.stringify({
+              content: `❌ **Error**: ${userFriendlyError}`,
+            })}\n\n`
+          )
+        );
+        controller.close();
+      },
+    });
   }
 
   return new ReadableStream({
