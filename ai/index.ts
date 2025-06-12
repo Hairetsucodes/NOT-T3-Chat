@@ -20,11 +20,8 @@ export async function handleLLMRequestStreaming(
   // Add system message if not present
   const messagesWithSystem = ensureSystemMessage(messages);
 
-  // If model has a "/" in it, it's an OpenRouter model regardless of provider
-  const actualProvider = modelId.includes("/") ? "openrouter" : provider;
-
   // Handle Google separately due to different SDK
-  if (actualProvider.toLowerCase() === "google") {
+  if (provider.toLowerCase() === "google") {
     return await callGoogleStreaming(
       messagesWithSystem,
       modelId,
@@ -34,8 +31,8 @@ export async function handleLLMRequestStreaming(
   }
 
   // Use generic provider streaming for all other providers
-  const config = getProviderConfig(actualProvider);
-  const providerName = getProviderName(actualProvider);
+  const config = getProviderConfig(provider);
+  const providerName = getProviderName(provider);
 
   return await createProviderStream(
     messagesWithSystem,
