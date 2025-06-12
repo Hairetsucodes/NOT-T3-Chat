@@ -16,8 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import SettingsModal from "@/components/settings/SettingsModal";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { pinConversation } from "@/data/convo";
-import { deleteConversation } from "@/data/history";
 
 type ConversationWithLoading = Conversation & {
   isLoading?: boolean;
@@ -35,11 +33,13 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const [searchValue, setSearchValue] = useState("");
   const {
     conversations,
+    pinnedConversations,
+    unpinnedConversations,
     activeUser,
     setConversationId,
     setMessages,
-    updateConversation,
-    setConversations,
+    togglePinConversation,
+    deleteConversation,
   } = useContext(ChatContext);
   return (
     <>
@@ -129,10 +129,6 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                       };
                     };
 
-                    // Separate pinned and unpinned conversations
-                    const pinnedConversations = conversations.filter(conv => conv.isPinned);
-                    const unpinnedConversations = conversations.filter(conv => !conv.isPinned);
-
                     // Group unpinned conversations by time
                     const groupedConversations = unpinnedConversations.reduce(
                       (groups, conversation) => {
@@ -171,7 +167,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                       );
                     }
 
-                    const renderConversationList = (conversations: typeof groupedConversations[0]['conversations']) => (
+                    const renderConversationList = (
+                      conversations: (typeof groupedConversations)[0]["conversations"]
+                    ) => (
                       <div className="w-full text-sm">
                         <ul className="flex w-full min-w-0 flex-col gap-1">
                           {conversations.map((thread) => (
@@ -226,32 +224,19 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                                         onClick={async (e) => {
                                           e.preventDefault();
                                           e.stopPropagation();
-                                          
-                                          const newPinState = !thread.isPinned;
-                                          
-                                          // Optimistically update the UI
-                                          updateConversation(thread.id, {
-                                            isPinned: newPinState,
-                                          });
-                                          
-                                          // Make the server call
-                                          if (activeUser?.id) {
-                                            try {
-                                              await pinConversation(
-                                                activeUser.id,
-                                                thread.id
-                                              );
-                                            } catch (error) {
-                                              console.error("Failed to pin/unpin conversation:", error);
-                                              // Revert the optimistic update on error
-                                              updateConversation(thread.id, {
-                                                isPinned: !newPinState,
-                                              });
-                                            }
-                                          }
+
+                                          await togglePinConversation(
+                                            thread.id
+                                          );
                                         }}
                                       >
-                                        <Pin className={`size-4 ${thread.isPinned ? 'fill-current' : ''}`} />
+                                        <Pin
+                                          className={`size-4 ${
+                                            thread.isPinned
+                                              ? "fill-current"
+                                              : ""
+                                          }`}
+                                        />
                                       </Button>
                                       <Button
                                         size="sm"
@@ -262,43 +247,26 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                                         onClick={async (e) => {
                                           e.preventDefault();
                                           e.stopPropagation();
-                                          
-                                          if (!activeUser?.id) return;
-                                          
+
                                           // Confirm deletion
-                                          if (!confirm(`Are you sure you want to delete "${thread.title}"?`)) {
+                                          if (
+                                            !confirm(
+                                              `Are you sure you want to delete "${thread.title}"?`
+                                            )
+                                          ) {
                                             return;
                                           }
-                                          
-                                          // Optimistically remove from UI
-                                          setConversations(
-                                            conversations.filter((c) => c.id !== thread.id)
-                                          );
-                                          
+
                                           try {
-                                            const result = await deleteConversation(
-                                              activeUser.id,
-                                              thread.id
-                                            );
-                                            
-                                            if ('error' in result) {
-                                              console.error("Failed to delete conversation:", result.error);
-                                              // Revert the optimistic update on error
-                                              setConversations(conversations);
-                                              alert("Failed to delete conversation. Please try again.");
-                                            } else {
-                                              // If we're currently viewing this conversation, redirect to chat
-                                              if (window.location.pathname === `/chat/${thread.id}`) {
-                                                window.history.replaceState(null, "", "/chat");
-                                                setConversationId(null);
-                                                setMessages([]);
-                                              }
-                                            }
+                                            await deleteConversation(thread.id);
                                           } catch (error) {
-                                            console.error("Failed to delete conversation:", error);
-                                            // Revert the optimistic update on error
-                                            setConversations(conversations);
-                                            alert("Failed to delete conversation. Please try again.");
+                                            console.error(
+                                              "Failed to delete conversation:",
+                                              error
+                                            );
+                                            alert(
+                                              "Failed to delete conversation. Please try again."
+                                            );
                                           }
                                         }}
                                       >
@@ -331,10 +299,15 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
                         {/* Time-grouped unpinned conversations */}
                         {sortedGroups.map(
-                          ([timeLabel, { conversations: groupConversations }]) => (
+                          ([
+                            timeLabel,
+                            { conversations: groupConversations },
+                          ]) => (
                             <div key={timeLabel} className="mb-4">
                               <div className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 ">
-                                <span className="text-gray-400">{timeLabel}</span>
+                                <span className="text-gray-400">
+                                  {timeLabel}
+                                </span>
                               </div>
                               {renderConversationList(groupConversations)}
                             </div>

@@ -9,6 +9,8 @@ import { createContext, useState, useCallback, useRef } from "react";
 import { UnifiedModel } from "@/data/models";
 import { getPreferredModels } from "@/data/models";
 import { Message } from "@/types/chat";
+import { pinConversation } from "@/data/convo";
+import { deleteConversation as deleteConversationAction } from "@/data/history";
 
 type ChatUser = {
   name: string | null;
@@ -25,6 +27,8 @@ type ConversationWithLoading = Conversation & {
 
 interface ChatContextType {
   conversations: ConversationWithLoading[];
+  pinnedConversations: ConversationWithLoading[];
+  unpinnedConversations: ConversationWithLoading[];
   setConversations: (conversations: ConversationWithLoading[]) => void;
   addConversation: (conversation: ConversationWithLoading) => void;
   updateConversation: (
@@ -32,6 +36,8 @@ interface ChatContextType {
     updates: Partial<ConversationWithLoading>
   ) => void;
   removeLoadingConversation: (id: string) => void;
+  togglePinConversation: (id: string) => Promise<void>;
+  deleteConversation: (id: string) => Promise<void>;
   activeUser: ChatUser;
   userSettings: UserCustomization | null;
   chatSettings: ChatSettings | null;
@@ -79,10 +85,14 @@ interface ChatContextType {
 
 export const ChatContext = createContext<ChatContextType>({
   conversations: [],
+  pinnedConversations: [],
+  unpinnedConversations: [],
   setConversations: () => {},
   addConversation: () => {},
   updateConversation: () => {},
   removeLoadingConversation: () => {},
+  togglePinConversation: () => Promise.resolve(),
+  deleteConversation: () => Promise.resolve(),
   activeUser: null,
   userSettings: null,
   chatSettings: null,
@@ -140,6 +150,11 @@ export const ChatProvider = ({
 }) => {
   const [conversations, setConversations] =
     useState<ConversationWithLoading[]>(initialConversations);
+
+  // Derived state for pinned and unpinned conversations
+  const pinnedConversations = conversations.filter((conv) => conv.isPinned);
+  const unpinnedConversations = conversations.filter((conv) => !conv.isPinned);
+
   const [preferredModels, setPreferredModels] = useState<PreferredModel[]>(
     initialPreferredModels
   );
@@ -271,6 +286,7 @@ export const ChatProvider = ({
               updatedAt: new Date(),
               branchedFromConvoId: null,
               branchedIds: null,
+              isPinned: false,
             };
             addConversation(newConversation);
           }
@@ -417,6 +433,7 @@ export const ChatProvider = ({
             isLoading: true,
             branchedFromConvoId: null,
             branchedIds: null,
+            isPinned: false,
           };
           addConversation(loadingConversation);
         }
@@ -462,6 +479,7 @@ export const ChatProvider = ({
           isLoading: true,
           branchedFromConvoId: null,
           branchedIds: null,
+          isPinned: false,
         };
         addConversation(loadingConversation);
       }
@@ -479,14 +497,105 @@ export const ChatProvider = ({
     [conversationId, sendMessage, addConversation, activeUser?.id]
   );
 
+  const togglePinConversation = useCallback(
+    async (id: string) => {
+      if (!activeUser?.id) return;
+
+      // Optimistically update the UI
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === id
+            ? { ...conv, isPinned: !conv.isPinned, updatedAt: new Date() }
+            : conv
+        )
+      );
+
+      // Update on the server using the server action
+      try {
+        await pinConversation(activeUser.id, id);
+      } catch (error) {
+        // Revert on error
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv.id === id
+              ? { ...conv, isPinned: !conv.isPinned, updatedAt: new Date() }
+              : conv
+          )
+        );
+        console.error("Error toggling pin status:", error);
+      }
+    },
+    [activeUser?.id]
+  );
+
+  const deleteConversation = useCallback(
+    async (id: string) => {
+      if (!activeUser?.id) return;
+
+      // Store backup for potential revert
+      const conversationToDelete = conversations.find(conv => conv.id === id);
+      if (!conversationToDelete) return;
+
+      // Optimistically remove from UI
+      setConversations((prev) => prev.filter((conv) => conv.id !== id));
+
+      // If we're currently viewing this conversation, navigate away
+      if (conversationId === id) {
+        setConversationId(null);
+        setMessages([]);
+        if (typeof window !== 'undefined') {
+          window.history.replaceState(null, "", "/chat");
+        }
+      }
+
+      try {
+        const result = await deleteConversationAction(activeUser.id, id);
+        
+        if ("error" in result) {
+          // Revert the optimistic update on error
+          setConversations((prev) => [conversationToDelete, ...prev]);
+          
+          // Restore conversation view if it was the current one
+          if (conversationId === id) {
+            setConversationId(id);
+            if (typeof window !== 'undefined') {
+              window.history.replaceState(null, "", `/chat/${id}`);
+            }
+          }
+          
+          throw new Error(result.error);
+        }
+      } catch (error) {
+        // Revert the optimistic update on error
+        setConversations((prev) => [conversationToDelete, ...prev]);
+        
+        // Restore conversation view if it was the current one
+        if (conversationId === id) {
+          setConversationId(id);
+          if (typeof window !== 'undefined') {
+            window.history.replaceState(null, "", `/chat/${id}`);
+          }
+        }
+        
+        console.error("Error deleting conversation:", error);
+        throw error; // Re-throw so caller can handle UI feedback
+      }
+    },
+    [activeUser?.id, conversations, conversationId, setConversationId, setMessages]
+  );
+
   return (
     <ChatContext.Provider
       value={{
         conversations,
+        pinnedConversations,
+        unpinnedConversations,
         setConversations,
         addConversation,
         updateConversation,
         removeLoadingConversation,
+        togglePinConversation,
+        deleteConversation,
         activeUser,
         userSettings,
         chatSettings,
