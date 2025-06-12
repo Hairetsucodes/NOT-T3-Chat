@@ -15,7 +15,10 @@ interface CategoryButtonsProps {
   onCategorySelect: (category: string) => void;
 }
 
-export function CategoryButtons({ selectedCategory, onCategorySelect }: CategoryButtonsProps) {
+export function CategoryButtons({
+  selectedCategory,
+  onCategorySelect,
+}: CategoryButtonsProps) {
   return (
     <div className="flex flex-row flex-wrap gap-2.5 text-sm max-sm:justify-evenly">
       {categories.map((category) => {

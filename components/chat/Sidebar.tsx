@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Search, Pin, X, Loader2, GitBranch } from "lucide-react";
 import { Conversation } from "@prisma/client";
 import { ChatContext } from "@/context/ChatContext";
-import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -34,7 +33,6 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const [searchValue, setSearchValue] = useState("");
   const { conversations, activeUser, setConversationId, setMessages } =
     useContext(ChatContext);
-  const router = useRouter();
   return (
     <>
       {/* Sidebar - Hidden on desktop md+, toggleable on mobile */}
@@ -55,13 +53,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                   variant="callToAction"
                   className="w-full"
                   onClick={() => {
-                    // Clear state immediately
                     setConversationId(null);
                     setMessages([]);
-
-                    // Navigate to fresh chat page and close sidebar
-                    router.push("/chat");
-                    onClose?.();
+                    window.history.replaceState(null, "", "/chat");
                   }}
                 >
                   <span className="w-full select-none text-center text-sm ">
