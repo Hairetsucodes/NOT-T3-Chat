@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { getAPIKeys } from "@/data/apikeys";
 import { createMessage } from "@/data/messages";
-import { handleLLMRequestStreaming, generateTitle } from "@/ai/llms";
+import { handleLLMRequestStreaming, generateTitle } from "@/ai/index";
 
 export const maxDuration = 30;
 
