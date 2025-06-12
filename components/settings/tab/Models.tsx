@@ -485,7 +485,7 @@ export default function Models() {
           </div>
         )}
 
-        <div className="flex w-full flex-row items-baseline justify-between gap-3 sm:items-center sm:gap-2 my-2">
+        <div className="w-full flex flex-col md:flex-row items-baseline justify-between gap-3 sm:items-center sm:gap-2 my-2">
           <div className="flex flex-wrap items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -619,7 +619,12 @@ export default function Models() {
                       xmlns="http://www.w3.org/2000/svg"
                       fill="currentColor"
                     >
-                      <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" strokeWidth="2" fill="none" />
+                      <path
+                        d="M2 2l12 12M14 2L2 14"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        fill="none"
+                      />
                     </svg>
                   </div>
                   xAI
