@@ -58,7 +58,9 @@ export async function POST(req: Request) {
     // Determine provider from selectedModel or default to openai
     let provider = selectedModel?.provider || "openai";
     const modelId = selectedModel?.model || "gpt-4o-mini";
-
+    console.log("selectedModel", selectedModel);
+    console.log("modelId", modelId);
+    console.log("provider", provider);
     // If model has a "/" in it, it's an OpenRouter model regardless of provider
     if (modelId.includes("/")) {
       provider = "openrouter";

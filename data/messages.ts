@@ -77,12 +77,14 @@ export const getMessagesByConversationId = async (conversationId: string) => {
   if (!conversation) {
     throw new Error("Conversation not found");
   }
-  
-  if (conversation.branchedIds) {
+
+  if (conversation.branchedIds && conversation.branchedIds !== "null") {
     // This is a branched conversation - get messages from all conversations in the branch chain
     const branchedIds: string[] = JSON.parse(conversation.branchedIds);
-    const allConversationIds = [...branchedIds, conversationId]; // Include current conversation too
-    
+    const allConversationIds = Array.isArray(branchedIds)
+      ? [...branchedIds, conversationId]
+      : [conversationId];
+
     const allMessages = await prisma.message.findMany({
       where: {
         conversationId: {
@@ -93,7 +95,7 @@ export const getMessagesByConversationId = async (conversationId: string) => {
         createdAt: "asc",
       },
     });
-    
+
     return allMessages;
   }
 

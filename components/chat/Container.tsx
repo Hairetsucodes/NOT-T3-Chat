@@ -62,9 +62,9 @@ export function ChatContainer({
           <WelcomeScreen onSelectSuggestion={handleSuggestionSelect} />
         ) : (
           <div className="flex flex-col w-full max-w-[770px] mx-auto px-4 py-8 space-y-6">
-            {messages.map((message) => (
+            {messages.map((message, index) => (
               <div
-                key={message.id}
+                key={message.id || `message-${index}-${message.role}-${message.content?.slice(0, 50)}`}
                 className={`flex flex-col ${
                   message.role === "user" ? "items-end" : "items-start"
                 }`}

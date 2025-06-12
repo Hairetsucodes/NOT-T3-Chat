@@ -33,7 +33,27 @@ export function MessageRenderer({ message }: MessageRendererProps) {
   const renderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const processingRef = useRef<boolean>(false);
   const isUser = message.role === "user";
-  const { activeUser, conversationId } = useContext(ChatContext);
+  const { activeUser, conversationId, messages } = useContext(ChatContext);
+
+  // Find the user message that prompted this assistant message
+  const userInputMessage = (() => {
+    if (message.role !== "assistant") return "";
+
+    const currentMessageIndex = messages.findIndex(
+      (msg) =>
+        msg.id === message.id ||
+        (msg.role === "assistant" && msg.content === message.content)
+    );
+
+    if (currentMessageIndex > 0) {
+      const previousMessage = messages[currentMessageIndex - 1];
+      if (previousMessage && previousMessage.role === "user") {
+        return previousMessage.content;
+      }
+    }
+
+    return "";
+  })();
 
   const renderContent = useCallback(
     async (content: string) => {
@@ -210,9 +230,10 @@ export function MessageRenderer({ message }: MessageRendererProps) {
           <MessageActions
             conversationId={conversationId || message.conversationId}
             userId={activeUser.id}
-            message={message.content || ""}
-            provider={message.provider}
-            model={message.model}
+            inputMessage={userInputMessage}
+            message={message}
+            selectedRetryModel={message.model}
+            selectedRetryProvider={message.provider}
           />
         </div>
       )}

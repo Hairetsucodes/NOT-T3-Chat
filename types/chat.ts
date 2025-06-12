@@ -14,3 +14,12 @@ export type Message = {
   provider?: string;
   model?: string;
 };
+
+export interface MessageActionsProps {
+  conversationId?: string;
+  userId: string;
+  inputMessage: string;
+  message: Message;
+  selectedRetryModel?: string;
+  selectedRetryProvider?: string;
+}

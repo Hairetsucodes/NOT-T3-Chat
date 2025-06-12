@@ -64,7 +64,12 @@ interface ChatContextType {
   setConversationTitle: (title: string | null) => void;
   sendMessage: (
     message: Message,
-    options?: { conversationId?: string; selectedModel?: string }
+    options?: {
+      conversationId?: string;
+      selectedModel?: string;
+      provider?: string;
+      model?: string;
+    }
   ) => Promise<void>;
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -204,13 +209,18 @@ export const ChatProvider = ({
   const sendMessage = useCallback(
     async (
       message: Message,
-      options?: { conversationId?: string; selectedModel?: string }
+      options?: {
+        conversationId?: string;
+        selectedModel?: string;
+        provider?: string;
+        model?: string;
+      }
     ) => {
       // Add user message to the messages array
       const newMessages = [...messages, message];
       setMessages(newMessages);
       setIsLoading(true);
-
+      console.log("options", options);
       // Create abort controller for this request
       abortControllerRef.current = new AbortController();
 
@@ -226,8 +236,8 @@ export const ChatProvider = ({
               conversationId: options.conversationId,
             }),
             selectedModel: {
-              provider: selectedModel.provider || "openai",
-              model: selectedModel.model || "gpt-4o-mini",
+              provider: options?.provider || selectedModel.provider || "openai",
+              model: options?.model || selectedModel.model || "gpt-4o-mini",
             },
           }),
           signal: abortControllerRef.current.signal,
@@ -262,6 +272,8 @@ export const ChatProvider = ({
               userId: activeUser.id,
               createdAt: new Date(),
               updatedAt: new Date(),
+              branchedFromConvoId: null,
+              branchedIds: null,
             };
             addConversation(newConversation);
           }
@@ -290,6 +302,8 @@ export const ChatProvider = ({
           role: "assistant",
           content: "",
           reasoning_content: "",
+          provider: options?.provider || selectedModel.provider || "openai",
+          model: options?.model || selectedModel.model || "gpt-4o-mini",
         };
 
         setMessages([...newMessages, assistantMessage]);
@@ -404,6 +418,8 @@ export const ChatProvider = ({
             createdAt: new Date(),
             updatedAt: new Date(),
             isLoading: true,
+            branchedFromConvoId: null,
+            branchedIds: null,
           };
           addConversation(loadingConversation);
         }
@@ -447,6 +463,8 @@ export const ChatProvider = ({
           createdAt: new Date(),
           updatedAt: new Date(),
           isLoading: true,
+          branchedFromConvoId: null,
+          branchedIds: null,
         };
         addConversation(loadingConversation);
       }

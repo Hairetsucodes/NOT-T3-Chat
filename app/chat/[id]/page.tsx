@@ -1,16 +1,16 @@
 import React from "react";
 import { getMessagesByConversationId } from "@/data/messages";
-import { redirect } from "next/navigation";
 import { Chat } from "@/components/chat/Chat";
 import { ChatWrapper } from "@/components/chat/ChatWrapper";
 
-export default async function Page(props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
+export default async function Page(props: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ provider?: string; model?: string }>;
+}) {
+  const { id } = await props.params;
 
-  const dbMessages = await getMessagesByConversationId(params.id);
-  if (!dbMessages) {
-    redirect("/chat");
-  }
+  const { provider, model } = await props.searchParams;
+  const dbMessages = await getMessagesByConversationId(id);
 
   // Transform database messages to Message format, filtering out unsupported roles
   const messages = dbMessages
@@ -25,7 +25,12 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     }));
 
   return (
-    <ChatWrapper initialMessages={messages} initialConversationId={params.id}>
+    <ChatWrapper
+      initialMessages={messages}
+      initialConversationId={id}
+      initialProvider={provider || ""}
+      initialModel={model || ""}
+    >
       <Chat />
     </ChatWrapper>
   );

@@ -42,6 +42,45 @@ export const branchConversation = async (
     },
   });
 
-  console.log("branchedConversation", branchedConversation);
   return branchedConversation;
+};
+
+export const createRetryConversation = async (
+  userId: string,
+  originalTitle: string,
+  conversationId: string
+) => {
+  const user = await checkUser({ userId });
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  const conversation = await prisma.conversation.findUnique({
+    where: {
+      id: conversationId,
+    },
+  });
+
+  if (!conversation) {
+    throw new Error("Conversation not found");
+  }
+  let allConversationIds: string[] | null;
+  if (conversation.branchedIds) {
+    const branchedIds = JSON.parse(conversation.branchedIds);
+    allConversationIds = [...branchedIds, conversationId];
+  } else {
+    allConversationIds = null;
+  }
+
+  const retryConversation = await prisma.conversation.create({
+    data: {
+      userId,
+      title: `${originalTitle.slice(0, 50)}` || " New Chat",
+      branchedIds: allConversationIds
+        ? JSON.stringify(allConversationIds)
+        : null,
+    },
+  });
+
+  return retryConversation;
 };
