@@ -401,8 +401,6 @@ export const ChatProvider = ({
 
   const handleSuggestionSelect = useCallback(
     (suggestion: string) => {
-      if (isLoading) return;
-
       // Add loading conversation for new chats
       if (!conversationId && activeUser?.id) {
         const loadingId = `loading-${Date.now()}-${Math.random()
@@ -431,7 +429,7 @@ export const ChatProvider = ({
         ...(conversationId && { conversationId }),
       });
     },
-    [conversationId, sendMessage, addConversation, activeUser?.id, isLoading]
+    [conversationId, sendMessage, addConversation, activeUser?.id]
   );
 
   return (
