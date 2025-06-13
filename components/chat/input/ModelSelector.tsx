@@ -1,6 +1,13 @@
 "use client";
 
-import { useContext, useState, useEffect, useMemo, useCallback, memo } from "react";
+import {
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  memo,
+} from "react";
 import {
   Search,
   ChevronDown,
@@ -290,21 +297,6 @@ const ModelSelector = memo(function ModelSelector() {
     () => availableModels.find((model) => model.id === chatSettings?.model),
     [availableModels, chatSettings]
   );
-
-  // Ensure selected model is available, otherwise select first available
-  useEffect(() => {
-    if (
-      enabledModels.length > 0 &&
-      !enabledModels.find((model) => model.id === chatSettings?.model)
-    ) {
-      const firstModel = enabledModels[0];
-      setChatSettings({
-        ...chatSettings,
-        model: firstModel.id,
-        provider: firstModel.provider,
-      } as ChatSettings);
-    }
-  }, [enabledModels, chatSettings, setChatSettings]);
 
   // Memoize handlers
   const handleModelSelect = useCallback(

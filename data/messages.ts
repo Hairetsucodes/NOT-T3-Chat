@@ -1,6 +1,7 @@
 "use server";
 import { checkUser } from "@/lib/auth/check";
 import { prisma } from "@/prisma";
+import { auth } from "@/auth";
 
 export const createMessage = async (
   userId: string,
@@ -69,17 +70,18 @@ export const getConversations = async (userId: string) => {
 };
 
 export const getMessagesByConversationId = async (conversationId: string) => {
-  const user = await checkUser({ userId: conversationId });
-  if (!user) {
+  const session = await auth();
+  if (!session?.user?.id) {
     throw new Error("Unauthorized");
   }
-
   try {
-    const conversation = await prisma.conversation.findUnique({
+    const conversation = await prisma.conversation.findFirst({
       where: {
         id: conversationId,
+        userId: session.user.id,
       },
     });
+
     if (!conversation) {
       throw new Error("Conversation not found");
     }
@@ -96,6 +98,15 @@ export const getMessagesByConversationId = async (conversationId: string) => {
     return messages;
   } catch (error) {
     console.error("Error getting messages by conversation ID:", error);
-    return null;
+    // Re-throw specific errors to maintain error handling in the page
+    if (
+      error instanceof Error &&
+      (error.message === "Conversation not found" ||
+        error.message === "Unauthorized")
+    ) {
+      throw error;
+    }
+    // For other errors, throw a generic error
+    throw new Error("Failed to fetch messages");
   }
 };

@@ -1,9 +1,31 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useCallback, memo, useEffect } from "react";
 import { ChevronDown, ChevronRight, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { processMarkdown } from "@/lib/markdownProcessor";
+
+// Clean async markdown hook using useEffect
+function useProcessedMarkdown(reasoning: string) {
+  const [processed, setProcessed] = useState<string>("");
+  
+  useEffect(() => {
+    if (!reasoning) {
+      setProcessed("");
+      return;
+    }
+
+    const result = processMarkdown(reasoning);
+    
+    if (typeof result === "string") {
+      setProcessed(result);
+    } else if (result && typeof result === "object" && "then" in result) {
+      result.then(setProcessed);
+    }
+  }, [reasoning]);
+
+  return processed;
+}
 
 // Move styles outside component to prevent recreation
 const PIXEL_GLITCH_STYLES = `
@@ -79,62 +101,49 @@ interface ReasoningDisplayProps {
   isStreaming?: boolean;
 }
 
-export function ReasoningDisplay({
+export const ReasoningDisplay = memo(function ReasoningDisplay({
   reasoning,
   isStreaming,
 }: ReasoningDisplayProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
 
-  // Memoize expensive operations
+  // Use simplified custom hook instead of useEffect
   const reasoningTitle = useMemo(() => extractTitle(reasoning), [reasoning]);
-  
-  const renderedReasoning = useMemo(() => {
-    if (!reasoning) return "";
-    return processMarkdown(reasoning);
-  }, [reasoning]);
+  const resolvedRenderedReasoning = useProcessedMarkdown(reasoning);
 
-  // Use a ref to track previous title for animation trigger
-  const prevTitleRef = React.useRef<string>("");
+  // Simple title-based animation trigger using key prop
 
-  // Handle title change animation
-  const triggerAnimation = useCallback(() => {
-    setIsAnimating(true);
-    const timer = setTimeout(() => setIsAnimating(false), 600);
-    return () => clearTimeout(timer);
+  // Memoized toggle function to prevent recreations
+  const toggleExpanded = useCallback(() => {
+    setIsExpanded((prev) => !prev);
   }, []);
 
-  // Effect for title change detection
-  useEffect(() => {
-    if (reasoningTitle && reasoningTitle !== prevTitleRef.current) {
-      const cleanup = triggerAnimation();
-      prevTitleRef.current = reasoningTitle;
-      return cleanup;
-    }
-    prevTitleRef.current = reasoningTitle;
-  }, [reasoningTitle, triggerAnimation]);
+  // Memoized content rendering
+  const expandedContent = useMemo(() => {
+    if (!isExpanded) return null;
 
-  // Resolve the async rendered reasoning
-  const [resolvedRenderedReasoning, setResolvedRenderedReasoning] = useState<string>("");
+    return (
+      <div className="px-3 pb-3 border-t border-border/30 bg-background">
+        <div className="mt-3 text-sm text-muted-foreground">
+          {resolvedRenderedReasoning ? (
+            <div
+              className="contentMarkdown prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: resolvedRenderedReasoning }}
+            />
+          ) : reasoning ? (
+            <div className="whitespace-pre-wrap">{reasoning}</div>
+          ) : (
+            <div className="flex items-center space-x-2 text-blue-500">
+              <div className="w-3 h-3 bg-current rounded-full animate-pulse"></div>
+              <span>Thinking...</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }, [isExpanded, resolvedRenderedReasoning, reasoning]);
 
-  useEffect(() => {
-    let isCancelled = false;
-    
-    if (typeof renderedReasoning === 'object' && 'then' in renderedReasoning) {
-      renderedReasoning.then((result: string) => {
-        if (!isCancelled) {
-          setResolvedRenderedReasoning(result);
-        }
-      });
-    } else {
-      setResolvedRenderedReasoning(renderedReasoning as string);
-    }
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [renderedReasoning]);
-
+  // Early return for empty state
   if (!reasoning && !isStreaming) {
     return null;
   }
@@ -144,7 +153,7 @@ export function ReasoningDisplay({
       <style>{PIXEL_GLITCH_STYLES}</style>
       <Button
         variant="ghost"
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={toggleExpanded}
         className="w-full justify-start p-1 h-auto text-sm hover:bg-muted/50 bg-secondary"
       >
         <Brain className="h-4 w-4 mr-2 text-blue-500" />
@@ -153,28 +162,11 @@ export function ReasoningDisplay({
             key={reasoningTitle} // Force re-render on title change
             className={`font-medium transition-all duration-300 ${
               reasoningTitle ? "text-primary dark:text-primary" : ""
-            } ${
-              isAnimating
-                ? "animate-pixel-in dark:text-primary text-primary/90"
-                : reasoningTitle
-                ? "animate-pulse"
-                : ""
             }`}
             style={{
               textShadow: reasoningTitle
                 ? "0 0 8px hsl(var(--primary) / 0.5)"
                 : "none",
-              transform: isAnimating
-                ? "scale(1.1)"
-                : reasoningTitle
-                ? "scale(1)"
-                : "scale(0.95)",
-              filter: isAnimating
-                ? "blur(1px) brightness(0.9) contrast(1.2)"
-                : reasoningTitle
-                ? "brightness(0.95)"
-                : "brightness(1)",
-              animation: isAnimating ? "pixelGlitch 0.6s ease-out" : "none",
             }}
           >
             {reasoningTitle || "Reasoning"}
@@ -200,25 +192,7 @@ export function ReasoningDisplay({
         </div>
       </Button>
 
-      {isExpanded && (
-        <div className="px-3 pb-3 border-t border-border/30 bg-background">
-          <div className="mt-3 text-sm text-muted-foreground">
-            {resolvedRenderedReasoning ? (
-              <div
-                className="contentMarkdown prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: resolvedRenderedReasoning }}
-              />
-            ) : reasoning ? (
-              <div className="whitespace-pre-wrap">{reasoning}</div>
-            ) : (
-              <div className="flex items-center space-x-2 text-blue-500">
-                <div className="w-3 h-3 bg-current rounded-full animate-pulse"></div>
-                <span>Thinking...</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {expandedContent}
     </div>
   );
-}
+});

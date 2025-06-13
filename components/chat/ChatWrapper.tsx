@@ -40,28 +40,13 @@ export function ChatWrapper({
   useEffect(() => {
     const retryModel = searchParams.get("model");
     const retryProvider = searchParams.get("provider");
-
-    if (
-      initialMessages.some((msg) => msg.role === "user" && msg.content === "")
-    )
-      return;
-
-    // If there are more than 1 user messages in the initial messages, don't retry
-    const userMessageCount = initialMessages.filter(
-      (msg) => msg.role === "user"
-    ).length;
-    if (userMessageCount >= 1) return;
-    if (hasRetriedRef.current) return;
-
     const isRetry = searchParams.get("retry") === "true";
     const retryMessage = searchParams.get("message");
 
     if (!isRetry || !retryMessage) return;
-
-    // Prevent duplicate retries if messages already exist
+    if (hasRetriedRef.current) return;
     if (messages.length > 0) return;
 
-    // Update selected model/provider when provided in query
     if (retryModel && retryProvider) {
       setChatSettings({
         ...chatSettings,
@@ -76,7 +61,6 @@ export function ChatWrapper({
       content: retryMessage,
     };
 
-    // Fire off the retry request
     sendMessage(userMessage, {
       conversationId: initialConversationId,
       selectedModel: initialModel || chatSettings?.model,

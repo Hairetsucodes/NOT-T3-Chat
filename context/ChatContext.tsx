@@ -5,7 +5,7 @@ import {
   UserCustomization,
   ChatSettings,
 } from "@prisma/client";
-import { createContext, useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { createContext, useState, useCallback, useRef, useMemo } from "react";
 import { UnifiedModel } from "@/data/models";
 import { getPreferredModels } from "@/data/models";
 import { Message } from "@/types/chat";
@@ -80,7 +80,10 @@ interface ChatContextType {
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
-  handleSubmit: (event?: { preventDefault?: () => void; currentInput?: string }) => void;
+  handleSubmit: (event?: {
+    preventDefault?: () => void;
+    currentInput?: string;
+  }) => void;
   handleSuggestionSelect: (suggestion: string) => void;
 }
 
@@ -184,19 +187,6 @@ export const ChatProvider = ({
 
   const loadingConversationIdRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-
-  // Track if page is being restored from bfcache to avoid unnecessary API calls
-  useEffect(() => {
-    const handlePageShow = (event: PageTransitionEvent) => {
-      if (event.persisted) {
-        // Page was restored from bfcache - we can skip some initialization
-        console.log('Page restored from bfcache');
-      }
-    };
-
-    window.addEventListener('pageshow', handlePageShow);
-    return () => window.removeEventListener('pageshow', handlePageShow);
-  }, []);
 
   const addConversation = useCallback(
     (conversation: ConversationWithLoading) => {
@@ -359,7 +349,7 @@ export const ChatProvider = ({
                       setIsLoading(false);
                       hasReceivedFirstToken = true;
                     }
-                    
+
                     setMessages((prev) =>
                       prev.map((msg) =>
                         msg.id === assistantMessage.id
@@ -710,8 +700,6 @@ export const ChatProvider = ({
   );
 
   return (
-    <ChatContext.Provider value={contextValue}>
-      {children}
-    </ChatContext.Provider>
+    <ChatContext.Provider value={contextValue}>{children}</ChatContext.Provider>
   );
 };
