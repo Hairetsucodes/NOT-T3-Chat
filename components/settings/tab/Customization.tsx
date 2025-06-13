@@ -131,7 +131,12 @@ export function CustomizationTab() {
       }
 
       // Update the context state with the saved values
-      if (userSettings && result && typeof result === "object" && "id" in result) {
+      if (
+        userSettings &&
+        result &&
+        typeof result === "object" &&
+        "id" in result
+      ) {
         setUserSettings(result);
       }
 
@@ -175,7 +180,7 @@ export function CustomizationTab() {
       if (result && typeof result === "object" && "id" in result) {
         setUserSettings(result);
       }
-      
+
       toast.success("Settings reset to defaults");
     } catch (error) {
       console.error("Failed to reset settings:", error);
@@ -217,7 +222,7 @@ export function CustomizationTab() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   disabled={isLoading}
-                  className="p-2 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-9 transition-colors"
+                  className="p-2 rounded-lg border-1 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-9 transition-colors"
                 />
                 <span className="pointer-events-none absolute bottom-2 right-2 text-xs font-normal text-muted-foreground">
                   {name.length}/50
@@ -235,7 +240,7 @@ export function CustomizationTab() {
                   value={occupation}
                   onChange={(e) => setOccupation(e.target.value)}
                   disabled={isLoading}
-                  className="p-2 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-9 transition-colors"
+                  className="p-2 rounded-lg border-1  bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-9 transition-colors"
                 />
                 <span className="pointer-events-none absolute bottom-2 right-2 text-xs font-normal text-muted-foreground">
                   {occupation.length}/100
@@ -261,7 +266,7 @@ export function CustomizationTab() {
                     onChange={(e) => setTraitInput(e.target.value)}
                     onKeyDown={handleTraitInputKeyPress}
                     disabled={isLoading}
-                    className="p-2 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-9 transition-colors"
+                    className="p-2 rounded-lg border-1 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-9 transition-colors"
                   />
                   <span className="pointer-events-none absolute bottom-2 right-2 text-xs font-normal text-muted-foreground">
                     {traits.length}/50
@@ -324,7 +329,7 @@ export function CustomizationTab() {
                   value={additionalInfo}
                   onChange={(e) => setAdditionalInfo(e.target.value)}
                   disabled={isLoading}
-                  className="min-h-[100px] p-2 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 transition-colors"
+                  className="min-h-[100px] p-2 rounded-lg border-1 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 transition-colors"
                 />
                 <span className="pointer-events-none absolute bottom-2 right-2 text-xs font-normal text-muted-foreground">
                   {additionalInfo.length}/3000

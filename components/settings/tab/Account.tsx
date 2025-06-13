@@ -138,7 +138,7 @@ export function AccountTab() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={isLoading}
-              className="p-2 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-11 transition-colors"
+              className="p-2 rounded-lg border-1 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-11 transition-colors"
             />
           </div>
 
@@ -156,7 +156,7 @@ export function AccountTab() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={isLoading}
-              className="p-2 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-11 transition-colors"
+              className="p-2 rounded-lg border-1 bg-chat-input-background/80 border-chat-border/60 backdrop-blur-sm focus:border-primary/50 text-foreground placeholder:text-foreground/50 h-11 transition-colors"
             />
             <p className="text-sm text-muted-foreground">
               Username cannot contain spaces and must be unique.
@@ -173,7 +173,7 @@ export function AccountTab() {
               type="email"
               value={activeUser.email || ""}
               disabled
-              className="p-2 bg-muted/30 border-chat-border/40 text-foreground/70 backdrop-blur-sm h-11 cursor-not-allowed"
+              className="p-2 rounded-lg border-1 bg-muted/30 border-chat-border/40 text-foreground/70 backdrop-blur-sm h-11 cursor-not-allowed"
             />
             <p className="text-sm text-muted-foreground">
               Email cannot be changed from here.

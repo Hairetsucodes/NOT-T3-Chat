@@ -1,4 +1,5 @@
 import { JSX, useState } from "react";
+import { useTheme } from "next-themes";
 import { getLanguageDisplayName } from "@/lib/code-utils";
 import { highlight } from "@/lib/shiki-shared";
 import { BundledLanguage } from "shiki/bundle/web";
@@ -17,6 +18,7 @@ export function StreamingCodeBlock({
   code: string;
   language: string;
 }) {
+  const { theme, systemTheme } = useTheme();
   const [currentHighlight, setCurrentHighlight] = useState<JSX.Element | null>(
     null
   );
@@ -25,6 +27,11 @@ export function StreamingCodeBlock({
   );
 
   const displayLanguage = getLanguageDisplayName(language);
+
+  // Determine the actual theme being used
+  const actualTheme = theme === "system" ? systemTheme : theme;
+  const isDark = actualTheme === "dark";
+  const shikiTheme = isDark ? "github-dark" : "github-light";
 
   useLayoutEffect(() => {
     const highlightCode = () => {
@@ -41,7 +48,7 @@ export function StreamingCodeBlock({
 
       // Try to highlight the incomplete code, but be more forgiving of errors
       const normalizedLang = normalizeLanguage(language);
-      highlight(code, normalizedLang as BundledLanguage)
+      highlight(code, normalizedLang as BundledLanguage, shikiTheme)
         .then((result) => {
           setCurrentHighlight(result);
           setSmoothTransition(null); // Clear transition once new highlight is ready
@@ -59,7 +66,7 @@ export function StreamingCodeBlock({
     };
 
     highlightCode();
-  }, [code, language]);
+  }, [code, language, shikiTheme]);
 
   const codeStyle = getStreamingCodeStyle();
 
@@ -96,6 +103,7 @@ export function CodeBlock({
   code: string;
   language: string;
 }) {
+  const { theme, systemTheme } = useTheme();
   const [highlightedNode, setHighlightedNode] = useState<JSX.Element | null>(
     null
   );
@@ -104,6 +112,11 @@ export function CodeBlock({
   const [isLoading, setIsLoading] = useState(true);
 
   const displayLanguage = getLanguageDisplayName(language);
+
+  // Determine the actual theme being used
+  const actualTheme = theme === "system" ? systemTheme : theme;
+  const isDark = actualTheme === "dark";
+  const shikiTheme = isDark ? "github-dark" : "github-light";
 
   useLayoutEffect(() => {
     // Skip highlighting if code is empty or whitespace only
@@ -115,7 +128,7 @@ export function CodeBlock({
 
     setIsLoading(true);
     const normalizedLang = normalizeLanguage(language);
-    highlight(code, normalizedLang as BundledLanguage)
+    highlight(code, normalizedLang as BundledLanguage, shikiTheme)
       .then((result) => {
         setHighlightedNode(result);
         setIsLoading(false);
@@ -129,7 +142,7 @@ export function CodeBlock({
         setHighlightedNode(<code className="text-foreground">{code}</code>);
         setIsLoading(false);
       });
-  }, [code, language]);
+  }, [code, language, shikiTheme]);
 
   const handleCopy = async () => {
     try {

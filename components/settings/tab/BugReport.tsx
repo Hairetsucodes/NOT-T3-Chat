@@ -48,14 +48,18 @@ export function BugReportTab() {
         </div>
         <div className="grid gap-3">
           <Label htmlFor="bug-title">Title</Label>
-          <Input id="bug-title" placeholder="Brief description of the issue" />
+          <Input
+            id="bug-title"
+            placeholder="Brief description of the issue"
+            className="rounded-lg border-[.1rem] border-chat-border p-2"
+          />
         </div>
         <div className="grid gap-3">
           <Label htmlFor="bug-description">Description</Label>
           <Textarea
             id="bug-description"
             placeholder="Detailed description of the issue, steps to reproduce, expected vs actual behavior..."
-            className="min-h-[120px]"
+            className="min-h-[120px] rounded-lg border-[.1rem] border-chat-border p-2"
           />
         </div>
         <div className="grid gap-3">

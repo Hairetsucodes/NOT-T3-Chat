@@ -471,7 +471,7 @@ export function HistoryTab() {
                   type="file"
                   accept=".json"
                   onChange={handleImportHistory}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  className="absolute rounded-lg border-1  inset-0 opacity-0 cursor-pointer"
                   disabled={isLoading}
                 />
               </div>

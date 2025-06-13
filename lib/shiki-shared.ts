@@ -44,7 +44,7 @@ function getHighlighter(): Promise<Highlighter> {
   }
 
   highlighterPromise = createHighlighter({
-    themes: ['github-dark'],
+    themes: ['github-dark', 'github-light'],
     langs: PRELOADED_LANGUAGES,
   }).then((highlighter) => {
     highlighterInstance = highlighter;
@@ -55,7 +55,11 @@ function getHighlighter(): Promise<Highlighter> {
 }
 
 // Optimized highlight function using the shared highlighter instance
-export async function highlight(code: string, lang: BundledLanguage): Promise<JSX.Element> {
+export async function highlight(
+  code: string, 
+  lang: BundledLanguage, 
+  theme: 'github-dark' | 'github-light' = 'github-dark'
+): Promise<JSX.Element> {
   try {
     const highlighter = await getHighlighter();
     
@@ -67,7 +71,7 @@ export async function highlight(code: string, lang: BundledLanguage): Promise<JS
 
     const out = highlighter.codeToHast(code, {
       lang,
-      theme: 'github-dark',
+      theme,
     });
 
     return toJsxRuntime(out, {

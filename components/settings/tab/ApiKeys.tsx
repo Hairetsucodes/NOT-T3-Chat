@@ -196,6 +196,7 @@ export function ApiKeysTab() {
               type="password"
               placeholder="Enter your API key..."
               value={apiKey}
+              className="rounded-lg border-[.1rem] border-chat-border p-2"
               onChange={(e) => setApiKey(e.target.value)}
             />
           </div>

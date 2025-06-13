@@ -219,9 +219,10 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                                         type="text"
                                         value={thread.title}
                                       />
-                                      {conversationId === thread.id && isLoading && (
-                                        <Loader2 className="h-3 w-3 animate-spin ml-2 flex-shrink-0" />
-                                      )}
+                                      {conversationId === thread.id &&
+                                        isLoading && (
+                                          <Loader2 className="h-3 w-3 animate-spin ml-2 flex-shrink-0" />
+                                        )}
                                     </div>
                                     <div className="pointer-events-auto absolute -right-1 bottom-0 top-0 z-50 flex translate-x-full items-center justify-end text-muted-foreground transition-transform group-hover/link:translate-x-0 group-hover/link:bg-sidebar-accent">
                                       <div className="pointer-events-none absolute bottom-0 right-[100%] top-0 h-12 w-8 bg-gradient-to-l from-sidebar-accent to-transparent opacity-0 group-hover/link:opacity-100" />
@@ -298,7 +299,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                         {pinnedConversations.length > 0 && (
                           <div className="mb-4">
                             <div className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 ">
-                              <span className="text-gray-400 flex items-center gap-1">
+                              <span className="text-color-heading flex items-center gap-1">
                                 <Pin className="size-3" />
                                 Pinned
                               </span>
@@ -315,7 +316,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                           ]) => (
                             <div key={timeLabel} className="mb-4">
                               <div className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 ">
-                                <span className="text-gray-400">
+                                <span className="text-color-heading font-semibold">
                                   {timeLabel}
                                 </span>
                               </div>

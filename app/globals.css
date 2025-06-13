@@ -23,6 +23,7 @@
   --color-chat-overlay: var(--chat-overlay);
   --color-chat-input-gradient: hsl(var(--chat-input-gradient));
   --color-chat-wordmark-color: var(--wordmark-color);
+  --color-heading: hsl(var(--heading));
   --color-sidebar: hsl(var(--sidebar-background));
   --color-chart-1: hsl(var(--chart-1));
   --color-chart-2: hsl(var(--chart-2));
@@ -87,7 +88,7 @@
   --sidebar-border: 20 6% 92%;
   --sidebar-ring: 333.3, 71.4%, 50.6%;
   --gradient-noise-top: 292 42.9% 93.1%;
-  --color-heading: 336.3 70.3% 19.8%;
+  --heading: 336.3 70.3% 19.8%;
   --chat-border: 304.8 61% 83.9%;
   --chat-background: 300 56% 98%;
   --chat-accent: #f5ecf9;
@@ -130,7 +131,7 @@
   --sidebar-border: 0 0% 0%;
   --sidebar-ring: 333.3, 71.4%, 50.6%;
   --gradient-noise-top: 309 15% 9%;
-  --color-heading: 328.2 45.9% 57.3%;
+  --heading: 328.2 38% 23%;
   --chat-border: 333.3 22% 16.1%;
   --chat-background: 270 16.13% 12.16%;
   --chat-accent: rgba(25, 21, 30, 0.86);
