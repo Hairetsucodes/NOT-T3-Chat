@@ -11,7 +11,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --force
 
 # Explicitly install @prisma/engines
 RUN pnpm add @prisma/engines
@@ -35,7 +35,7 @@ RUN npm install -g pnpm
 WORKDIR /app
 
 # Set environment to production
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 # Copy necessary files from the base stage
 COPY --from=base /app/next.config.mjs ./
