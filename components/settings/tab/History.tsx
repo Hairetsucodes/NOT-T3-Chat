@@ -27,9 +27,8 @@ import {
   clearAllHistory,
   clearHistoryOlderThan,
   importChatHistory,
-  HistoryStats,
-  UserChatHistory,
 } from "@/data/history";
+import { HistoryStats, UserChatHistory } from "@/types/history";
 
 // Background component to match other tabs
 const HistoryBackground = ({ children }: { children: React.ReactNode }) => (
