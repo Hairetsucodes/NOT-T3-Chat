@@ -1,6 +1,10 @@
 import { Message } from "@/types/chat";
-import { getProviderConfig, getProviderName, callGoogleNonStreaming } from '../providers';
-import { callProviderNonStreaming } from './streaming';
+import {
+  getProviderConfig,
+  getProviderName,
+  callGoogleNonStreaming,
+} from "../providers";
+import { callProviderNonStreaming } from "./streaming";
 
 /**
  * Map complex reasoning models to simpler alternatives for title generation
@@ -40,9 +44,17 @@ function mapToTitleModel(modelId: string, provider: string): string {
           return "deepseek-chat";
         }
         break;
+      case "xai":
+        // Map all xai models to grok-3-fast for faster title generation
+        return "grok-3-fast";
+        break;
       case "google":
         // Map premium/experimental Google models to free alternatives
-        if (modelId.includes("2.5") || modelId.includes("preview") || modelId.includes("exp")) {
+        if (
+          modelId.includes("2.5") ||
+          modelId.includes("preview") ||
+          modelId.includes("exp")
+        ) {
           return "gemini-1.5-flash"; // Fast, free Google model
         } else if (modelId.includes("pro") && !modelId.includes("1.0")) {
           return "gemini-1.0-pro"; // Free pro model
@@ -100,7 +112,7 @@ export async function generateTitle(
         providerName
       );
     }
-
+    console.log("title", title);
     // Clean up the title (remove quotes, limit length)
     title = title.replace(/^["']|["']$/g, "").trim();
     if (title.length > 50) {
@@ -114,4 +126,4 @@ export async function generateTitle(
     const words = userMessage.split(" ").slice(0, 4);
     return words.join(" ") + (userMessage.split(" ").length > 4 ? "..." : "");
   }
-} 
+}

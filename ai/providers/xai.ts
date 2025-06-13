@@ -16,6 +16,11 @@ export const xaiConfig: ProviderConfig = {
   },
   parseNonStreamContent: (data: unknown) => {
     const response = data as OpenAINonStreamResponse;
-    return response.choices?.[0]?.message?.content?.trim() || "";
+    const message = response.choices?.[0]?.message;
+    if (!message) return "";
+    
+    // For reasoning models, content might be in reasoning_content field
+    const content = message.content || message.reasoning_content || "";
+    return content.trim();
   },
 }; 
