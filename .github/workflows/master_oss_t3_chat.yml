@@ -23,6 +23,7 @@ jobs:
           context: .
           file: ./DOCKERFILE
           push: false
+          load: true
           tags: oss-t3-chat:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
