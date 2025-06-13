@@ -310,11 +310,7 @@ const ModelSelector = memo(function ModelSelector() {
           model: modelId,
           provider: selectedModelData.provider,
         } as ChatSettings);
-        setChatSettings({
-          ...chatSettings,
-          model: modelId,
-          provider: selectedModelData.provider,
-        } as ChatSettings);
+
         updateChatSettings(modelId, selectedModelData.provider);
       }
       setIsOpen(false);

@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatContext } from "@/context/ChatContext";
-import { useSession } from "next-auth/react";
 import { addPreferredModel, removePreferredModel } from "@/data/models";
 import {
   Search,
@@ -150,11 +149,14 @@ type FilterType =
   | "deepseek";
 
 export default function Models() {
-  const { availableModels } = useContext(ChatContext);
-  const { data: session } = useSession();
+  const {
+    availableModels,
+    refreshPreferredModels,
+    preferredModels,
+    setPreferredModels,
+  } = useContext(ChatContext);
   const [searchTerm, setSearchTerm] = useState("");
   const [showNotification, setShowNotification] = useState(true);
-  const [enabledModels, setEnabledModels] = useState(new Set<string>());
   const [selectedFilters, setSelectedFilters] = useState<FilterType[]>(["all"]);
   const [displayedCount, setDisplayedCount] = useState(50);
   const [loading, setLoading] = useState(false);
@@ -262,12 +264,7 @@ export default function Models() {
   };
 
   const toggleModel = async (modelId: string) => {
-    if (!session?.user?.id) {
-      console.error("User not authenticated");
-      return;
-    }
-
-    const isCurrentlyEnabled = enabledModels.has(modelId);
+    const isCurrentlyEnabled = preferredModels.some((m) => m.model === modelId);
     const model = availableModels?.find((m) => m.modelId === modelId);
 
     if (!model) {
@@ -275,59 +272,46 @@ export default function Models() {
       return;
     }
 
-    // Optimistic update - update UI immediately
-    setEnabledModels((prev) => {
-      const newSet = new Set(prev);
-      if (isCurrentlyEnabled) {
-        newSet.delete(modelId);
-      } else {
-        newSet.add(modelId);
-      }
-      return newSet;
-    });
+    // Optimistic update - immediately update UI
+    if (isCurrentlyEnabled) {
+      // Remove from preferences optimistically
+      setPreferredModels(preferredModels.filter((m) => m.model !== modelId));
+    } else {
+      // Add to preferences optimistically
+      const newPreferredModel = {
+        id: `temp-${modelId}`, // Temporary ID
+        userId: "", // Will be set by server
+        model: modelId,
+        provider: model.provider,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      setPreferredModels([...preferredModels, newPreferredModel]);
+    }
 
     // Then update database in background
     try {
       if (isCurrentlyEnabled) {
         // Remove from preferences
-        const result = await removePreferredModel(modelId);    
+        const result = await removePreferredModel(modelId);
         if (result && "error" in result) {
           console.error("Failed to remove preferred model:", result);
           // Revert optimistic update on error
-          setEnabledModels((prev) => {
-            const newSet = new Set(prev);
-            newSet.add(modelId);
-            return newSet;
-          });
+          await refreshPreferredModels();
         }
       } else {
         // Add to preferences
-        const result = await addPreferredModel(
-          modelId,
-          model.provider
-        );
+        const result = await addPreferredModel(modelId, model.provider);
         if (result && "error" in result) {
           console.error("Failed to add preferred model:", result);
           // Revert optimistic update on error
-          setEnabledModels((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(modelId);
-            return newSet;
-          });
+          await refreshPreferredModels();
         }
       }
     } catch (error) {
       console.error("Error toggling model preference:", error);
       // Revert optimistic update on error
-      setEnabledModels((prev) => {
-        const newSet = new Set(prev);
-        if (isCurrentlyEnabled) {
-          newSet.add(modelId);
-        } else {
-          newSet.delete(modelId);
-        }
-        return newSet;
-      });
+      await refreshPreferredModels();
     }
   };
 
@@ -560,7 +544,9 @@ export default function Models() {
                 model.name,
                 typeof model.pricing === "string" ? model.pricing : null
               );
-              const isEnabled = enabledModels.has(model.modelId);
+              const isEnabled = preferredModels.some(
+                (m) => m.model === model.modelId
+              );
 
               return (
                 <div
