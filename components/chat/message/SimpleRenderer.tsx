@@ -107,7 +107,6 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
     minWidth: isWordWrapEnabled ? "auto" : "max-content",
     fontFamily:
       "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-    color: isLoading ? "var(--foreground)" : undefined,
   } as const;
 
   return (
@@ -142,7 +141,7 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
         </div>
       </div>
       <div className={isWordWrapEnabled ? "overflow-auto" : "overflow-x-auto"}>
-        <div className="p-4 m-0 bg-sidebar relative">
+        <div className=" m-0 bg-sidebar relative">
           <div className="contentMarkdown" style={codeStyle}>
             {highlightedNode || <code className="text-foreground">{code}</code>}
           </div>
@@ -158,11 +157,19 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
 }
 
 // Streaming CodeBlock component for incomplete code blocks during streaming
-function StreamingCodeBlock({ code, language }: { code: string; language: string }) {
-  const [highlightedNode, setHighlightedNode] = useState<JSX.Element | null>(
+function StreamingCodeBlock({
+  code,
+  language,
+}: {
+  code: string;
+  language: string;
+}) {
+  const [currentHighlight, setCurrentHighlight] = useState<JSX.Element | null>(
     null
   );
-  const [isLoading, setIsLoading] = useState(true);
+  const [smoothTransition, setSmoothTransition] = useState<JSX.Element | null>(
+    null
+  );
 
   // Language display mapping
   const languageMap: { [key: string]: string } = {
@@ -202,25 +209,31 @@ function StreamingCodeBlock({ code, language }: { code: string; language: string
     languageMap[language.toLowerCase()] || language.toUpperCase();
 
   useLayoutEffect(() => {
-    setIsLoading(true);
-    // Try to highlight the incomplete code, but be more forgiving of errors
-    highlight(code, language as BundledLanguage)
-      .then((result) => {
-        setHighlightedNode(result);
-        setIsLoading(false);
-      })
-      .catch(() => {
-        // For incomplete code, fallback to plain code with proper styling
-        setHighlightedNode(
-          <code className="text-foreground">
-            {code}
-          </code>
-        );
-        setIsLoading(false);
-      });
-  }, [code, language]);
+    const highlightCode = () => {
+      // Try to highlight the incomplete code, but be more forgiving of errors
+      highlight(code, language as BundledLanguage)
+        .then((result) => {
+          setCurrentHighlight(result);
+          setSmoothTransition(null); // Clear transition once new highlight is ready
+        })
+        .catch(() => {
+          // For incomplete code, fallback to plain code with proper styling
+          const fallbackNode = <code className="text-foreground">{code}</code>;
+          setCurrentHighlight(fallbackNode);
+          setSmoothTransition(null);
+        });
+    };
 
-  // GitHub-like code styling
+        // Keep current highlight visible while processing new content (prevents flashing)
+    if (currentHighlight) {
+      setSmoothTransition(currentHighlight);
+    }
+    
+    // Always highlight immediately - no debouncing for maximum responsiveness
+    highlightCode();
+  }, [code, language, currentHighlight]);
+
+  // GitHub-like code styling - consistent styling without loading-dependent colors
   const codeStyle = {
     whiteSpace: "pre-wrap" as const,
     wordBreak: "break-word" as const,
@@ -229,8 +242,14 @@ function StreamingCodeBlock({ code, language }: { code: string; language: string
     lineHeight: "1.5",
     fontFamily:
       "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-    color: isLoading ? "var(--foreground)" : undefined,
   };
+
+  // Display current highlight, or smooth transition while loading, or fallback
+  const displayContent = currentHighlight || smoothTransition || (
+    <code className="text-foreground" style={codeStyle}>
+      {code}
+    </code>
+  );
 
   return (
     <div className="rounded-[4px] overflow-hidden bg-sidebar relative max-w-full">
@@ -240,19 +259,10 @@ function StreamingCodeBlock({ code, language }: { code: string; language: string
         </div>
       </div>
       <div className="overflow-auto">
-        <div className="p-4 m-0 bg-sidebar relative">
+        <div className=" m-0 bg-sidebar relative">
           <div className="contentMarkdown" style={codeStyle}>
-            {highlightedNode || (
-              <code className="text-foreground" style={codeStyle}>
-                {code}
-              </code>
-            )}
+            {displayContent}
           </div>
-          {isLoading && (
-            <div className="absolute top-2 right-2 text-xs text-muted-foreground opacity-50">
-              Highlighting...
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -321,16 +331,33 @@ export const SimpleMessageRenderer = memo(function SimpleMessageRenderer({
       return null;
     }
 
-    // Count opening and closing code block markers
-    const openingCount = (content.match(/```/g) || []).length;
-    const hasIncompleteCodeBlock = openingCount % 2 === 1; // Odd count means incomplete
+    // Better detection using sliding window approach
+    const detectIncompleteCodeBlock = (text: string): boolean => {
+      // Find the last occurrence of ``` in the text
+      const lastTripleBacktick = text.lastIndexOf("```");
+
+      if (lastTripleBacktick === -1) {
+        return false; // No code blocks at all
+      }
+
+      // Get everything after the last ```
+      const afterLastMarker = text.slice(lastTripleBacktick + 3);
+
+      // Check if we're in an incomplete code block by looking for another ``` after the last one
+      const hasClosingMarker = afterLastMarker.includes("```");
+
+      // If no closing marker found after the last opening marker, we're in an incomplete block
+      return !hasClosingMarker;
+    };
+
+    const hasIncompleteCodeBlock = detectIncompleteCodeBlock(content);
 
     // Debug: log when we detect incomplete code blocks (only in development)
-    if (process.env.NODE_ENV === 'development' && hasIncompleteCodeBlock) {
-      console.log('🔄 Incomplete code block detected during streaming', { 
-        openingCount, 
+    if (process.env.NODE_ENV === "development" && hasIncompleteCodeBlock) {
+      console.log("🔄 Incomplete code block detected during streaming", {
         contentLength: content.length,
-        endsWithTripleBackticks: content.endsWith('```')
+        lastTripleBacktick: content.lastIndexOf("```"),
+        hasIncompleteCodeBlock,
       });
     }
 
@@ -367,15 +394,17 @@ export const SimpleMessageRenderer = memo(function SimpleMessageRenderer({
     // Handle remaining content after all complete code blocks
     if (lastIndex < content.length) {
       const remainingContent = content.slice(lastIndex);
-      
+
       if (hasIncompleteCodeBlock) {
         // Find the last opening ``` in the remaining content
-        const lastCodeBlockStart = remainingContent.lastIndexOf('```');
-        
+        const lastCodeBlockStart = remainingContent.lastIndexOf("```");
+
         if (lastCodeBlockStart !== -1) {
           // Add any content before the incomplete code block
           if (lastCodeBlockStart > 0) {
-            const beforeIncomplete = remainingContent.slice(0, lastCodeBlockStart).trim();
+            const beforeIncomplete = remainingContent
+              .slice(0, lastCodeBlockStart)
+              .trim();
             if (beforeIncomplete) {
               parts.push(
                 <MarkdownContent
@@ -385,17 +414,20 @@ export const SimpleMessageRenderer = memo(function SimpleMessageRenderer({
               );
             }
           }
-          
+
           // Extract and render the incomplete code block
           const incompleteBlock = remainingContent.slice(lastCodeBlockStart);
           const match = incompleteBlock.match(/```(\w+)?(?:\n)?([\s\S]*)/);
-          
+
           if (match) {
             const language = match[1] || "text";
             const code = match[2] || "";
-            
+
             parts.push(
-              <div key={`incomplete-code-${lastIndex + lastCodeBlockStart}`} className="my-4">
+              <div
+                key={`incomplete-code-${lastIndex + lastCodeBlockStart}`}
+                className="my-4"
+              >
                 <StreamingCodeBlock code={code} language={language} />
               </div>
             );
