@@ -140,7 +140,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
    npx auth secret
    ```
 
-   Configure your `.env` file with the required API keys and database URL:
+   Configure your `.env` file with the `DATABASE_URL` & `AUTH_SECRET`:
 
    ```env
    DATABASE_URL="file:../dev.db"
@@ -177,10 +177,6 @@ Visit [http://localhost:3000](http://localhost:3000) to see the application.
    AUTH_SECRET="your-secure-production-secret"
    NEXTAUTH_URL="https://your-domain.com"
 
-   # AI Provider API Keys
-   OPENAI_API_KEY="your-openai-key"
-   ANTHROPIC_API_KEY="your-anthropic-key"
-   # ... other API keys as needed
    ```
 
 3. **For database migrations in production:**
@@ -322,9 +318,6 @@ DATABASE_URL="file:/app/data/prod.db"
 AUTH_SECRET="your-generated-secret-here"
 NEXTAUTH_URL="http://localhost:3000"
 
-# AI Provider API Keys (add as needed)
-OPENAI_API_KEY="your-openai-key"
-ANTHROPIC_API_KEY="your-anthropic-key"
 ```
 
 Then use it with docker-compose:
@@ -416,7 +409,6 @@ Ensure all environment variables are properly configured for your production env
 - `DATABASE_URL` (consider PostgreSQL for production)
 - `AUTH_SECRET` (use a secure random string)
 - `NEXTAUTH_URL` (your production domain)
-- AI provider API keys
 
 ### Database Migration for Production
 
