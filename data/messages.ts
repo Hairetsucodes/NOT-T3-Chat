@@ -79,28 +79,89 @@ export const getMessagesByConversationId = async (conversationId: string) => {
       throw new Error("Conversation not found");
     }
 
+    // Check if this is a branched conversation
     if (conversation.branchedIds && conversation.branchedIds !== "null") {
-      // This is a branched conversation - get messages from all conversations in the branch chain
       const branchedIds: string[] = JSON.parse(conversation.branchedIds);
-      const allConversationIds = Array.isArray(branchedIds)
-        ? [...branchedIds, conversationId]
-        : [conversationId];
+      const originalConversationIds = Array.isArray(branchedIds)
+        ? branchedIds
+        : [];
 
-      const allMessages = await prisma.message.findMany({
-        where: {
-          conversationId: {
-            in: allConversationIds,
+      const branchPoint = conversation.createdAt;
+
+      // Get messages from original conversations that were created BEFORE the branch point
+      let originalMessages: Awaited<
+        ReturnType<typeof prisma.message.findMany>
+      > = [];
+      if (originalConversationIds.length > 0) {
+        originalMessages = await prisma.message.findMany({
+          where: {
+            conversationId: {
+              in: originalConversationIds,
+            },
+            createdAt: {
+              lt: branchPoint,
+            },
           },
+          orderBy: {
+            createdAt: "asc",
+          },
+        });
+      }
+
+      // Get all messages from the current branched conversation
+      const currentMessages = await prisma.message.findMany({
+        where: {
+          conversationId,
         },
         orderBy: {
           createdAt: "asc",
         },
       });
 
-      return allMessages;
+      // Combine messages
+      const allMessages = [...originalMessages, ...currentMessages];
+
+      // CRITICAL VALIDATION: Double-check that no messages from original conversations are after branch point
+      const invalidOriginalMessages = allMessages.filter(
+        (msg) =>
+          originalConversationIds.includes(msg.conversationId) &&
+          msg.createdAt >= branchPoint
+      );
+
+      if (invalidOriginalMessages.length > 0) {
+        console.error(
+          `\n🚨 CRITICAL ERROR: Found ${invalidOriginalMessages.length} messages from original conversations created AFTER branch point!`
+        );
+        invalidOriginalMessages.forEach((msg) => {
+          console.error(
+            `  - Message ${msg.id} from conversation ${
+              msg.conversationId
+            } created at ${msg.createdAt.toISOString()} (AFTER branch at ${branchPoint.toISOString()})`
+          );
+        });
+
+        // Filter them out completely
+        const filteredMessages = allMessages.filter(
+          (msg) =>
+            !(
+              originalConversationIds.includes(msg.conversationId) &&
+              msg.createdAt >= branchPoint
+            )
+        );
+
+        return filteredMessages.sort(
+          (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+        );
+      }
+
+      // Sort by creation time
+      const sortedMessages = allMessages.sort(
+        (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+      );
+
+      return sortedMessages;
     }
 
-    // Regular conversation or original conversation
     const messages = await prisma.message.findMany({
       where: {
         conversationId,
@@ -109,10 +170,10 @@ export const getMessagesByConversationId = async (conversationId: string) => {
         createdAt: "asc",
       },
     });
+
     return messages;
   } catch (error) {
     console.error("Error getting messages by conversation ID:", error);
-    console.log("conversationId", conversationId);
     return null;
   }
 };

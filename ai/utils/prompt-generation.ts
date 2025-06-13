@@ -1,7 +1,11 @@
 import { Message } from "@/types/chat";
-import { getProviderConfig, getProviderName, callGoogleNonStreaming } from '../providers';
-import { callProviderNonStreaming } from './streaming';
-import { PrismaClient } from '@prisma/client';
+import {
+  getProviderConfig,
+  getProviderName,
+  callGoogleNonStreaming,
+} from "../providers";
+import { callProviderNonStreaming } from "./streaming";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -45,7 +49,11 @@ function mapToPromptModel(modelId: string, provider: string): string {
         break;
       case "google":
         // Map premium/experimental Google models to free alternatives
-        if (modelId.includes("2.5") || modelId.includes("preview") || modelId.includes("exp")) {
+        if (
+          modelId.includes("2.5") ||
+          modelId.includes("preview") ||
+          modelId.includes("exp")
+        ) {
           return "gemini-1.5-flash"; // Fast, free Google model
         } else if (modelId.includes("pro") && !modelId.includes("1.0")) {
           return "gemini-1.0-pro"; // Free pro model
@@ -69,15 +77,16 @@ export async function generatePersonalizedPrompt(
   try {
     // Get user customization data
     const userCustomization = await prisma.userCustomization.findUnique({
-      where: { userId }
+      where: { userId },
     });
 
     if (!userCustomization) {
-      console.log("No user customization found for user:", userId);
+      console.warn("No user customization found for user:", userId);
       return null;
     }
 
-    const { displayName, userRole, userTraits, additionalContext } = userCustomization;
+    const { displayName, userRole, userTraits, additionalContext } =
+      userCustomization;
 
     // Build the prompt generation request
     const promptGenerationMessages: Message[] = [
@@ -98,10 +107,10 @@ Create a system prompt that makes the AI assistant tailored to this specific use
       {
         role: "user",
         content: `Generate a personalized system prompt using this user information:
-${displayName ? `Display Name: ${displayName}` : ''}
-${userRole ? `Role: ${userRole}` : ''}
-${userTraits ? `User Traits: ${userTraits}` : ''}
-${additionalContext ? `Additional Context: ${additionalContext}` : ''}
+${displayName ? `Display Name: ${displayName}` : ""}
+${userRole ? `Role: ${userRole}` : ""}
+${userTraits ? `User Traits: ${userTraits}` : ""}
+${additionalContext ? `Additional Context: ${additionalContext}` : ""}
 
 Please create a system prompt that incorporates this information to personalize the AI assistant's responses.`,
         timestamp: new Date(),
@@ -116,7 +125,11 @@ Please create a system prompt that incorporates this information to personalize 
 
     // Handle Google separately due to different SDK
     if (actualProvider.toLowerCase() === "google") {
-      generatedPrompt = await callGoogleNonStreaming(promptGenerationMessages, promptModelId, apiKey);
+      generatedPrompt = await callGoogleNonStreaming(
+        promptGenerationMessages,
+        promptModelId,
+        apiKey
+      );
     } else {
       // Use generic provider non-streaming for all other providers
       const config = getProviderConfig(actualProvider);
@@ -146,11 +159,8 @@ Please create a system prompt that incorporates this information to personalize 
       },
     });
 
-    console.log("✅ Generated and saved personalized prompt for user:", userId);
     return savedPrompt.id;
-
-  } catch (error) {
-    console.error("❌ Personalized prompt generation error:", error);
+  } catch {
     return null;
   }
 }
@@ -166,7 +176,7 @@ export async function updateChatSettingsWithPrompt(
 ): Promise<boolean> {
   try {
     let existingSettings = null;
-    
+
     // Try to find existing settings, but handle schema mismatch gracefully
     try {
       existingSettings = await prisma.chatSettings.findFirst({
@@ -176,11 +186,11 @@ export async function updateChatSettingsWithPrompt(
           userId: true,
           provider: true,
           model: true,
-          promptId: true
-        }
+          promptId: true,
+        },
       });
     } catch (schemaError) {
-      console.log(`Schema mismatch when querying ChatSettings for user ${userId}, will create new record:`, schemaError instanceof Error ? schemaError.message : 'Unknown error');
+      console.error("Schema mismatch when querying ChatSettings:", schemaError);
     }
 
     if (existingSettings) {
@@ -188,10 +198,10 @@ export async function updateChatSettingsWithPrompt(
       try {
         await prisma.chatSettings.update({
           where: { id: existingSettings.id },
-          data: { promptId }
+          data: { promptId },
         });
-      } catch (updateError) {
-        console.log(`Could not update existing ChatSettings, creating new one for user ${userId}:`, updateError instanceof Error ? updateError.message : 'Unknown error');
+      } catch (error) {
+        console.error("Error updating ChatSettings:", error);
         // If update fails, try creating a new one
         await createNewChatSettings(userId, provider, model, promptId);
       }
@@ -200,24 +210,27 @@ export async function updateChatSettingsWithPrompt(
       await createNewChatSettings(userId, provider, model, promptId);
     }
 
-    console.log("✅ Updated ChatSettings with prompt for user:", userId);
     return true;
-  } catch (error) {
-    console.error("❌ Error updating ChatSettings with prompt:", error);
+  } catch {
     return false;
   }
 }
 
 // Helper function to create new ChatSettings with minimal fields
-async function createNewChatSettings(userId: string, provider: string, model: string, promptId: string) {
+async function createNewChatSettings(
+  userId: string,
+  provider: string,
+  model: string,
+  promptId: string
+) {
   try {
     await prisma.chatSettings.create({
       data: {
         userId,
         provider,
         model,
-        promptId
-      }
+        promptId,
+      },
     });
   } catch (createError) {
     console.error("Error creating new ChatSettings:", createError);
@@ -235,15 +248,25 @@ export async function generateAndApplyPersonalizedPrompt(
   apiKey: string
 ): Promise<string | null> {
   try {
-    const promptId = await generatePersonalizedPrompt(userId, provider, modelId, apiKey);
-    
+    const promptId = await generatePersonalizedPrompt(
+      userId,
+      provider,
+      modelId,
+      apiKey
+    );
+
     if (promptId) {
-      const success = await updateChatSettingsWithPrompt(userId, promptId, provider, modelId);
+      const success = await updateChatSettingsWithPrompt(
+        userId,
+        promptId,
+        provider,
+        modelId
+      );
       if (success) {
         return promptId;
       }
     }
-    
+
     return null;
   } catch (error) {
     console.error("❌ Error in generateAndApplyPersonalizedPrompt:", error);
@@ -251,4 +274,4 @@ export async function generateAndApplyPersonalizedPrompt(
   } finally {
     await prisma.$disconnect();
   }
-} 
+}

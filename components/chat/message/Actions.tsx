@@ -142,6 +142,8 @@ export function MessageActions({
         provider: newProvider || message.provider || "",
       } as ChatSettings);
     }
+    // COMPLETELY clear and reset conversation state BEFORE navigation
+    setMessages([]);
     try {
       // Create new conversations
       const newConversation = await createRetryConversation(
@@ -153,13 +155,11 @@ export function MessageActions({
       // Add the new conversation to the list
       addConversation(newConversation);
 
-      // COMPLETELY clear and reset conversation state BEFORE navigation
-      setMessages([]);
       setConversationId(newConversation.id);
 
       const retryParams = new URLSearchParams({
         retry: "true",
-        message: inputMessage,  
+        message: inputMessage,
         ...(newModelId && { model: newModelId }),
         ...(newProvider && { provider: newProvider }),
       });

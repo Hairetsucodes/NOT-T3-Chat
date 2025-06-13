@@ -41,7 +41,16 @@ export function ChatWrapper({
     const retryModel = searchParams.get("model");
     const retryProvider = searchParams.get("provider");
 
-    if (initialMessages.length > 0) return;
+    if (
+      initialMessages.some((msg) => msg.role === "user" && msg.content === "")
+    )
+      return;
+
+    // If there are more than 1 user messages in the initial messages, don't retry
+    const userMessageCount = initialMessages.filter(
+      (msg) => msg.role === "user"
+    ).length;
+    if (userMessageCount >= 1) return;
     if (hasRetriedRef.current) return;
 
     const isRetry = searchParams.get("retry") === "true";

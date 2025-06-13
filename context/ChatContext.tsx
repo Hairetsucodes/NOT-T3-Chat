@@ -232,7 +232,7 @@ export const ChatProvider = ({
       const newMessages = [...messages, message];
       setMessages(newMessages);
       setIsLoading(true);
-      console.log("options", options);
+
       // Create abort controller for this request
       abortControllerRef.current = new AbortController();
 
@@ -533,7 +533,7 @@ export const ChatProvider = ({
       if (!activeUser?.id) return;
 
       // Store backup for potential revert
-      const conversationToDelete = conversations.find(conv => conv.id === id);
+      const conversationToDelete = conversations.find((conv) => conv.id === id);
       if (!conversationToDelete) return;
 
       // Optimistically remove from UI
@@ -543,45 +543,51 @@ export const ChatProvider = ({
       if (conversationId === id) {
         setConversationId(null);
         setMessages([]);
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
           window.history.replaceState(null, "", "/chat");
         }
       }
 
       try {
         const result = await deleteConversationAction(activeUser.id, id);
-        
+
         if ("error" in result) {
           // Revert the optimistic update on error
           setConversations((prev) => [conversationToDelete, ...prev]);
-          
+
           // Restore conversation view if it was the current one
           if (conversationId === id) {
             setConversationId(id);
-            if (typeof window !== 'undefined') {
+            if (typeof window !== "undefined") {
               window.history.replaceState(null, "", `/chat/${id}`);
             }
           }
-          
+
           throw new Error(result.error);
         }
       } catch (error) {
         // Revert the optimistic update on error
         setConversations((prev) => [conversationToDelete, ...prev]);
-        
+
         // Restore conversation view if it was the current one
         if (conversationId === id) {
           setConversationId(id);
-          if (typeof window !== 'undefined') {
+          if (typeof window !== "undefined") {
             window.history.replaceState(null, "", `/chat/${id}`);
           }
         }
-        
+
         console.error("Error deleting conversation:", error);
         throw error; // Re-throw so caller can handle UI feedback
       }
     },
-    [activeUser?.id, conversations, conversationId, setConversationId, setMessages]
+    [
+      activeUser?.id,
+      conversations,
+      conversationId,
+      setConversationId,
+      setMessages,
+    ]
   );
 
   return (

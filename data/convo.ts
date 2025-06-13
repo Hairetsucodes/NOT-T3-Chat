@@ -64,21 +64,11 @@ export const createRetryConversation = async (
   if (!conversation) {
     throw new Error("Conversation not found");
   }
-  let allConversationIds: string[] | null;
-  if (conversation.branchedIds) {
-    const branchedIds = JSON.parse(conversation.branchedIds);
-    allConversationIds = [...branchedIds, conversationId];
-  } else {
-    allConversationIds = null;
-  }
 
   const retryConversation = await prisma.conversation.create({
     data: {
       userId,
-      title: `${originalTitle.slice(0, 50)}` || " New Chat",
-      branchedIds: allConversationIds
-        ? JSON.stringify(allConversationIds)
-        : null,
+      title: ` ${conversation.title.slice(0, 50)}` || " New Chat",
     },
   });
 

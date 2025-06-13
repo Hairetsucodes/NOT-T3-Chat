@@ -173,10 +173,7 @@ async function generatePersonalizedPromptBackground(userId: string) {
         model = userChatSettings.model;
       }
     } catch (schemaError) {
-      console.log(
-        `Using default provider/model due to schema mismatch for user ${userId}:`,
-        schemaError instanceof Error ? schemaError.message : "Unknown error"
-      );
+      console.error("Error getting user chat settings:", schemaError);
     }
 
     // Get API key for the provider
@@ -185,29 +182,18 @@ async function generatePersonalizedPromptBackground(userId: string) {
     });
 
     if (!apiKeyRecord) {
-      console.log(
+      console.error(
         `No API key found for provider ${provider}, skipping prompt generation for user ${userId}`
       );
       return;
     }
 
-    // Generate and apply the personalized prompt
-    const promptId = await generateAndApplyPersonalizedPrompt(
+    await generateAndApplyPersonalizedPrompt(
       userId,
       provider,
       model,
       apiKeyRecord.key
     );
-
-    if (promptId) {
-      console.log(
-        `✅ Successfully generated personalized prompt ${promptId} for user ${userId}`
-      );
-    } else {
-      console.log(
-        `❌ Failed to generate personalized prompt for user ${userId}`
-      );
-    }
   } catch (error) {
     console.error("Error in background prompt generation:", error);
   }
