@@ -1,0 +1,46 @@
+name: Build and Test Docker Container
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  docker-build-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./DOCKERFILE
+          push: false
+          tags: oss-t3-chat:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          
+      - name: Test Docker container
+        run: |
+          # Start the container in the background
+          docker run -d --name test-container -p 3000:3000 oss-t3-chat:test
+          
+          # Wait for the container to start
+          sleep 10
+          
+          # Check if the container is running
+          docker ps | grep test-container
+          
+          # Test if the application responds
+          curl -f http://localhost:3000 || exit 1
+          
+          # Clean up
+          docker stop test-container
+          docker rm test-container

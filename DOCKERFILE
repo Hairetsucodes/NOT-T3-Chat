@@ -1,0 +1,56 @@
+# Base stage
+FROM node:21-alpine AS base
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Set the working directory
+WORKDIR /app
+
+# Copy package.json and pnpm-lock.yaml
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Explicitly install @prisma/engines
+RUN pnpm add @prisma/engines
+
+# Copy the rest of the application code
+COPY . .
+
+# Generate Prisma client
+RUN pnpx prisma generate
+
+
+RUN pnpm run build
+
+# Production stage
+FROM node:21-alpine AS runner
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Set the working directory
+WORKDIR /app
+
+# Set environment to production
+ENV NODE_ENV production
+
+# Copy necessary files from the base stage
+COPY --from=base /app/next.config.mjs ./
+COPY --from=base /app/public ./public
+COPY --from=base /app/.next ./.next
+COPY --from=base /app/node_modules ./node_modules
+COPY --from=base /app/package.json ./package.json
+COPY --from=base /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=base /app/prisma ./prisma
+
+# Ensure the next command is available in the PATH
+RUN ln -s /app/node_modules/.bin/next /usr/local/bin/next
+
+# Expose the port
+EXPOSE 3000
+
+# Command to run the application
+CMD ["pnpm", "start"]
