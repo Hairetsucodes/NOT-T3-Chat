@@ -622,8 +622,8 @@ export const ChatProvider = ({
     ]
   );
 
-  // Memoize the context value to prevent unnecessary re-renders
-  const contextValue = useMemo(
+  // Split context into static and dynamic parts to reduce re-renders
+  const staticContextValue = useMemo(
     () => ({
       conversations,
       pinnedConversations,
@@ -646,19 +646,14 @@ export const ChatProvider = ({
       preferredModels,
       setPreferredModels,
       refreshPreferredModels,
-      messages,
-      setMessages,
-      input,
-      setInput,
-      isLoading,
       conversationId,
       setConversationId,
       conversationTitle,
       setConversationTitle,
-      sendMessage,
       handleInputChange,
       handleSubmit,
       handleSuggestionSelect,
+      sendMessage,
     }),
     [
       conversations,
@@ -682,20 +677,36 @@ export const ChatProvider = ({
       preferredModels,
       setPreferredModels,
       refreshPreferredModels,
+      conversationId,
+      setConversationId,
+      conversationTitle,
+      setConversationTitle,
+      handleInputChange,
+      handleSubmit,
+      handleSuggestionSelect,
+      sendMessage,
+    ]
+  );
+
+  // Separate dynamic streaming data to minimize re-renders
+  const streamingContextValue = useMemo(
+    () => ({
       messages,
       setMessages,
       input,
       setInput,
       isLoading,
-      conversationId,
-      setConversationId,
-      conversationTitle,
-      setConversationTitle,
-      sendMessage,
-      handleInputChange,
-      handleSubmit,
-      handleSuggestionSelect,
-    ]
+    }),
+    [messages, setMessages, input, setInput, isLoading]
+  );
+
+  // Combine the contexts
+  const contextValue = useMemo(
+    () => ({
+      ...staticContextValue,
+      ...streamingContextValue,
+    }),
+    [staticContextValue, streamingContextValue]
   );
 
   return (

@@ -14,6 +14,17 @@ import {
 import { ChatContext } from "@/context/ChatContext";
 import { highlight } from "@/lib/shiki-shared";
 import { processMarkdown } from "@/lib/markdownProcessor";
+import {
+  normalizeLanguage,
+  getLanguageDisplayName,
+  detectIncompleteCodeBlock,
+  extractIncompleteCodeBlock,
+} from "@/lib/code-utils";
+import {
+  getCodeStyle,
+  getStreamingCodeStyle,
+  CODE_BLOCK_CLASSES,
+} from "@/lib/code-styles";
 import type { BundledLanguage } from "shiki/bundle/web";
 import type { JSX } from "react";
 import { Button } from "@/components/ui/button";
@@ -32,53 +43,30 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
   const [isWordWrapEnabled, setIsWordWrapEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Language display mapping
-  const languageMap: { [key: string]: string } = {
-    js: "JavaScript",
-    ts: "TypeScript",
-    jsx: "React JSX",
-    tsx: "React TSX",
-    py: "Python",
-    python: "Python",
-    java: "Java",
-    cpp: "C++",
-    c: "C",
-    cs: "C#",
-    php: "PHP",
-    rb: "Ruby",
-    go: "Go",
-    rs: "Rust",
-    kt: "Kotlin",
-    swift: "Swift",
-    sh: "Shell",
-    bash: "Bash",
-    sql: "SQL",
-    html: "HTML",
-    css: "CSS",
-    scss: "SCSS",
-    sass: "Sass",
-    json: "JSON",
-    xml: "XML",
-    yaml: "YAML",
-    yml: "YAML",
-    md: "Markdown",
-    dockerfile: "Dockerfile",
-    text: "Plain Text",
-  };
-
-  const displayLanguage =
-    languageMap[language.toLowerCase()] || language.toUpperCase();
+  const displayLanguage = getLanguageDisplayName(language);
 
   useLayoutEffect(() => {
+    // Skip highlighting if code is empty or whitespace only
+    if (!code.trim()) {
+      setHighlightedNode(<code className="text-foreground">{code}</code>);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
-    highlight(code, language as BundledLanguage)
+    const normalizedLang = normalizeLanguage(language);
+    highlight(code, normalizedLang as BundledLanguage)
       .then((result) => {
         setHighlightedNode(result);
         setIsLoading(false);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.warn(
+          `Shiki highlighting failed for language "${language}":`,
+          error
+        );
         // Fallback to plain code
-        setHighlightedNode(<code>{code}</code>);
+        setHighlightedNode(<code className="text-foreground">{code}</code>);
         setIsLoading(false);
       });
   }, [code, language]);
@@ -97,26 +85,16 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
     setIsWordWrapEnabled(!isWordWrapEnabled);
   };
 
-  // GitHub-like code styling for immediate display
-  const codeStyle = {
-    whiteSpace: isWordWrapEnabled ? "pre-wrap" : "pre",
-    wordBreak: isWordWrapEnabled ? "break-word" : "normal",
-    overflowWrap: isWordWrapEnabled ? "break-word" : "normal",
-    fontSize: "0.9em",
-    lineHeight: "1.5",
-    minWidth: isWordWrapEnabled ? "auto" : "max-content",
-    fontFamily:
-      "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-  } as const;
+  const codeStyle = getCodeStyle({ isWordWrapEnabled });
 
   return (
-    <div className="rounded-[4px] overflow-hidden bg-sidebar relative max-w-full">
+    <div className={CODE_BLOCK_CLASSES.container}>
       {/* Language label header */}
-      <div className="flex items-center justify-between bg-secondary px-4 py-1 shadow-sm border-b border-secondary-foreground/10">
-        <div className="text-xs text-secondary-foreground font-medium">
+      <div className={CODE_BLOCK_CLASSES.header}>
+        <div className={CODE_BLOCK_CLASSES.languageLabel}>
           {displayLanguage}
         </div>
-        <div className="flex items-center gap-2">
+        <div className={CODE_BLOCK_CLASSES.buttonGroup}>
           <Button
             onClick={toggleWordWrap}
             variant="ghost"
@@ -141,12 +119,12 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
         </div>
       </div>
       <div className={isWordWrapEnabled ? "overflow-auto" : "overflow-x-auto"}>
-        <div className=" m-0 bg-sidebar relative">
-          <div className="contentMarkdown" style={codeStyle}>
+        <div className={CODE_BLOCK_CLASSES.contentContainer}>
+          <div className={CODE_BLOCK_CLASSES.content} style={codeStyle}>
             {highlightedNode || <code className="text-foreground">{code}</code>}
           </div>
           {isLoading && (
-            <div className="absolute top-2 right-2 text-xs text-muted-foreground opacity-50">
+            <div className={CODE_BLOCK_CLASSES.loadingIndicator}>
               Highlighting...
             </div>
           )}
@@ -171,52 +149,33 @@ function StreamingCodeBlock({
     null
   );
 
-  // Language display mapping
-  const languageMap: { [key: string]: string } = {
-    js: "JavaScript",
-    ts: "TypeScript",
-    jsx: "React JSX",
-    tsx: "React TSX",
-    py: "Python",
-    python: "Python",
-    java: "Java",
-    cpp: "C++",
-    c: "C",
-    cs: "C#",
-    php: "PHP",
-    rb: "Ruby",
-    go: "Go",
-    rs: "Rust",
-    kt: "Kotlin",
-    swift: "Swift",
-    sh: "Shell",
-    bash: "Bash",
-    sql: "SQL",
-    html: "HTML",
-    css: "CSS",
-    scss: "SCSS",
-    sass: "Sass",
-    json: "JSON",
-    xml: "XML",
-    yaml: "YAML",
-    yml: "YAML",
-    md: "Markdown",
-    dockerfile: "Dockerfile",
-    text: "Plain Text",
-  };
-
-  const displayLanguage =
-    languageMap[language.toLowerCase()] || language.toUpperCase();
+  const displayLanguage = getLanguageDisplayName(language);
 
   useLayoutEffect(() => {
     const highlightCode = () => {
+      // Skip highlighting if code is empty or whitespace only
+      if (!code.trim()) {
+        const fallbackNode = <code className="text-foreground">{code}</code>;
+        setCurrentHighlight(fallbackNode);
+        setSmoothTransition(null);
+        return;
+      }
+
+      // Keep current highlight visible while processing new content (prevents flashing)
+      setSmoothTransition(currentHighlight);
+
       // Try to highlight the incomplete code, but be more forgiving of errors
-      highlight(code, language as BundledLanguage)
+      const normalizedLang = normalizeLanguage(language);
+      highlight(code, normalizedLang as BundledLanguage)
         .then((result) => {
           setCurrentHighlight(result);
           setSmoothTransition(null); // Clear transition once new highlight is ready
         })
-        .catch(() => {
+        .catch((error) => {
+          console.warn(
+            `Shiki streaming highlighting failed for language "${language}":`,
+            error
+          );
           // For incomplete code, fallback to plain code with proper styling
           const fallbackNode = <code className="text-foreground">{code}</code>;
           setCurrentHighlight(fallbackNode);
@@ -224,25 +183,10 @@ function StreamingCodeBlock({
         });
     };
 
-        // Keep current highlight visible while processing new content (prevents flashing)
-    if (currentHighlight) {
-      setSmoothTransition(currentHighlight);
-    }
-    
-    // Always highlight immediately - no debouncing for maximum responsiveness
     highlightCode();
-  }, [code, language, currentHighlight]);
+  }, [code, language]);
 
-  // GitHub-like code styling - consistent styling without loading-dependent colors
-  const codeStyle = {
-    whiteSpace: "pre-wrap" as const,
-    wordBreak: "break-word" as const,
-    overflowWrap: "break-word" as const,
-    fontSize: "0.9em",
-    lineHeight: "1.5",
-    fontFamily:
-      "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-  };
+  const codeStyle = getStreamingCodeStyle();
 
   // Display current highlight, or smooth transition while loading, or fallback
   const displayContent = currentHighlight || smoothTransition || (
@@ -252,15 +196,15 @@ function StreamingCodeBlock({
   );
 
   return (
-    <div className="rounded-[4px] overflow-hidden bg-sidebar relative max-w-full">
-      <div className="flex items-center justify-between bg-secondary px-4 py-1 shadow-sm border-b border-secondary-foreground/10">
-        <div className="text-xs text-secondary-foreground font-medium">
+    <div className={CODE_BLOCK_CLASSES.container}>
+      <div className={CODE_BLOCK_CLASSES.header}>
+        <div className={CODE_BLOCK_CLASSES.languageLabel}>
           {displayLanguage} (streaming...)
         </div>
       </div>
       <div className="overflow-auto">
-        <div className=" m-0 bg-sidebar relative">
-          <div className="contentMarkdown" style={codeStyle}>
+        <div className={CODE_BLOCK_CLASSES.contentContainer}>
+          <div className={CODE_BLOCK_CLASSES.content} style={codeStyle}>
             {displayContent}
           </div>
         </div>
@@ -331,25 +275,6 @@ export const SimpleMessageRenderer = memo(function SimpleMessageRenderer({
       return null;
     }
 
-    // Better detection using sliding window approach
-    const detectIncompleteCodeBlock = (text: string): boolean => {
-      // Find the last occurrence of ``` in the text
-      const lastTripleBacktick = text.lastIndexOf("```");
-
-      if (lastTripleBacktick === -1) {
-        return false; // No code blocks at all
-      }
-
-      // Get everything after the last ```
-      const afterLastMarker = text.slice(lastTripleBacktick + 3);
-
-      // Check if we're in an incomplete code block by looking for another ``` after the last one
-      const hasClosingMarker = afterLastMarker.includes("```");
-
-      // If no closing marker found after the last opening marker, we're in an incomplete block
-      return !hasClosingMarker;
-    };
-
     const hasIncompleteCodeBlock = detectIncompleteCodeBlock(content);
 
     // Debug: log when we detect incomplete code blocks (only in development)
@@ -396,42 +321,28 @@ export const SimpleMessageRenderer = memo(function SimpleMessageRenderer({
       const remainingContent = content.slice(lastIndex);
 
       if (hasIncompleteCodeBlock) {
-        // Find the last opening ``` in the remaining content
-        const lastCodeBlockStart = remainingContent.lastIndexOf("```");
-
-        if (lastCodeBlockStart !== -1) {
+        const extractedIncomplete =
+          extractIncompleteCodeBlock(remainingContent);
+        if (extractedIncomplete) {
           // Add any content before the incomplete code block
-          if (lastCodeBlockStart > 0) {
-            const beforeIncomplete = remainingContent
-              .slice(0, lastCodeBlockStart)
-              .trim();
-            if (beforeIncomplete) {
-              parts.push(
-                <MarkdownContent
-                  key={`pre-incomplete-${lastIndex}`}
-                  content={beforeIncomplete}
-                />
-              );
-            }
-          }
-
-          // Extract and render the incomplete code block
-          const incompleteBlock = remainingContent.slice(lastCodeBlockStart);
-          const match = incompleteBlock.match(/```(\w+)?(?:\n)?([\s\S]*)/);
-
-          if (match) {
-            const language = match[1] || "text";
-            const code = match[2] || "";
-
+          if (extractedIncomplete.beforeIncomplete) {
             parts.push(
-              <div
-                key={`incomplete-code-${lastIndex + lastCodeBlockStart}`}
-                className="my-4"
-              >
-                <StreamingCodeBlock code={code} language={language} />
-              </div>
+              <MarkdownContent
+                key={`pre-incomplete-${lastIndex}`}
+                content={extractedIncomplete.beforeIncomplete}
+              />
             );
           }
+
+          // Add the incomplete code block
+          parts.push(
+            <div key={`incomplete-code-${lastIndex}`} className="my-4">
+              <StreamingCodeBlock
+                code={extractedIncomplete.code}
+                language={extractedIncomplete.language}
+              />
+            </div>
+          );
         } else {
           // No ``` found but hasIncompleteCodeBlock is true, treat as regular markdown
           const trimmedRemaining = remainingContent.trim();
