@@ -46,7 +46,7 @@ export default function Register() {
           remember: true,
         });
         router.refresh();
-        router.push("/dashboard");
+        router.push("/chat");
       } else {
         setError(registerData.error);
       }
