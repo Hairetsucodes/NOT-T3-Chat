@@ -275,15 +275,6 @@ export const resetUserSettings = async () => {
   }
 };
 
-export const getChatSettings = async () => {
-  const { userId } = await checkUser();
-
-  const chatSettings = await prisma.chatSettings.findFirst({
-    where: { userId },
-  });
-
-  return chatSettings;
-};
 
 export async function updateChatSettings(model: string, provider: string) {
   const { userId } = await checkUser();

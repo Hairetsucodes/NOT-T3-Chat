@@ -72,3 +72,15 @@ export const getAPIKeysApi = async (userId: string) => {
     throw new Error("Failed to fetch API keys");
   }
 }; 
+
+
+
+
+export const getChatSettingsApi = async (userId: string) => {
+
+  const chatSettings = await prisma.chatSettings.findFirst({
+    where: { userId },
+  });
+
+  return chatSettings;
+};

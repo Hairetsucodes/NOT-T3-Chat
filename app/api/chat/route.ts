@@ -1,12 +1,12 @@
 import { auth } from "@/auth";
 import { handleLLMRequestStreaming, generateTitle } from "@/ai/index";
 import { ChatRequestSchema } from "@/schemas/chatEndpoint";
-import { getChatSettings } from "@/data/settings";
 import { getModelById } from "@/data/models";
 import {
   createMessageApi,
   getPromptApi,
   getAPIKeysApi,
+  getChatSettingsApi,
 } from "@/lib/apiServerActions/chat";
 
 export async function POST(req: Request) {
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
   try {
     const apiKeys = await getAPIKeysApi(userId);
-    const settings = await getChatSettings();
+    const settings = await getChatSettingsApi(userId);  
     const prompt =
       !settings || "error" in settings || !settings.promptId
         ? null
