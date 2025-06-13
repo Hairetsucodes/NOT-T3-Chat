@@ -112,7 +112,6 @@ export async function generateTitle(
         providerName
       );
     }
-    console.log("title", title);
     // Clean up the title (remove quotes, limit length)
     title = title.replace(/^["']|["']$/g, "").trim();
     if (title.length > 50) {
