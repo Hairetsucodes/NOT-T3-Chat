@@ -3,7 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { Settings2 } from "lucide-react";
 import { ModeToggle } from "@/components/settings/theme/Toggle";
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import SettingsModal from "@/components/settings/SettingsModal";
 
 export function ChatHeader() {
@@ -11,7 +16,11 @@ export function ChatHeader() {
     <div className="absolute right-0 pt-3 pr-3 z-50">
       <Dialog>
         <DialogTrigger asChild>
-          <Button variant="chatMenu" className="bg-transparent border-none">
+          <Button
+            variant="chatMenu"
+            className="bg-transparent border-none"
+            aria-label="Open settings"
+          >
             <Settings2 />
           </Button>
         </DialogTrigger>
@@ -20,7 +29,7 @@ export function ChatHeader() {
           <SettingsModal />
         </DialogContent>
       </Dialog>
-      <ModeToggle />
+      <ModeToggle aria-label="Toggle theme" />
     </div>
   );
-} 
+}
