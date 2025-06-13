@@ -69,6 +69,11 @@ export const getConversations = async (userId: string) => {
 };
 
 export const getMessagesByConversationId = async (conversationId: string) => {
+  const user = await checkUser({ userId: conversationId });
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
   try {
     const conversation = await prisma.conversation.findUnique({
       where: {

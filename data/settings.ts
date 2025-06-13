@@ -153,6 +153,11 @@ export const updateUserSettings = async (
 
 // Background function to generate personalized prompt
 async function generatePersonalizedPromptBackground(userId: string) {
+  const { success } = await checkUser({ userId });
+  if (!success) {
+    return { error: "Unauthorized" };
+  }
+
   try {
     let provider = "openai";
     let model = "gpt-4o-mini";

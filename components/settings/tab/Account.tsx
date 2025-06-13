@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect, useContext } from "react";
-import { updateUser } from "@/data/user";
+import { updateUser } from "@/data/userInfo";
 import { toast } from "sonner";
 import { Loader2, User } from "lucide-react";
 import { ChatContext } from "@/context/ChatContext";
