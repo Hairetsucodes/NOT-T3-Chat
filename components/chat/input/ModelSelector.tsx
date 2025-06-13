@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useState, useEffect, useMemo, useCallback } from "react";
+import { useContext, useState, useEffect, useMemo, useCallback, memo } from "react";
 import {
   Search,
   ChevronDown,
@@ -201,7 +201,7 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-export default function ModelSelector() {
+const ModelSelector = memo(function ModelSelector() {
   const {
     preferredModels,
     availableModels: dbModels,
@@ -478,4 +478,6 @@ export default function ModelSelector() {
       </PopoverContent>
     </Popover>
   );
-}
+});
+
+export default ModelSelector;

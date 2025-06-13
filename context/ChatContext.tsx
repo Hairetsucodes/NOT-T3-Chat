@@ -5,7 +5,7 @@ import {
   UserCustomization,
   ChatSettings,
 } from "@prisma/client";
-import { createContext, useState, useCallback, useRef, useEffect } from "react";
+import { createContext, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { UnifiedModel } from "@/data/models";
 import { getPreferredModels } from "@/data/models";
 import { Message } from "@/types/chat";
@@ -80,7 +80,7 @@ interface ChatContextType {
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
-  handleSubmit: (event?: { preventDefault?: () => void }) => void;
+  handleSubmit: (event?: { preventDefault?: () => void; currentInput?: string }) => void;
   handleSuggestionSelect: (suggestion: string) => void;
 }
 
@@ -220,7 +220,7 @@ export const ChatProvider = ({
     setConversations((prev) => prev.filter((conv) => conv.id !== id));
   }, []);
 
-  const refreshPreferredModels = async () => {
+  const refreshPreferredModels = useCallback(async () => {
     if (!activeUser?.id) return;
 
     try {
@@ -229,7 +229,7 @@ export const ChatProvider = ({
     } catch (error) {
       console.error("Failed to refresh preferred models:", error);
     }
-  };
+  }, [activeUser?.id]);
 
   // New chat messaging functions
   const sendMessage = useCallback(
@@ -435,12 +435,15 @@ export const ChatProvider = ({
   );
 
   const handleSubmit = useCallback(
-    (event?: { preventDefault?: () => void }) => {
+    (event?: { preventDefault?: () => void; currentInput?: string }) => {
       if (event?.preventDefault) {
         event.preventDefault();
       }
 
-      if (input.trim() && !isLoading) {
+      // Use currentInput if provided, otherwise fall back to input state
+      const inputToUse = event?.currentInput ?? input;
+
+      if (inputToUse.trim() && !isLoading) {
         // Add loading conversation for new chats
         if (!conversationId && activeUser?.id) {
           const loadingId = `loading-${Date.now()}-${Math.random()
@@ -466,14 +469,17 @@ export const ChatProvider = ({
         const userMessage: Message = {
           id: Date.now().toString(),
           role: "user",
-          content: input,
+          content: inputToUse,
         };
 
         sendMessage(userMessage, {
           ...(conversationId && { conversationId }),
         });
 
-        setInput("");
+        // Only clear input state if we used it (not currentInput)
+        if (!event?.currentInput) {
+          setInput("");
+        }
       }
     },
     [
@@ -616,45 +622,84 @@ export const ChatProvider = ({
     ]
   );
 
+  // Memoize the context value to prevent unnecessary re-renders
+  const contextValue = useMemo(
+    () => ({
+      conversations,
+      pinnedConversations,
+      unpinnedConversations,
+      setConversations,
+      addConversation,
+      updateConversation,
+      removeLoadingConversation,
+      togglePinConversation,
+      deleteConversation,
+      activeUser,
+      userSettings,
+      chatSettings,
+      setChatSettings,
+      setUserSettings,
+      activeProviders,
+      setActiveProviders,
+      currentProvider,
+      availableModels,
+      preferredModels,
+      setPreferredModels,
+      refreshPreferredModels,
+      messages,
+      setMessages,
+      input,
+      setInput,
+      isLoading,
+      conversationId,
+      setConversationId,
+      conversationTitle,
+      setConversationTitle,
+      sendMessage,
+      handleInputChange,
+      handleSubmit,
+      handleSuggestionSelect,
+    }),
+    [
+      conversations,
+      pinnedConversations,
+      unpinnedConversations,
+      setConversations,
+      addConversation,
+      updateConversation,
+      removeLoadingConversation,
+      togglePinConversation,
+      deleteConversation,
+      activeUser,
+      userSettings,
+      chatSettings,
+      setChatSettings,
+      setUserSettings,
+      activeProviders,
+      setActiveProviders,
+      currentProvider,
+      availableModels,
+      preferredModels,
+      setPreferredModels,
+      refreshPreferredModels,
+      messages,
+      setMessages,
+      input,
+      setInput,
+      isLoading,
+      conversationId,
+      setConversationId,
+      conversationTitle,
+      setConversationTitle,
+      sendMessage,
+      handleInputChange,
+      handleSubmit,
+      handleSuggestionSelect,
+    ]
+  );
+
   return (
-    <ChatContext.Provider
-      value={{
-        conversations,
-        pinnedConversations,
-        unpinnedConversations,
-        setConversations,
-        addConversation,
-        updateConversation,
-        removeLoadingConversation,
-        togglePinConversation,
-        deleteConversation,
-        activeUser,
-        userSettings,
-        chatSettings,
-        setChatSettings,
-        setUserSettings,
-        activeProviders,
-        setActiveProviders,
-        currentProvider,
-        availableModels,
-        preferredModels,
-        setPreferredModels,
-        refreshPreferredModels,
-        messages,
-        setMessages,
-        input,
-        setInput,
-        isLoading,
-        conversationId,
-        setConversationId,
-        conversationTitle,
-        setConversationTitle,
-        sendMessage,
-        handleInputChange,
-        handleSubmit,
-        handleSuggestionSelect,
-      }}
-    >
+    <ChatContext.Provider value={contextValue}>
       {children}
     </ChatContext.Provider>
   );

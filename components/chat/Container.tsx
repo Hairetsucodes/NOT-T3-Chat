@@ -4,11 +4,10 @@ import { ChatInput } from "./input/Input";
 import { WelcomeScreen } from "./welcome/Welcome";
 import { ChatHeader } from "./ui/Header";
 import CornerDecorator from "./ui/CornerDecorator";
-import { MessageRenderer } from "./message/Renderer";
 import { LoadingBubbles } from "./ui/LoadingBubbles";
 import { Message } from "@/types/chat";
-import { ChangeEvent, useEffect } from "react";
-import { disposeHighlighter } from "@/lib/shikiHighlighter";
+import { ChangeEvent } from "react";
+import { SimpleMessageRenderer } from "./message/SimpleRenderer";
 
 interface ChatContainerProps {
   messages: Message[];
@@ -17,7 +16,7 @@ interface ChatContainerProps {
   handleInputChange: (
     e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLTextAreaElement>
   ) => void;
-  handleSubmit: (event?: { preventDefault?: () => void } | undefined) => void;
+  handleSubmit: (event?: { preventDefault?: () => void; currentInput?: string } | undefined) => void;
   handleSuggestionSelect: (suggestion: string) => void;
 }
 
@@ -29,12 +28,6 @@ export function ChatContainer({
   handleSubmit,
   handleSuggestionSelect,
 }: ChatContainerProps) {
-  useEffect(() => {
-    return () => {
-      disposeHighlighter();
-    };
-  }, []);
-
   return (
     <main className="relative flex w-full h-full flex-col overflow-hidden transition-[width,height]">
       {/* Background with borders */}
@@ -78,7 +71,7 @@ export function ChatContainer({
                   message.role === "user" ? "items-end" : "items-start"
                 }`}
               >
-                <MessageRenderer message={message} />
+                <SimpleMessageRenderer message={message} />
               </div>
             ))}
             {/* Show loading animation immediately when submitting */}

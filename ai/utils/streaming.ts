@@ -1,7 +1,85 @@
-import { StreamingJSONParser } from "./json-parser";
 import { createErrorStream } from "./errors";
 import { ProviderConfig } from "@/types/llms";
 import { Message } from "@/types/chat";
+
+interface ParsedStreamResponse {
+  choices?: Array<{
+    delta?: {
+      content?: string;
+      reasoning?: string;
+      reasoning_content?: string;
+      thought?: string;
+      thinking?: string;
+    };
+  }>;
+  type?: string;
+  delta?: {
+    text?: string;
+  };
+  content?: string;
+}
+
+/**
+ * Tokenize content into smaller chunks for better streaming experience
+ */
+function tokenizeContent(content: string): string[] {
+  if (!content) return [];
+
+  // Split by word boundaries and punctuation while preserving spaces and punctuation
+  const tokens: string[] = [];
+  const regex = /(\s+|[.,!?;:]|\S+)/g;
+  let match;
+
+  while ((match = regex.exec(content)) !== null) {
+    tokens.push(match[0]);
+  }
+
+  return tokens.filter((token) => token.length > 0);
+}
+
+/**
+ * Extract content from parsed response
+ */
+function extractContentFromParsed(
+  parsed: unknown
+): { content?: string; reasoning?: string } | null {
+  if (!parsed || typeof parsed !== "object") return null;
+
+  const result: { content?: string; reasoning?: string } = {};
+  const parsedObj = parsed as ParsedStreamResponse;
+
+  // Handle OpenAI/XAI format
+  if (parsedObj.choices?.[0]?.delta) {
+    const delta = parsedObj.choices[0].delta;
+
+    // Handle different reasoning content formats
+    const reasoningContent =
+      delta.reasoning ||
+      delta.reasoning_content ||
+      delta.thought ||
+      delta.thinking;
+
+    if (reasoningContent) {
+      result.reasoning = reasoningContent;
+    }
+
+    if (delta.content) {
+      result.content = delta.content;
+    }
+  }
+
+  // Handle Anthropic format
+  else if (parsedObj.type === "content_block_delta" && parsedObj.delta?.text) {
+    result.content = parsedObj.delta.text;
+  }
+
+  // Handle direct content
+  else if (parsedObj.content) {
+    result.content = parsedObj.content;
+  }
+
+  return Object.keys(result).length > 0 ? result : null;
+}
 
 /**
  * Generic streaming handler for all LLM providers
@@ -44,7 +122,11 @@ export async function createProviderStream(
     async start(controller) {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      const parser = new StreamingJSONParser();
+      let buffer = "";
+
+      // Helper function to sleep for consistent timing
+      const sleep = (ms: number) =>
+        new Promise((resolve) => setTimeout(resolve, ms));
 
       if (!reader) {
         controller.error(new Error("No response body reader"));
@@ -57,52 +139,105 @@ export async function createProviderStream(
           if (done) break;
 
           const chunk = decoder.decode(value, { stream: true });
-          const results = parser.processChunk(chunk);
+          buffer += chunk;
 
-          for (const result of results) {
-            if (result.reasoning) {
-              controller.enqueue(
-                new TextEncoder().encode(
-                  `data: ${JSON.stringify({
-                    reasoning: result.reasoning,
-                  })}\n\n`
-                )
-              );
-            }
+          // Process individual SSE messages as they come in
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || ""; // Keep incomplete line in buffer
 
-            if (result.content) {
-              controller.enqueue(
-                new TextEncoder().encode(
-                  `data: ${JSON.stringify({
-                    content: result.content,
-                  })}\n\n`
-                )
-              );
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine || !trimmedLine.startsWith("data: ")) continue;
+
+            const data = trimmedLine.slice(6).trim();
+            if (data === "[DONE]") continue;
+            if (!data) continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              const result = extractContentFromParsed(parsed);
+
+              if (result) {
+                // Stream reasoning tokens with consistent timing
+                if (result.reasoning) {
+                  const tokens = tokenizeContent(result.reasoning);
+                  for (const token of tokens) {
+                    controller.enqueue(
+                      new TextEncoder().encode(
+                        `data: ${JSON.stringify({
+                          reasoning: token,
+                        })}\n\n`
+                      )
+                    );
+                    await sleep(8); // 25ms delay between tokens
+                  }
+                }
+
+                // Stream content tokens with consistent timing
+                if (result.content) {
+                  const tokens = tokenizeContent(result.content);
+                  for (const token of tokens) {
+                    controller.enqueue(
+                      new TextEncoder().encode(
+                        `data: ${JSON.stringify({
+                          content: token,
+                        })}\n\n`
+                      )
+                    );
+                    await sleep(8); // 25ms delay between tokens
+                  }
+                }
+              }
+            } catch {
+              // Skip invalid JSON silently
+              continue;
             }
           }
         }
 
         // Process any remaining data in buffer
-        const finalResults = parser.flush();
-        for (const result of finalResults) {
-          if (result.reasoning) {
-            controller.enqueue(
-              new TextEncoder().encode(
-                `data: ${JSON.stringify({
-                  reasoning: result.reasoning,
-                })}\n\n`
-              )
-            );
-          }
+        if (buffer.trim()) {
+          const trimmedBuffer = buffer.trim();
+          if (trimmedBuffer.startsWith("data: ")) {
+            const data = trimmedBuffer.slice(6).trim();
+            if (data && data !== "[DONE]") {
+              try {
+                const parsed = JSON.parse(data);
+                const result = extractContentFromParsed(parsed);
 
-          if (result.content) {
-            controller.enqueue(
-              new TextEncoder().encode(
-                `data: ${JSON.stringify({
-                  content: result.content,
-                })}\n\n`
-              )
-            );
+                if (result) {
+                  if (result.reasoning) {
+                    const tokens = tokenizeContent(result.reasoning);
+                    for (const token of tokens) {
+                      controller.enqueue(
+                        new TextEncoder().encode(
+                          `data: ${JSON.stringify({
+                            reasoning: token,
+                          })}\n\n`
+                        )
+                      );
+                      await sleep(25);
+                    }
+                  }
+
+                  if (result.content) {
+                    const tokens = tokenizeContent(result.content);
+                    for (const token of tokens) {
+                      controller.enqueue(
+                        new TextEncoder().encode(
+                          `data: ${JSON.stringify({
+                            content: token,
+                          })}\n\n`
+                        )
+                      );
+                      await sleep(25);
+                    }
+                  }
+                }
+              } catch {
+                // Skip invalid JSON
+              }
+            }
           }
         }
 

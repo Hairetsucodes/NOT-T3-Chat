@@ -340,7 +340,7 @@
   }
 
   .contentMarkdown pre {
-    @apply p-4 rounded-lg bg-secondary/30 overflow-x-auto my-4 border border-secondary/50;
+    @apply p-4 rounded-lg bg-secondary/30 overflow-x-auto my-4 border-0 border-secondary/50;
   }
 
   .contentMarkdown pre code {

@@ -133,7 +133,7 @@ export async function callGoogleStreaming(
             if (part.text) {
               // Check if this is reasoning content for thinking models
               if (isThinkingModel && part.thought) {
-                // Stream reasoning content
+                // Stream reasoning content directly
                 controller.enqueue(
                   new TextEncoder().encode(
                     `data: ${JSON.stringify({
@@ -142,7 +142,7 @@ export async function callGoogleStreaming(
                   )
                 );
               } else if (!part.thought) {
-                // Stream regular content
+                // Stream content directly as raw tokens from Google
                 controller.enqueue(
                   new TextEncoder().encode(
                     `data: ${JSON.stringify({

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent } from "react";
+import { ChangeEvent, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowUp } from "lucide-react";
 import { InputActions } from "./Actions";
@@ -12,18 +12,37 @@ interface ChatInputProps {
   handleInputChange: (
     e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLTextAreaElement>
   ) => void;
-  handleSubmit: (event?: { preventDefault?: () => void } | undefined) => void;
+  handleSubmit: (event?: { preventDefault?: () => void; currentInput?: string } | undefined) => void;
 }
 
 export function ChatInput({
   input,
-  handleInputChange,
+  handleInputChange, // eslint-disable-line @typescript-eslint/no-unused-vars
   handleSubmit,
 }: ChatInputProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim()) {
-      handleSubmit(e);
+    const currentValue = textareaRef.current?.value || "";
+    if (currentValue.trim()) {
+      // Pass the current input value directly to handleSubmit
+      handleSubmit({ 
+        preventDefault: () => e.preventDefault(),
+        currentInput: currentValue 
+      });
+      
+      // Clear the textarea after submission
+      if (textareaRef.current) {
+        textareaRef.current.value = "";
+      }
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      onSubmit(e);
     }
   };
 
@@ -47,20 +66,15 @@ export function ChatInput({
           <div className="flex flex-grow flex-col">
             <div className="flex flex-grow flex-row items-start">
               <Textarea
+                ref={textareaRef}
                 name="input"
                 id="chat-input"
                 placeholder="Type your message here..."
                 className="w-full max-h-60 resize-none bg-transparent text-base leading-6 text-foreground outline-none placeholder:text-secondary-foreground/60 disabled:opacity-0"
                 aria-label="Message input"
-                value={input}
+                defaultValue={input}
                 rows={1}
-                onChange={handleInputChange}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    onSubmit(e);
-                  }
-                }}
+                onKeyDown={handleKeyDown}
               />
             </div>
 
@@ -70,10 +84,7 @@ export function ChatInput({
                   variant="callToAction"
                   size="icon"
                   type="submit"
-                  disabled={!input.trim()}
-                  aria-label={
-                    input.trim() ? "Send message" : "Message requires text"
-                  }
+                  aria-label="Send message"
                 >
                   <ArrowUp className="size-5" />
                 </Button>
