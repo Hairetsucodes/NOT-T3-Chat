@@ -327,10 +327,11 @@ pnpm db:migrate
 
 - WebSearch
 - Refactor x10
-- Tweaks
+- Tweak light mode
 - Attachments
 - Refactor x100
 - Tweaks
+- Chat Sharing
 - Bug Reports
 - Image Gen / Analysis
 - Refactor x1000
