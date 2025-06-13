@@ -234,9 +234,10 @@ export async function POST(req: Request) {
     });
 
     // Return streaming response with conversation metadata in headers
+    // Use cache headers that don't completely block bfcache
     const responseHeaders: Record<string, string> = {
       "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "no-cache",
+      "Cache-Control": "private, max-age=0, must-revalidate",
       Connection: "keep-alive",
       "X-Accel-Buffering": "no",
     };

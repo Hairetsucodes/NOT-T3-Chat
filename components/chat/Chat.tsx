@@ -13,6 +13,7 @@ export const Chat = () => {
     conversations,
     messages,
     input,
+    isLoading,
     handleInputChange,
     handleSubmit,
     handleSuggestionSelect,
@@ -75,6 +76,7 @@ export const Chat = () => {
         <ChatContainer
           messages={messages}
           input={input}
+          isLoading={isLoading}
           handleInputChange={handleInputChange}
           handleSubmit={handleSubmit}
           handleSuggestionSelect={handleSuggestionSelect}

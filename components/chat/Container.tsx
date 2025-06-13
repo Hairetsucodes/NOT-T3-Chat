@@ -5,6 +5,7 @@ import { WelcomeScreen } from "./welcome/Welcome";
 import { ChatHeader } from "./ui/Header";
 import CornerDecorator from "./ui/CornerDecorator";
 import { MessageRenderer } from "./message/Renderer";
+import { LoadingBubbles } from "./ui/LoadingBubbles";
 import { Message } from "@/types/chat";
 import { ChangeEvent, useEffect } from "react";
 import { disposeHighlighter } from "@/lib/shikiHighlighter";
@@ -12,6 +13,7 @@ import { disposeHighlighter } from "@/lib/shikiHighlighter";
 interface ChatContainerProps {
   messages: Message[];
   input: string;
+  isLoading: boolean;
   handleInputChange: (
     e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLTextAreaElement>
   ) => void;
@@ -22,6 +24,7 @@ interface ChatContainerProps {
 export function ChatContainer({
   messages,
   input,
+  isLoading,
   handleInputChange,
   handleSubmit,
   handleSuggestionSelect,
@@ -72,6 +75,12 @@ export function ChatContainer({
                 <MessageRenderer message={message} />
               </div>
             ))}
+            {/* Show loading animation immediately when submitting */}
+            {isLoading && (
+              <div className="flex flex-col items-start">
+                <LoadingBubbles />
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -5,7 +5,7 @@ import {
   UserCustomization,
   ChatSettings,
 } from "@prisma/client";
-import { createContext, useState, useCallback, useRef } from "react";
+import { createContext, useState, useCallback, useRef, useEffect } from "react";
 import { UnifiedModel } from "@/data/models";
 import { getPreferredModels } from "@/data/models";
 import { Message } from "@/types/chat";
@@ -185,6 +185,19 @@ export const ChatProvider = ({
   const loadingConversationIdRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Track if page is being restored from bfcache to avoid unnecessary API calls
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        // Page was restored from bfcache - we can skip some initialization
+        console.log('Page restored from bfcache');
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+
   const addConversation = useCallback(
     (conversation: ConversationWithLoading) => {
       setConversations((prev) => [conversation, ...prev]);
@@ -324,6 +337,8 @@ export const ChatProvider = ({
         setMessages([...newMessages, assistantMessage]);
 
         let done = false;
+        let hasReceivedFirstToken = false; // Track if we've received the first content token
+
         while (!done) {
           const { value, done: streamDone } = await reader.read();
           done = streamDone;
@@ -339,6 +354,12 @@ export const ChatProvider = ({
                 try {
                   const parsed = JSON.parse(data);
                   if (parsed.content) {
+                    // Stop loading animation as soon as first content token arrives
+                    if (!hasReceivedFirstToken) {
+                      setIsLoading(false);
+                      hasReceivedFirstToken = true;
+                    }
+                    
                     setMessages((prev) =>
                       prev.map((msg) =>
                         msg.id === assistantMessage.id
@@ -389,6 +410,7 @@ export const ChatProvider = ({
 
         setMessages([...newMessages, errorMessage]);
       } finally {
+        // Ensure loading is always set to false when done
         setIsLoading(false);
         abortControllerRef.current = null;
       }

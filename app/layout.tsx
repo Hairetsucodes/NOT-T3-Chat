@@ -29,6 +29,12 @@ export default async function RootLayout({
   const session = await auth();
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Add the preload directive for noise.png */}
+        <link rel="preload" href="/images/noise.png" as="image" fetchPriority="high" />
+        {/* Optimize for back/forward cache */}
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
       <body
         className={`${inter.variable} ${geistMono.variable} antialiased`}
       >
