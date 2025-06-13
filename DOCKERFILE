@@ -10,8 +10,8 @@ WORKDIR /app
 # Copy package.json and pnpm-lock.yaml
 COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies
-RUN pnpm install --force
+# Install dependencies (skip postinstall scripts)
+RUN pnpm install --force --ignore-scripts
 
 # Explicitly install @prisma/engines
 RUN pnpm add @prisma/engines
