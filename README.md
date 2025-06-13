@@ -99,7 +99,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
   </tr>
 </table>
 
-## 🚀 Quick Start
+## 🚀 Development Setup
 
 ### Prerequisites
 
@@ -122,7 +122,13 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
    pnpm install
    ```
 
-3. **Set up environment variables:**
+3. **Initialize the database:**
+
+   ```bash
+   pnpm setup
+   ```
+
+4. **Set up environment variables:**
 
    ```bash
    cp .env.example .env
@@ -138,15 +144,8 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 
    ```env
    DATABASE_URL="file:../dev.db"
-   NEXTAUTH_SECRET="your-secret-key"
+   AUTH_SECRET="your-secret-key"
    NEXTAUTH_URL="http://localhost:3000"
-
-   ```
-
-4. **Initialize the database:**
-
-   ```bash
-   pnpm run setup
    ```
 
 5. **Start the development server:**
@@ -156,16 +155,79 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 
 Visit [http://localhost:3000](http://localhost:3000) to see the application.
 
-## 📦 Available Scripts
+> **Note**: Always run `pnpm setup` before `pnpm dev` or `pnpm build` to ensure the database is properly initialized.
 
-### Development
+## 🏭 Production Build & Start
+
+### Production Environment Setup
+
+1. **Set up production environment variables:**
+
+   ```bash
+   cp .env.example .env.production
+   ```
+
+2. **Configure your production `.env` file:**
+
+   ```env
+   # Database (use PostgreSQL for production if preferred)
+   DATABASE_URL="file:../prod.db"
+
+   # NextAuth
+   AUTH_SECRET="your-secure-production-secret"
+   NEXTAUTH_URL="https://your-domain.com"
+
+   # AI Provider API Keys
+   OPENAI_API_KEY="your-openai-key"
+   ANTHROPIC_API_KEY="your-anthropic-key"
+   # ... other API keys as needed
+   ```
+
+3. **For database migrations in production:**
+   ```bash
+   pnpm db:migrate
+   ```
+
+### Quick Production Setup
+
+1. **Ensure database is initialized:**
+
+   ```bash
+   pnpm setup
+   ```
+
+2. **Build the application:**
+
+   ```bash
+   pnpm build
+   ```
+
+3. **Start the production server:**
+   ```bash
+   pnpm start
+   ```
+
+The application will be available at [http://localhost:3000](http://localhost:3000).
+
+### Production Checklist
+
+- ✅ Environment variables configured
+- ✅ Database properly migrated
+- ✅ AUTH_SECRET is secure and unique
+- ✅ NEXTAUTH_URL matches your domain
+- ✅ API keys are valid and properly configured
+- ✅ Application built successfully (`pnpm build`)
+
+### Available Scripts
+
+#### Development
 
 - `pnpm dev` - Start development server with Turbopack
 - `pnpm build` - Build for production
 - `pnpm start` - Start production server
 - `pnpm lint` - Run ESLint
 
-### Database Management
+#### Database Management
 
 - `pnpm setup` - **Quick setup** (generate + push schema)
 - `pnpm db:generate` - Generate Prisma client
@@ -175,17 +237,17 @@ Visit [http://localhost:3000](http://localhost:3000) to see the application.
 - `pnpm db:reset` - Reset database (⚠️ destroys data)
 - `pnpm db:seed` - Seed the database
 
-## 🗄️ Database Setup
+### Database Setup
 
 This project uses SQLite for local development and Prisma as the ORM.
 
-### First-time Setup
+#### First-time Setup
 
 ```bash
 pnpm setup
 ```
 
-### Schema Changes
+#### Schema Changes
 
 After modifying `prisma/schema.prisma`:
 
@@ -194,12 +256,82 @@ pnpm db:generate
 pnpm db:push
 ```
 
-### Database Management
+#### Database Management
 
 Open Prisma Studio to manage your data:
 
 ```bash
 pnpm db:studio
+```
+
+## 🐳 Docker Deployment
+
+The easiest way to deploy the application is using Docker:
+
+### Using Docker Compose (Recommended)
+
+1. **Build and run with Docker Compose:**
+
+   ```bash
+   docker-compose up --build
+   ```
+
+2. **Run in detached mode:**
+
+   ```bash
+   docker-compose up -d --build
+   ```
+
+3. **Stop the application:**
+   ```bash
+   docker-compose down
+   ```
+
+The Docker setup includes:
+
+- Automatic database initialization
+- Persistent data storage in `./docker-data` directory
+- Auto-generated `AUTH_SECRET` if not provided
+- Proper SQLite database handling for containers
+
+### Using Docker directly
+
+1. **Build the image:**
+
+   ```bash
+   docker build -t oss-t3-chat .
+   ```
+
+2. **Run the container:**
+   ```bash
+   docker run -p 3000:3000 \
+     -v $(pwd)/docker-data:/app/data \
+     -e NEXTAUTH_URL=http://localhost:3000 \
+     oss-t3-chat
+   ```
+
+### Environment Variables for Docker
+
+Create a `.env.docker` file for custom configuration:
+
+```env
+# Database (automatically configured for container)
+DATABASE_URL="file:/app/data/prod.db"
+
+# NextAuth (auto-generated if not provided)
+AUTH_SECRET="your-generated-secret-here"
+NEXTAUTH_URL="http://localhost:3000"
+
+# AI Provider API Keys (add as needed)
+OPENAI_API_KEY="your-openai-key"
+ANTHROPIC_API_KEY="your-anthropic-key"
+```
+
+Then use it with docker-compose:
+
+```bash
+# Uncomment env_file in docker-compose.yml
+docker-compose --env-file .env.docker up --build
 ```
 
 ## 🔧 Configuration
@@ -213,7 +345,7 @@ Create a `.env` file with the following variables:
 DATABASE_URL="file:./dev.db"
 
 # NextAuth
-NEXTAUTH_SECRET="your-nextauth-secret"
+AUTH_SECRET="your-nextauth-secret"
 NEXTAUTH_URL="http://localhost:3000"
 ```
 
@@ -251,103 +383,42 @@ Users can retry any AI response with:
 ## 🏗️ Project Structure
 
 ```
-├── app/                 # Next.js 13+ app directory
-│   ├── api/            # API routes
-│   ├── chat/           # Chat pages
+├── ai/                # AI provider configurations and utilities
+├── app/               # Next.js 13+ app directory
+│   ├── api/          # API routes
+│   ├── chat/         # Chat pages
 │   └── ...
-├── components/         # React components
-├── data/              # Database operations
-├── lib/               # Utility libraries
+├── components/        # React components
+├── context/           # React context providers
+├── data/              # Database operations and queries
+├── docker-data/       # Docker persistent data storage
+├── hooks/             # Custom React hooks
+├── lib/               # Utility libraries and configurations
 ├── prisma/            # Database schema and migrations
-├── public/            # Static assets
+├── public/            # Static assets and images
+├── schemas/           # Validation schemas (Zod, etc.)
+├── scripts/           # utility scripts
 └── types/             # TypeScript type definitions
 ```
 
-## 🚀 Deployment
+## 🚀 Production Deployment
 
-### Docker Deployment
-
-The easiest way to deploy the application is using Docker:
-
-#### Using Docker Compose (Recommended)
-
-1. **Build and run with Docker Compose:**
-   ```bash
-   docker-compose up --build
-   ```
-
-2. **Run in detached mode:**
-   ```bash
-   docker-compose up -d --build
-   ```
-
-3. **Stop the application:**
-   ```bash
-   docker-compose down
-   ```
-
-The Docker setup includes:
-- Automatic database initialization
-- Persistent data storage in `./docker-data` directory
-- Auto-generated `NEXTAUTH_SECRET` if not provided
-- Proper SQLite database handling for containers
-
-#### Using Docker directly
-
-1. **Build the image:**
-   ```bash
-   docker build -t oss-t3-chat .
-   ```
-
-2. **Run the container:**
-   ```bash
-   docker run -p 3000:3000 \
-     -v $(pwd)/docker-data:/app/data \
-     -e NEXTAUTH_URL=http://localhost:3000 \
-     oss-t3-chat
-   ```
-
-#### Environment Variables for Docker
-
-Create a `.env.docker` file for custom configuration:
-
-```env
-# Database (automatically configured for container)
-DATABASE_URL="file:/app/data/prod.db"
-
-# NextAuth (auto-generated if not provided)
-NEXTAUTH_SECRET="your-generated-secret-here"
-NEXTAUTH_URL="http://localhost:3000"
-
-# AI Provider API Keys (add as needed)
-OPENAI_API_KEY="your-openai-key"
-ANTHROPIC_API_KEY="your-anthropic-key"
-```
-
-Then use it with docker-compose:
-```bash
-# Uncomment env_file in docker-compose.yml
-docker-compose --env-file .env.docker up --build
-```
-
-### Traditional Deployment
-
-#### Build for Production
+### Build for Production
 
 ```bash
 pnpm build
 ```
 
-#### Environment Setup for Production
+### Environment Setup for Production
 
 Ensure all environment variables are properly configured for your production environment, especially:
 
 - `DATABASE_URL` (consider PostgreSQL for production)
-- `NEXTAUTH_SECRET` (use a secure random string)
+- `AUTH_SECRET` (use a secure random string)
 - `NEXTAUTH_URL` (your production domain)
 - AI provider API keys
 
-#### Database Migration for Production
+### Database Migration for Production
 
 ```bash
 pnpm db:migrate
@@ -382,7 +453,7 @@ pnpm db:migrate
 1. **Module not found errors**: Run `pnpm db:generate` to ensure Prisma client is generated
 2. **Database connection issues**: Check your `DATABASE_URL` in `.env`
 3. **Build failures**: Ensure all environment variables are set
-4. **Authentication issues**: Verify `NEXTAUTH_SECRET` and `NEXTAUTH_URL`
+4. **Authentication issues**: Verify `AUTH_SECRET` and `NEXTAUTH_URL`
 
 ### Getting Help
 
