@@ -85,6 +85,7 @@ model Conversation {
   isPinned              Boolean        @default(false)
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
+  isRetry               Boolean        @default(false)
   branchedFromConvoId   String?
   branchedIds           String? // JSON array of all conversation IDs in the branch chain
   user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)

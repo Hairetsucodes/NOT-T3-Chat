@@ -69,6 +69,7 @@ export const createRetryConversation = async (
     data: {
       userId,
       title: ` ${conversation.title.slice(0, 50)}` || " New Chat",
+      isRetry: true,
     },
   });
 
