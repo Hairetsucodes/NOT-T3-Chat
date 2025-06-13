@@ -3,79 +3,11 @@ import { handleLLMRequestStreaming, generateTitle } from "@/ai/index";
 import { ChatRequestSchema } from "@/schemas/chatEndpoint";
 import { getChatSettings } from "@/data/settings";
 import { getModelById } from "@/data/models";
-import { prisma } from "@/prisma";
-import { z } from "zod";
-
-const createMessageApi = async (
-  userId: string,
-  content: string,
-  role: string,
-  provider: string,
-  modelId: string,
-  reasoningContent: string,
-  conversationId?: string,
-  title?: string
-) => {
-  // Create conversation if it doesn't exist
-  if (!conversationId) {
-    const conversation = await prisma.conversation.create({
-      data: {
-        userId,
-        title: title || "New Conversation",
-      },
-    });
-    conversationId = conversation.id;
-  }
-
-  // Validate required fields
-  if (!content) {
-    throw new Error("Content is required");
-  }
-  if (!role) {
-    throw new Error("Role is required");
-  }
-
-  // Create and return the message
-  const message = await prisma.message.create({
-    data: {
-      userId,
-      conversationId,
-      content,
-      role,
-      provider,
-      model: modelId,
-      reasoningContent,
-    },
-  });
-
-  return message;
-};
-
-export const maxDuration = 30;
-const getPrompt = async (promptId: string, userId: string) => {
-  const prompt = await prisma.prompt.findFirst({
-    where: { id: promptId, userId },
-  });
-
-  return prompt;
-};
-
-const getAPIKeys = async (userId: string) => {
-  try {
-    const apiKeys = await prisma.apiKey.findMany({
-      where: {
-        userId: userId,
-      },
-    });
-    return apiKeys;
-  } catch (error) {
-    console.error("Error fetching API keys:", error);
-    if (error instanceof z.ZodError) {
-      throw new Error("Invalid user ID");
-    }
-    throw new Error("Failed to fetch API keys");
-  }
-};
+import {
+  createMessageApi,
+  getPromptApi,
+  getAPIKeysApi,
+} from "@/lib/apiServerActions/chat";
 
 export async function POST(req: Request) {
   // Parse and validate JSON body
@@ -118,12 +50,12 @@ export async function POST(req: Request) {
   const userId = session.user.id;
 
   try {
-    const apiKeys = await getAPIKeys(userId);
+    const apiKeys = await getAPIKeysApi(userId);
     const settings = await getChatSettings();
     const prompt =
       !settings || "error" in settings || !settings.promptId
         ? null
-        : await getPrompt(settings.promptId, userId);
+        : await getPromptApi(settings.promptId, userId);
     // Determine provider from selectedModel or default to openai
     let provider = selectedModel?.provider || "openai";
     const modelId = selectedModel?.model || "gpt-4o-mini";
