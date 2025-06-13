@@ -3,46 +3,8 @@
 import { checkUser } from "@/lib/auth/check";
 import { prisma } from "../prisma";
 import { Conversation } from "@prisma/client";
+import { UserChatHistory, FormattedConversation, HistoryStats } from "@/types/history";
 
-// Types for formatted history export/import
-export interface FormattedMessage {
-  id: string;
-  content: string;
-  role: string;
-  provider: string;
-  model?: string | null;
-  reasoningContent?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface FormattedConversation {
-  id: string;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-  messages: FormattedMessage[];
-  messageCount: number;
-}
-
-export interface UserChatHistory {
-  userId: string;
-  totalConversations: number;
-  totalMessages: number;
-  exportedAt: string;
-  conversations: FormattedConversation[];
-}
-
-export interface HistoryStats {
-  totalConversations: number;
-  totalMessages: number;
-  oldestConversation?: string;
-  newestConversation?: string;
-  providers: { [key: string]: number };
-  messagesByRole: { [key: string]: number };
-}
-
-// Get user's complete chat history in formatted structure
 export const getUserChatHistory = async (
   userId: string
 ): Promise<UserChatHistory | { error: string }> => {
@@ -100,7 +62,6 @@ export const getUserChatHistory = async (
   }
 };
 
-// Get history statistics
 export const getHistoryStats = async (
   userId: string
 ): Promise<HistoryStats | { error: string }> => {
@@ -151,7 +112,6 @@ export const getHistoryStats = async (
   }
 };
 
-// Clear all chat history for a user
 export const clearAllHistory = async (
   userId: string
 ): Promise<{ success: boolean } | { error: string }> => {
@@ -161,10 +121,7 @@ export const clearAllHistory = async (
   }
 
   try {
-    // Delete all messages first (due to foreign key constraints)
-    await prisma.message.deleteMany({
-      where: { userId },
-    });
+
 
     // Then delete all conversations
     await prisma.conversation.deleteMany({

@@ -68,7 +68,7 @@ export const createRetryConversation = async (
   const retryConversation = await prisma.conversation.create({
     data: {
       userId,
-      title: ` ${conversation.title.slice(0, 50)}` || " New Chat",
+      title: conversation.title || " New Chat",
       isRetry: true,
     },
   });
