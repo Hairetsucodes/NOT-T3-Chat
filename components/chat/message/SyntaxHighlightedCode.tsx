@@ -1,8 +1,35 @@
 import { highlightCode } from "@/lib/shikiHighlighter";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Check, Copy, WrapText, AlignLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
+
+// Move helper functions outside component to prevent recreation
+function normalizeLanguage(language: string, code: string): string {
+  language = language.toLowerCase();
+  if (
+    language === "typescript" ||
+    language === "ts" ||
+    language === "tsx" ||
+    language === "jsx"
+  ) {
+    return "typescript";
+  }
+  if (language === "javascript" || language === "js") {
+    return "javascript";
+  }
+  if (!language && /^\s*\{[\s\S]*\}\s*$/.test(code)) {
+    return "json";
+  }
+  return language || "plaintext";
+}
+
+// Helper function to escape HTML
+function escapeHtml(text: string): string {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
 
 interface SyntaxHighlightedCodeProps {
   code: string;
@@ -23,14 +50,30 @@ export function SyntaxHighlightedCode({
     language: "",
   });
 
-  const normalizedLanguage = normalizeLanguage(language, code);
+  // Memoize expensive operations
+  const normalizedLanguage = useMemo(() => normalizeLanguage(language, code), [language, code]);
+  
+  // Memoize theme calculation
+  const isDark = useMemo(() => {
+    const currentTheme = theme === "system" ? systemTheme : theme;
+    return currentTheme === "dark";
+  }, [theme, systemTheme]);
 
-  // Get the actual theme being used
-  const currentTheme = theme === "system" ? systemTheme : theme;
-  const isDark = currentTheme === "dark";
+  // Memoize the highlight function to prevent unnecessary recreations
+  const performHighlight = useCallback(async (codeToHighlight: string, lang: string) => {
+    try {
+      const highlighted = await highlightCode(codeToHighlight, lang, isDark);
+      setHighlightedCode(highlighted);
+      lastHighlightedRef.current = { code: codeToHighlight, language: lang };
+    } catch (error) {
+      console.error("Error highlighting code:", error);
+      setHighlightedCode(`<pre><code>${escapeHtml(codeToHighlight)}</code></pre>`);
+      lastHighlightedRef.current = { code: codeToHighlight, language: lang };
+    }
+  }, [isDark]);
 
   const debouncedHighlight = useCallback(
-    async (codeToHighlight: string, lang: string) => {
+    (codeToHighlight: string, lang: string) => {
       // Clear any existing timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -42,38 +85,16 @@ export function SyntaxHighlightedCode({
         lastHighlightedRef.current.code &&
         codeToHighlight.startsWith(lastHighlightedRef.current.code);
 
-      const highlightFn = async () => {
-        try {
-          const highlighted = await highlightCode(
-            codeToHighlight,
-            lang,
-            isDark
-          );
-          setHighlightedCode(highlighted);
-          lastHighlightedRef.current = {
-            code: codeToHighlight,
-            language: lang,
-          };
-        } catch (error) {
-          console.error("Error highlighting code:", error);
-          setHighlightedCode(
-            `<pre><code>${escapeHtml(codeToHighlight)}</code></pre>`
-          );
-          lastHighlightedRef.current = {
-            code: codeToHighlight,
-            language: lang,
-          };
-        }
-      };
-
       if (shouldDebounce) {
         // Minimal debounce for streaming - much faster updates
-        timeoutRef.current = setTimeout(highlightFn, 16); // ~60fps updates
+        timeoutRef.current = setTimeout(() => {
+          performHighlight(codeToHighlight, lang);
+        }, 16); // ~60fps updates
       } else {
-        await highlightFn();
+        performHighlight(codeToHighlight, lang);
       }
     },
-    [isDark]
+    [performHighlight]
   );
 
   useEffect(() => {
@@ -86,22 +107,28 @@ export function SyntaxHighlightedCode({
     };
   }, [code, normalizedLanguage, debouncedHighlight]);
 
-  const handleCopy = () => {
+  const handleCopy = useCallback(() => {
     navigator.clipboard?.writeText(code).catch(console.error);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
-  };
+  }, [code]);
 
-  const toggleWordWrap = () => {
-    setIsWordWrapEnabled(!isWordWrapEnabled);
-  };
+  const toggleWordWrap = useCallback(() => {
+    setIsWordWrapEnabled(prev => !prev);
+  }, []);
+
+  // Memoize the display language to prevent unnecessary recalculations
+  const displayLanguage = useMemo(() => 
+    normalizedLanguage === "plaintext" ? "text" : normalizedLanguage,
+    [normalizedLanguage]
+  );
 
   return (
     <div className="rounded-[4px] overflow-hidden bg-sidebar relative max-w-full">
       {/* Language label header */}
       <div className="flex items-center justify-between bg-secondary px-4 py-1 shadow-sm border-b border-secondary-foreground/10">
         <div className="text-xs text-secondary-foreground font-medium">
-          {normalizedLanguage === "plaintext" ? "text" : normalizedLanguage}
+          {displayLanguage}
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -144,30 +171,4 @@ export function SyntaxHighlightedCode({
       </div>
     </div>
   );
-}
-
-function normalizeLanguage(language: string, code: string): string {
-  language = language.toLowerCase();
-  if (
-    language === "typescript" ||
-    language === "ts" ||
-    language === "tsx" ||
-    language === "jsx"
-  ) {
-    return "typescript";
-  }
-  if (language === "javascript" || language === "js") {
-    return "javascript";
-  }
-  if (!language && /^\s*\{[\s\S]*\}\s*$/.test(code)) {
-    return "json";
-  }
-  return language || "plaintext";
-}
-
-// Helper function to escape HTML
-function escapeHtml(text: string): string {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
 }
