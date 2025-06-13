@@ -48,10 +48,14 @@ export const branchConversation = async (
   });
 
   await prisma.message.createMany({
-    data: messages.map((message) => ({
-      ...message,
-      conversationId: branchedConversation.id,
-    })),
+    data: messages.map((message) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id, ...messageWithoutId } = message;
+      return {
+        ...messageWithoutId,
+        conversationId: branchedConversation.id,
+      };
+    }),
   });
 
   return branchedConversation;
