@@ -8,6 +8,7 @@ import { LoadingBubbles } from "./ui/LoadingBubbles";
 import { Message } from "@/types/chat";
 import { ChangeEvent, memo } from "react";
 import { SimpleMessageRenderer } from "./message/SimpleRenderer";
+import { useSearchParams } from "next/navigation";
 
 interface ChatContainerProps {
   messages: Message[];
@@ -63,6 +64,10 @@ export function ChatContainer({
   handleSubmit,
   handleSuggestionSelect,
 }: ChatContainerProps) {
+  // Check for retry query parameter
+  const searchParams = useSearchParams();
+  const hasRetryParam = searchParams.get("retry") === "true";
+  
   // Only get the minimal context data needed
 
   return (
@@ -91,7 +96,7 @@ export function ChatContainer({
         className="absolute inset-0 overflow-y-auto mt-4 md:mt-4"
         style={{ paddingBottom: "144px", scrollbarGutter: "stable both-edges" }}
       >
-        {messages.length === 0 ? (
+        {messages.length === 0 && !hasRetryParam ? (
           <WelcomeScreen onSelectSuggestion={handleSuggestionSelect} />
         ) : (
           <MessageList messages={messages} isLoading={isLoading} />

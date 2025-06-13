@@ -20,6 +20,11 @@ export const branchConversation = async (
   if (!conversation) {
     throw new Error("Conversation not found");
   }
+  const messages = await prisma.message.findMany({
+    where: {
+      conversationId,
+    },
+  });
 
   // Get all conversation IDs that should be included in the new branch
   let branchedIds: string[];
@@ -40,6 +45,13 @@ export const branchConversation = async (
       branchedFromConvoId: conversationId,
       branchedIds: JSON.stringify(branchedIds),
     },
+  });
+
+  await prisma.message.createMany({
+    data: messages.map((message) => ({
+      ...message,
+      conversationId: branchedConversation.id,
+    })),
   });
 
   return branchedConversation;
