@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Pin, X, Loader2, GitBranch } from "lucide-react";
+import { Search, Pin, X, Loader2, GitBranch, RefreshCcw } from "lucide-react";
 import { Conversation } from "@prisma/client";
 import { ChatContext } from "@/context/ChatContext";
 import {
@@ -19,6 +19,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 type ConversationWithLoading = Conversation & {
   isLoading?: boolean;
+  isRetry?: boolean;
 };
 
 interface SidebarProps {
@@ -40,6 +41,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     setMessages,
     togglePinConversation,
     deleteConversation,
+    conversationId,
+    isLoading,
   } = useContext(ChatContext);
   return (
     <>
@@ -182,15 +185,16 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                                 <div className="group/link relative flex h-9 w-full items-center overflow-hidden rounded-lg px-2 py-1 text-sm text-muted-foreground/70 cursor-default">
                                   <div className="relative flex w-full items-center">
                                     <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                                    <div className="relative w-full">
+                                    <div className="relative w-full flex items-center justify-between">
                                       <span className="text-sm">
                                         {thread.title}
                                       </span>
+                                      <Loader2 className="h-3 w-3 animate-spin ml-2" />
                                     </div>
                                   </div>
                                 </div>
                               ) : (
-                                // Regular conversation - clickable
+                                // Regular and retry conversations - clickable
                                 <Link
                                   className="group/link relative flex h-9 w-full items-center overflow-hidden rounded-lg px-2 py-1 text-sm outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring hover:focus-visible:bg-sidebar-accent"
                                   href={`/chat/${thread.id}`}
@@ -198,6 +202,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                                 >
                                   <div className="relative flex w-full items-center">
                                     <div className="relative w-full flex items-center gap-2">
+                                      {thread.isRetry && (
+                                        <RefreshCcw className="size-4 text-muted-foreground" />
+                                      )}
                                       {thread.branchedFromConvoId && (
                                         <span className="text-xs text-muted-foreground">
                                           <GitBranch className="size-4" />
@@ -212,6 +219,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                                         type="text"
                                         value={thread.title}
                                       />
+                                      {conversationId === thread.id && isLoading && (
+                                        <Loader2 className="h-3 w-3 animate-spin ml-2 flex-shrink-0" />
+                                      )}
                                     </div>
                                     <div className="pointer-events-auto absolute -right-1 bottom-0 top-0 z-50 flex translate-x-full items-center justify-end text-muted-foreground transition-transform group-hover/link:translate-x-0 group-hover/link:bg-sidebar-accent">
                                       <div className="pointer-events-none absolute bottom-0 right-[100%] top-0 h-12 w-8 bg-gradient-to-l from-sidebar-accent to-transparent opacity-0 group-hover/link:opacity-100" />

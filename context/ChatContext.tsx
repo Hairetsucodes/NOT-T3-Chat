@@ -23,6 +23,7 @@ type ChatUser = {
 // Extend Conversation type to include loading state
 type ConversationWithLoading = Conversation & {
   isLoading?: boolean;
+  isRetry?: boolean;
 };
 
 interface ChatContextType {
@@ -287,6 +288,7 @@ export const ChatProvider = ({
               branchedFromConvoId: null,
               branchedIds: null,
               isPinned: false,
+              isRetry: false,
             };
             addConversation(newConversation);
           }
@@ -434,6 +436,7 @@ export const ChatProvider = ({
             branchedFromConvoId: null,
             branchedIds: null,
             isPinned: false,
+            isRetry: false,
           };
           addConversation(loadingConversation);
         }
@@ -480,6 +483,7 @@ export const ChatProvider = ({
           branchedFromConvoId: null,
           branchedIds: null,
           isPinned: false,
+          isRetry: false,
         };
         addConversation(loadingConversation);
       }
