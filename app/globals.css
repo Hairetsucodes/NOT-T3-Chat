@@ -269,7 +269,7 @@
   }
 
   .contentMarkdown ul > li::before {
-    @apply absolute left-0 top-[0.7em] w-2 h-2 rounded-full bg-primary/70 -translate-y-1/2;
+    @apply absolute left-0 top-[0.7em] w-2 h-2 rounded-full bg-primary -translate-y-1/2;
     content: "";
   }
 
@@ -279,7 +279,7 @@
   }
 
   .contentMarkdown ol > li::before {
-    @apply absolute left-0 top-0 font-semibold text-primary/90 min-w-[1.5rem];
+    @apply absolute left-0 top-0 font-semibold text-[#dc749e] min-w-[1.5rem];
     content: counter(item) ".";
   }
 
@@ -294,7 +294,7 @@
 
   /* Nested unordered list items should have smaller bullets */
   .contentMarkdown li > ul > li::before {
-    @apply w-1.5 h-1.5 bg-primary/50;
+    @apply w-1.5 h-1.5 bg-[#dc749e];
   }
 
   .contentMarkdown li > ul > li {
@@ -324,7 +324,7 @@
   }
 
   .contentMarkdown strong {
-    @apply font-semibold text-primary/90;
+    @apply font-semibold;
   }
 
   .contentMarkdown em {
