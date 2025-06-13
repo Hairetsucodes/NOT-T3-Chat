@@ -265,13 +265,80 @@ Users can retry any AI response with:
 
 ## 🚀 Deployment
 
-### Build for Production
+### Docker Deployment
+
+The easiest way to deploy the application is using Docker:
+
+#### Using Docker Compose (Recommended)
+
+1. **Build and run with Docker Compose:**
+   ```bash
+   docker-compose up --build
+   ```
+
+2. **Run in detached mode:**
+   ```bash
+   docker-compose up -d --build
+   ```
+
+3. **Stop the application:**
+   ```bash
+   docker-compose down
+   ```
+
+The Docker setup includes:
+- Automatic database initialization
+- Persistent data storage in `./docker-data` directory
+- Auto-generated `NEXTAUTH_SECRET` if not provided
+- Proper SQLite database handling for containers
+
+#### Using Docker directly
+
+1. **Build the image:**
+   ```bash
+   docker build -t oss-t3-chat .
+   ```
+
+2. **Run the container:**
+   ```bash
+   docker run -p 3000:3000 \
+     -v $(pwd)/docker-data:/app/data \
+     -e NEXTAUTH_URL=http://localhost:3000 \
+     oss-t3-chat
+   ```
+
+#### Environment Variables for Docker
+
+Create a `.env.docker` file for custom configuration:
+
+```env
+# Database (automatically configured for container)
+DATABASE_URL="file:/app/data/prod.db"
+
+# NextAuth (auto-generated if not provided)
+NEXTAUTH_SECRET="your-generated-secret-here"
+NEXTAUTH_URL="http://localhost:3000"
+
+# AI Provider API Keys (add as needed)
+OPENAI_API_KEY="your-openai-key"
+ANTHROPIC_API_KEY="your-anthropic-key"
+```
+
+Then use it with docker-compose:
+```bash
+# Uncomment env_file in docker-compose.yml
+docker-compose --env-file .env.docker up --build
+```
+
+### Traditional Deployment
+
+#### Build for Production
 
 ```bash
 pnpm build
 ```
 
-### Environment Setup for Production
+#### Environment Setup for Production
 
 Ensure all environment variables are properly configured for your production environment, especially:
 
@@ -280,7 +347,7 @@ Ensure all environment variables are properly configured for your production env
 - `NEXTAUTH_URL` (your production domain)
 - AI provider API keys
 
-### Database Migration for Production
+#### Database Migration for Production
 
 ```bash
 pnpm db:migrate
@@ -338,9 +405,6 @@ pnpm db:migrate
 - Tweaks
 - Production Deployment / postGres
 - Refactor x9000
-- Tweaks
-- Dockerize
-- Github Actions
 - Tweaks
 - Ollama Local
 - Extra Credit: Voice 2 Voice over websockets.

@@ -1,0 +1,24 @@
+services:
+  oss-t3-chat:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount a volume for the SQLite database to persist data
+      - ./docker-data:/app/data
+    environment:
+      # Database configuration for container
+      - DATABASE_URL=file:/app/data/prod.db
+      # NextAuth configuration
+      - NEXTAUTH_URL=http://localhost:3000
+      # AUTH_SECRET will be auto-generated and exported by startup script
+    # Uncomment the following lines if you want to use an external .env file
+    # env_file:
+    #   - .env.docker
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/auth/session"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s 
