@@ -211,15 +211,13 @@ export const ChatProvider = ({
   }, []);
 
   const refreshPreferredModels = useCallback(async () => {
-    if (!activeUser?.id) return;
-
     try {
-      const updated = await getPreferredModels(activeUser.id);
+      const updated = await getPreferredModels();
       setPreferredModels(updated);
     } catch (error) {
       console.error("Failed to refresh preferred models:", error);
     }
-  }, [activeUser?.id]);
+  }, []);
 
   // New chat messaging functions
   const sendMessage = useCallback(
@@ -534,7 +532,7 @@ export const ChatProvider = ({
 
       // Update on the server using the server action
       try {
-        await pinConversation(activeUser.id, id);
+        await pinConversation(id);
       } catch (error) {
         // Revert on error
         setConversations((prev) =>
@@ -571,7 +569,7 @@ export const ChatProvider = ({
       }
 
       try {
-        const result = await deleteConversationAction(activeUser.id, id);
+        const result = await deleteConversationAction(id);
 
         if ("error" in result) {
           // Revert the optimistic update on error

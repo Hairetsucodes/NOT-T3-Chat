@@ -123,7 +123,7 @@ export function CustomizationTab() {
         codeFont: codeFont,
       };
 
-      const result = await updateUserSettings(activeUser.id, settingsData);
+      const result = await updateUserSettings(settingsData);
 
       if (result && "error" in result) {
         toast.error(result.error);
@@ -157,7 +157,7 @@ export function CustomizationTab() {
 
     setIsLoading(true);
     try {
-      const result = await resetUserSettings(activeUser.id);
+      const result = await resetUserSettings();
 
       if (result && "error" in result) {
         toast.error(result.error);

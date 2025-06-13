@@ -1,12 +1,11 @@
 import { auth } from "@/auth";
 
-export const checkUser = async ({ userId }: { userId: string }) => {
+export const checkUser = async () => {
   const session = await auth();
-  if (session?.user.id !== userId) {
+  if (!session?.user.id) {
     return { error: "Unauthorized" };
   }
   return {
-    success: "Authenticated",
-    authToken: session.user.authToken,
+    userId: session.user.id,
   };
 };

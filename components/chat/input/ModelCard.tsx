@@ -78,7 +78,7 @@ export const ModelCard = memo(function ModelCard({
       try {
         if (model.isFavorite) {
           // Remove from favorites
-          const result = await removePreferredModel(activeUser.id, model.id);
+          const result = await removePreferredModel(model.id);
           if (result && "error" in result) {
             toast.error(result.error);
           } else {
@@ -88,11 +88,7 @@ export const ModelCard = memo(function ModelCard({
           }
         } else {
           // Add to favorites
-          const result = await addPreferredModel(
-            activeUser.id,
-            model.id,
-            model.provider
-          );
+          const result = await addPreferredModel(model.id, model.provider);
           if (result && "error" in result) {
             toast.error(result.error);
           } else {
@@ -234,9 +230,7 @@ export const ModelCard = memo(function ModelCard({
           </div>
         ) : (
           <div className="w-full flex items-center justify-center">
-            <span className="text-xs text-primary">
-              No capabilities
-            </span>
+            <span className="text-xs text-primary">No capabilities</span>
           </div>
         )}
       </button>

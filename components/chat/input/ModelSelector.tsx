@@ -315,7 +315,7 @@ const ModelSelector = memo(function ModelSelector() {
           model: modelId,
           provider: selectedModelData.provider,
         } as ChatSettings);
-        updateChatSettings(activeUser.id, modelId, selectedModelData.provider);
+        updateChatSettings(modelId, selectedModelData.provider);
       }
       setIsOpen(false);
       setSearchQuery("");

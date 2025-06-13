@@ -17,7 +17,6 @@ export type Message = {
 
 export interface MessageActionsProps {
   conversationId?: string;
-  userId: string;
   inputMessage: string;
   message: Message;
   selectedRetryModel?: string;

@@ -2,12 +2,9 @@
 import { checkUser } from "@/lib/auth/check";
 import { prisma } from "@/prisma";
 
-export const branchConversation = async (
-  userId: string,
-  conversationId: string
-) => {
-  const user = await checkUser({ userId });
-  if (!user) {
+export const branchConversation = async (conversationId: string) => {
+  const { userId } = await checkUser();
+  if (!userId) {
     throw new Error("Unauthorized");
   }
 
@@ -61,13 +58,9 @@ export const branchConversation = async (
   return branchedConversation;
 };
 
-export const createRetryConversation = async (
-  userId: string,
-  originalTitle: string,
-  conversationId: string
-) => {
-  const user = await checkUser({ userId });
-  if (!user) {
+export const createRetryConversation = async (conversationId: string) => {
+  const { userId } = await checkUser();
+  if (!userId) {
     throw new Error("Unauthorized");
   }
 
@@ -92,12 +85,9 @@ export const createRetryConversation = async (
   return retryConversation;
 };
 
-export const pinConversation = async (
-  userId: string,
-  conversationId: string
-) => {
-  const user = await checkUser({ userId });
-  if (!user) {
+export const pinConversation = async (conversationId: string) => {
+  const { userId } = await checkUser();
+  if (!userId) {
     throw new Error("Unauthorized");
   }
 

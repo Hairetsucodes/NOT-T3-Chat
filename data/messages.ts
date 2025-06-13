@@ -1,10 +1,8 @@
 "use server";
 import { checkUser } from "@/lib/auth/check";
 import { prisma } from "@/prisma";
-import { auth } from "@/auth";
 
 export const createMessage = async (
-  userId: string,
   content: string,
   role: string,
   provider: string,
@@ -13,8 +11,8 @@ export const createMessage = async (
   conversationId?: string,
   title?: string
 ) => {
-  const user = await checkUser({ userId });
-  if (!user) {
+  const { userId } = await checkUser();
+  if (!userId) {
     throw new Error("Unauthorized");
   }
 
@@ -53,9 +51,9 @@ export const createMessage = async (
   return message;
 };
 
-export const getConversations = async (userId: string) => {
-  const user = await checkUser({ userId });
-  if (!user) {
+export const getConversations = async () => {
+  const { userId } = await checkUser();
+  if (!userId) {
     throw new Error("Unauthorized");
   }
   const conversations = await prisma.conversation.findMany({
@@ -70,15 +68,12 @@ export const getConversations = async (userId: string) => {
 };
 
 export const getMessagesByConversationId = async (conversationId: string) => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized");
-  }
+  const { userId } = await checkUser();
   try {
     const conversation = await prisma.conversation.findFirst({
       where: {
         id: conversationId,
-        userId: session.user.id,
+        userId: userId,
       },
     });
 

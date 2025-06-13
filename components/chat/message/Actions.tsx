@@ -53,7 +53,6 @@ const PROVIDER_ORDER = [
 
 export function MessageActions({
   conversationId,
-  userId,
   inputMessage,
   message,
   selectedRetryProvider,
@@ -110,7 +109,7 @@ export function MessageActions({
 
     setIsLoading(true);
     try {
-      const branchedConvo = await branchConversation(userId, conversationId);
+      const branchedConvo = await branchConversation(conversationId);
 
       // Add the new conversation to the conversations list
       addConversation(branchedConvo);
@@ -146,11 +145,7 @@ export function MessageActions({
     setMessages([]);
     try {
       // Create new conversations
-      const newConversation = await createRetryConversation(
-        userId,
-        inputMessage,
-        conversationId
-      );
+      const newConversation = await createRetryConversation(conversationId);
 
       // Add the new conversation to the list
       addConversation(newConversation);
@@ -269,7 +264,6 @@ export function MessageActions({
                       key={modelData.modelId}
                       onClick={() => {
                         updateChatSettings(
-                          userId,
                           modelData.modelId,
                           modelData.provider
                         );

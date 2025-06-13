@@ -18,21 +18,21 @@ export default async function ChatLayout({
   if (!user) {
     redirect("/");
   }
-  const userData = await getUserById(user.user.id);
+  const userData = await getUserById();
 
   // Handle error case or null response
   if (!userData || "error" in userData) {
     redirect("/");
   }
-  const conversations = await getConversations(user.user.id);
-  const providers = await getProviders(user.user.id);
-  const chatSettings = await getChatSettings(user.user.id);
-  const userSettings = await getUserSettings(user.user.id);
+  const conversations = await getConversations();
+  const providers = await getProviders();
+  const chatSettings = await getChatSettings();
+  const userSettings = await getUserSettings();
   let models: UnifiedModel[] = [];
   if (providers.length > 0) {
     models = await getAvailableModels();
   }
-  const preferredModels = await getPreferredModels(user.user.id);
+  const preferredModels = await getPreferredModels();
   return (
     <ChatProvider
       activeUser={userData}

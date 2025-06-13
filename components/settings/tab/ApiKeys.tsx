@@ -51,7 +51,7 @@ export function ApiKeysTab() {
 
     setIsLoading(true);
     try {
-      await createAPIKey(activeUser.id, apiKey.trim(), finalProvider);
+      await createAPIKey(apiKey.trim(), finalProvider);
       toast.success("API key saved successfully");
       setActiveProviders([
         ...activeProviders,
@@ -84,7 +84,7 @@ export function ApiKeysTab() {
     if (!session?.user?.id) return;
 
     try {
-      await deleteAPIKey(session.user.id, keyId);
+      await deleteAPIKey(keyId);
       toast.success("API key deleted successfully");
       setActiveProviders(
         activeProviders.filter((provider) => provider.id !== keyId)

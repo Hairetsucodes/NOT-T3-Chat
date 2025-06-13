@@ -290,7 +290,7 @@ export default function Models() {
     try {
       if (isCurrentlyEnabled) {
         // Remove from preferences
-        const result = await removePreferredModel(session.user.id, modelId);
+        const result = await removePreferredModel(modelId);    
         if (result && "error" in result) {
           console.error("Failed to remove preferred model:", result);
           // Revert optimistic update on error
@@ -303,7 +303,6 @@ export default function Models() {
       } else {
         // Add to preferences
         const result = await addPreferredModel(
-          session.user.id,
           modelId,
           model.provider
         );

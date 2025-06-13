@@ -175,7 +175,7 @@ export async function getAvailableModels(): Promise<UnifiedModel[]> {
     ...normalizedDeepSeek,
     ...normalizedXai,
   ]
-    .filter(model => !model.name.toLowerCase().includes('embed'))
+    .filter((model) => !model.name.toLowerCase().includes("embed"))
     .sort((a, b) => {
       if (a.provider !== b.provider) {
         return a.provider.localeCompare(b.provider);
@@ -186,9 +186,11 @@ export async function getAvailableModels(): Promise<UnifiedModel[]> {
   return allModels;
 }
 
-export async function getPreferredModels(
-  userId: string
-): Promise<PreferredModel[]> {
+export async function getPreferredModels(): Promise<PreferredModel[]> {
+  const { userId } = await checkUser();
+  if (!userId) {
+    return [];
+  }
   const usersPreferredModels = await prisma.preferredModel.findMany({
     where: { userId: userId },
   });
@@ -407,13 +409,9 @@ export async function searchModels(query: string): Promise<UnifiedModel[]> {
   );
 }
 
-export const addPreferredModel = async (
-  userId: string,
-  modelId: string,
-  provider: string
-) => {
-  const { success } = await checkUser({ userId });
-  if (!success) {
+export const addPreferredModel = async (modelId: string, provider: string) => {
+  const { userId } = await checkUser();
+  if (!userId) {
     return { error: "Unauthorized" };
   }
 
@@ -459,9 +457,9 @@ export const addPreferredModel = async (
   }
 };
 
-export const removePreferredModel = async (userId: string, modelId: string) => {
-  const { success } = await checkUser({ userId });
-  if (!success) {
+export const removePreferredModel = async (modelId: string) => {
+  const { userId } = await checkUser();
+  if (!userId) {
     return { error: "Unauthorized" };
   }
 
@@ -480,9 +478,9 @@ export const removePreferredModel = async (userId: string, modelId: string) => {
   }
 };
 
-export const getUserPreferredModels = async (userId: string) => {
-  const { success } = await checkUser({ userId });
-  if (!success) {
+export const getUserPreferredModels = async () => {
+  const { userId } = await checkUser();
+  if (!userId) {
     return { error: "Unauthorized" };
   }
 

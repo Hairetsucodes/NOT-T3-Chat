@@ -22,16 +22,10 @@ const providerSchema = z
   ])
   .or(z.string().min(1).max(100));
 const apiKeySchema = z.string().min(1).max(500).trim();
-const userIdSchema = z.string().cuid();
 
-export const createAPIKey = async (
-  userId: string,
-  key: string,
-  provider: string
-) => {
+export const createAPIKey = async (key: string, provider: string) => {
   try {
     // Validate inputs
-    const validatedUserId = userIdSchema.parse(userId);
     const validatedKey = apiKeySchema.parse(key);
     const validatedProvider = providerSchema.parse(provider);
     if (validatedProvider.toLowerCase() === "openrouter") {
@@ -52,14 +46,14 @@ export const createAPIKey = async (
     if (validatedProvider.toLowerCase() === "xai") {
       await populateXaiModels(validatedKey);
     }
-    const user = await checkUser({ userId: validatedUserId });
-    if (!user) {
+    const { userId } = await checkUser();
+    if (!userId) {
       throw new Error("Unauthorized");
     }
 
     const existingKey = await prisma.apiKey.findFirst({
       where: {
-        userId: validatedUserId,
+        userId: userId,
         provider: validatedProvider,
       },
     });
@@ -81,7 +75,7 @@ export const createAPIKey = async (
       data: {
         key: validatedKey,
         provider: validatedProvider,
-        userId: validatedUserId,
+        userId: userId,
       },
     });
     return apiKey;
@@ -94,37 +88,12 @@ export const createAPIKey = async (
   }
 };
 
-export const getAPIKeys = async (userId: string) => {
+export const deleteAPIKey = async (keyId: string) => {
   try {
-    const validatedUserId = userIdSchema.parse(userId);
-
-    const user = await checkUser({ userId: validatedUserId });
-    if (!user) {
-      throw new Error("Unauthorized");
-    }
-
-    const apiKeys = await prisma.apiKey.findMany({
-      where: {
-        userId: validatedUserId,
-      },
-    });
-    return apiKeys;
-  } catch (error) {
-    console.error("Error fetching API keys:", error);
-    if (error instanceof z.ZodError) {
-      throw new Error("Invalid user ID");
-    }
-    throw new Error("Failed to fetch API keys");
-  }
-};
-
-export const deleteAPIKey = async (userId: string, keyId: string) => {
-  try {
-    const validatedUserId = userIdSchema.parse(userId);
     const validatedKeyId = z.string().cuid().parse(keyId);
 
-    const user = await checkUser({ userId: validatedUserId });
-    if (!user) {
+    const { userId } = await checkUser();
+    if (!userId) {
       throw new Error("Unauthorized");
     }
 
@@ -132,7 +101,7 @@ export const deleteAPIKey = async (userId: string, keyId: string) => {
     const apiKey = await prisma.apiKey.findFirst({
       where: {
         id: validatedKeyId,
-        userId: validatedUserId, // This ensures only the owner can delete
+        userId: userId, // This ensures only the owner can delete
       },
     });
 
@@ -154,16 +123,14 @@ export const deleteAPIKey = async (userId: string, keyId: string) => {
   }
 };
 
-export const getProviders = async (userId: string) => {
-  const validatedUserId = userIdSchema.parse(userId);
-  const user = await checkUser({ userId: validatedUserId });
-  if (!user) {
-    throw new Error("Unauthorized");
+export const getProviders = async () => {
+  const { userId } = await checkUser();
+  if (!userId) {
+    return [];
   }
-
   const providers = await prisma.apiKey.findMany({
     where: {
-      userId: validatedUserId,
+      userId: userId,
     },
     select: {
       id: true,

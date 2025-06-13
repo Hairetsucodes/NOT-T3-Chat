@@ -3,13 +3,17 @@
 import { checkUser } from "@/lib/auth/check";
 import { prisma } from "../prisma";
 import { Conversation } from "@prisma/client";
-import { UserChatHistory, FormattedConversation, HistoryStats } from "@/types/history";
+import {
+  UserChatHistory,
+  FormattedConversation,
+  HistoryStats,
+} from "@/types/history";
 
-export const getUserChatHistory = async (
-  userId: string
-): Promise<UserChatHistory | { error: string }> => {
-  const { success } = await checkUser({ userId });
-  if (!success) {
+export const getUserChatHistory = async (): Promise<
+  UserChatHistory | { error: string }
+> => {
+  const { userId } = await checkUser();
+  if (!userId) {
     return { error: "Unauthorized" };
   }
 
@@ -62,11 +66,11 @@ export const getUserChatHistory = async (
   }
 };
 
-export const getHistoryStats = async (
-  userId: string
-): Promise<HistoryStats | { error: string }> => {
-  const { success } = await checkUser({ userId });
-  if (!success) {
+export const getHistoryStats = async (): Promise<
+  HistoryStats | { error: string }
+> => {
+  const { userId } = await checkUser();
+  if (!userId) {
     return { error: "Unauthorized" };
   }
 
@@ -112,17 +116,15 @@ export const getHistoryStats = async (
   }
 };
 
-export const clearAllHistory = async (
-  userId: string
-): Promise<{ success: boolean } | { error: string }> => {
-  const { success } = await checkUser({ userId });
-  if (!success) {
+export const clearAllHistory = async (): Promise<
+  { success: boolean } | { error: string }
+> => {
+  const { userId } = await checkUser();
+  if (!userId) {
     return { error: "Unauthorized" };
   }
 
   try {
-
-
     // Then delete all conversations
     await prisma.conversation.deleteMany({
       where: { userId },
@@ -137,13 +139,12 @@ export const clearAllHistory = async (
 
 // Clear history older than specified date
 export const clearHistoryOlderThan = async (
-  userId: string,
   olderThanDate: Date
 ): Promise<
   { deletedConversations: number; deletedMessages: number } | { error: string }
 > => {
-  const { success } = await checkUser({ userId });
-  if (!success) {
+  const { userId } = await checkUser();
+  if (!userId) {
     return { error: "Unauthorized" };
   }
 
@@ -186,7 +187,6 @@ export const clearHistoryOlderThan = async (
 
 // Import chat history from formatted structure
 export const importChatHistory = async (
-  userId: string,
   historyData: UserChatHistory,
   options: {
     overwrite?: boolean;
@@ -201,8 +201,8 @@ export const importChatHistory = async (
     }
   | { error: string }
 > => {
-  const { success } = await checkUser({ userId });
-  if (!success) {
+  const { userId } = await checkUser();
+  if (!userId) {
     return { error: "Unauthorized" };
   }
 
@@ -223,7 +223,10 @@ export const importChatHistory = async (
       try {
         // Check if conversation already exists (only relevant for same-user imports)
         let existingConv = null;
-        if (!options.transferFromDifferentUser || historyData.userId === userId) {
+        if (
+          !options.transferFromDifferentUser ||
+          historyData.userId === userId
+        ) {
           existingConv = await prisma.conversation.findFirst({
             where: {
               userId,
@@ -243,46 +246,52 @@ export const importChatHistory = async (
           }
         }
 
-      let conversation;
-      
-      if (options.transferFromDifferentUser && historyData.userId !== userId) {
-        // When transferring from different user, always create new conversation with new ID
-        conversation = await prisma.conversation.create({
-          data: {
-            userId, // Always assign to current user
-            title: conv.title,
-            createdAt: new Date(conv.createdAt),
-            updatedAt: new Date(conv.updatedAt),
-          },
-        });
-      } else {
-        // When importing from same user, use original ID and upsert
-        conversation = await prisma.conversation.upsert({
-          where: { id: conv.id },
-          update: {
-            title: conv.title,
-            updatedAt: new Date(conv.updatedAt),
-          },
-          create: {
-            id: conv.id,
-            userId, // Always assign to current user
-            title: conv.title,
-            createdAt: new Date(conv.createdAt),
-            updatedAt: new Date(conv.updatedAt),
-          },
-        });
-      }
+        let conversation;
 
-      // If overwriting, delete existing messages
-      if (existingConv && options.overwrite) {
-        await prisma.message.deleteMany({
-          where: { conversationId: conv.id },
-        });
-      }
+        if (
+          options.transferFromDifferentUser &&
+          historyData.userId !== userId
+        ) {
+          // When transferring from different user, always create new conversation with new ID
+          conversation = await prisma.conversation.create({
+            data: {
+              userId, // Always assign to current user
+              title: conv.title,
+              createdAt: new Date(conv.createdAt),
+              updatedAt: new Date(conv.updatedAt),
+            },
+          });
+        } else {
+          // When importing from same user, use original ID and upsert
+          conversation = await prisma.conversation.upsert({
+            where: { id: conv.id },
+            update: {
+              title: conv.title,
+              updatedAt: new Date(conv.updatedAt),
+            },
+            create: {
+              id: conv.id,
+              userId, // Always assign to current user
+              title: conv.title,
+              createdAt: new Date(conv.createdAt),
+              updatedAt: new Date(conv.updatedAt),
+            },
+          });
+        }
 
-              // Import messages
+        // If overwriting, delete existing messages
+        if (existingConv && options.overwrite) {
+          await prisma.message.deleteMany({
+            where: { conversationId: conv.id },
+          });
+        }
+
+        // Import messages
         for (const msg of conv.messages) {
-          if (options.transferFromDifferentUser && historyData.userId !== userId) {
+          if (
+            options.transferFromDifferentUser &&
+            historyData.userId !== userId
+          ) {
             // When transferring from different user, always create new message with new ID
             await prisma.message.create({
               data: {
@@ -326,10 +335,14 @@ export const importChatHistory = async (
           importedMessages++;
         }
 
-      importedConversations++;
+        importedConversations++;
       } catch (error) {
         console.error(`Failed to import conversation "${conv.title}":`, error);
-        return { error: `Failed to import conversation "${conv.title}": ${error instanceof Error ? error.message : 'Unknown error'}` };
+        return {
+          error: `Failed to import conversation "${conv.title}": ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        };
       }
     }
 
@@ -346,11 +359,10 @@ export const importChatHistory = async (
 
 // Delete specific conversation
 export const deleteConversation = async (
-  userId: string,
   conversationId: string
 ): Promise<{ success: boolean } | { error: string }> => {
-  const { success } = await checkUser({ userId });
-  if (!success) {
+  const { userId } = await checkUser();
+  if (!userId) {
     return { error: "Unauthorized" };
   }
 
@@ -386,7 +398,6 @@ export const deleteConversation = async (
 
 // Get conversations with pagination
 export const getConversationsPaginated = async (
-  userId: string,
   options: {
     limit?: number;
     offset?: number;
@@ -402,8 +413,8 @@ export const getConversationsPaginated = async (
     }
   | { error: string }
 > => {
-  const { success } = await checkUser({ userId });
-  if (!success) {
+  const { userId } = await checkUser();
+  if (!userId) {
     return { error: "Unauthorized" };
   }
 
@@ -457,12 +468,8 @@ export const getConversationsPaginated = async (
   }
 };
 
-
-
 // Sync history between accounts (placeholder for future implementation)
-export const prepareSyncData = async (
-  userId: string
-): Promise<
+export const prepareSyncData = async (): Promise<
   | {
       syncToken: string;
       lastSyncAt: string;
@@ -470,14 +477,14 @@ export const prepareSyncData = async (
     }
   | { error: string }
 > => {
-  const { success } = await checkUser({ userId });
-  if (!success) {
+  const { userId } = await checkUser();
+  if (!userId) {
     return { error: "Unauthorized" };
   }
 
   try {
     // Get basic info for sync preparation
-    const stats = await getHistoryStats(userId);
+    const stats = await getHistoryStats();
 
     if ("error" in stats) {
       return stats;

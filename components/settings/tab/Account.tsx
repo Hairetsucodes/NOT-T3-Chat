@@ -65,7 +65,7 @@ export function AccountTab() {
     setIsLoading(true);
 
     try {
-      const result = await updateUser(activeUser.id, {
+      const result = await updateUser({
         name: name.trim(),
         username: username.trim(),
       });

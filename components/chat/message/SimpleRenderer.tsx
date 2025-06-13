@@ -181,7 +181,6 @@ export const SimpleMessageRenderer = memo(function SimpleMessageRenderer({
         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <MessageActions
             conversationId={conversationId || message.conversationId}
-            userId={activeUser.id}
             inputMessage={userInputMessage}
             message={message}
             selectedRetryModel={message.model}

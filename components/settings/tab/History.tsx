@@ -54,7 +54,7 @@ export function HistoryTab() {
       }
 
       try {
-        const result = await getHistoryStats(activeUser.id);
+        const result = await getHistoryStats();
 
         if (result && "error" in result) {
           toast.error(result.error);
@@ -79,7 +79,7 @@ export function HistoryTab() {
 
     setIsLoading(true);
     try {
-      const result = await getUserChatHistory(activeUser.id);
+      const result = await getUserChatHistory();
 
       if (result && "error" in result) {
         toast.error(result.error);
@@ -134,9 +134,9 @@ export function HistoryTab() {
         return;
       }
 
-      const result = await importChatHistory(activeUser.id, historyData, {
+      const result = await importChatHistory(historyData, {
         skipExisting: true,
-        transferFromDifferentUser: true, // Allow importing from different users
+        transferFromDifferentUser: true,
       });
 
       if (result && "error" in result) {
@@ -165,7 +165,7 @@ export function HistoryTab() {
       toast.success(message);
 
       // Refresh stats
-      const newStats = await getHistoryStats(activeUser.id);
+      const newStats = await getHistoryStats();
       if (newStats && !("error" in newStats)) {
         setStats(newStats);
       }
@@ -194,7 +194,7 @@ export function HistoryTab() {
 
     setIsLoading(true);
     try {
-      const result = await clearAllHistory(activeUser.id);
+      const result = await clearAllHistory();
 
       if (result && "error" in result) {
         toast.error(result.error);
@@ -247,7 +247,7 @@ export function HistoryTab() {
           return;
       }
 
-      const result = await clearHistoryOlderThan(activeUser.id, cutoffDate);
+      const result = await clearHistoryOlderThan(cutoffDate);
 
       if (result && "error" in result) {
         toast.error(result.error);
@@ -260,7 +260,7 @@ export function HistoryTab() {
         );
 
         // Refresh stats
-        const newStats = await getHistoryStats(activeUser.id);
+        const newStats = await getHistoryStats();
         if (newStats && !("error" in newStats)) {
           setStats(newStats);
         }

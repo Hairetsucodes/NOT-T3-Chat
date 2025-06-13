@@ -1,5 +1,6 @@
 "use server";
 
+import { auth } from "@/auth";
 import { prisma } from "@/prisma";
 
 export const createUser = async (
@@ -60,10 +61,15 @@ export const getUserByEmail = async (email: string) => {
   }
 };
 
-export const getUserById = async (userId: string) => {
+export const getUserById = async () => {
+  const session = await auth();
+  if (!session?.user.id) {
+    return { error: "Unauthorized" };
+  }
+
   try {
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: session?.user.id },
       select: {
         id: true,
         name: true,

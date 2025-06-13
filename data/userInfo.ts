@@ -1,14 +1,9 @@
-"use server";
-
 import { checkUser } from "@/lib/auth/check";
 import { prisma } from "@/prisma";
 import { User } from "@prisma/client";
 
-export const updateUser = async (userId: string, data: Partial<User>) => {
-  const { success } = await checkUser({ userId });
-  if (!success) {
-    return { error: "Unauthorized" };
-  }
+export const updateUser = async (data: Partial<User>) => {
+  const { userId } = await checkUser();
   // check if the username is already taken
   if (data.username) {
     const existingUser = await prisma.user.findUnique({
@@ -26,11 +21,8 @@ export const updateUser = async (userId: string, data: Partial<User>) => {
   return user;
 };
 
-export const deleteUser = async (userId: string) => {
-  const { success } = await checkUser({ userId });
-  if (!success) {
-    return { error: "Unauthorized" };
-  }
+export const deleteUser = async () => {
+  const { userId } = await checkUser();
 
   const user = await prisma.user.delete({
     where: { id: userId },
