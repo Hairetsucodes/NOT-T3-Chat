@@ -1,7 +1,18 @@
 "use client";
 
 import { useContext, useState, useEffect, useMemo, useCallback } from "react";
-import { Search, ChevronDown, Pin, ChevronUp, Filter } from "lucide-react";
+import {
+  Search,
+  ChevronDown,
+  Pin,
+  ChevronUp,
+  Filter,
+  Eye,
+  Brain,
+  Globe,
+  FileText,
+  ImagePlus,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +46,142 @@ const isProModel = (name: string, pricing: unknown): boolean => {
     (pricing as { prompt: number }).prompt > 0.005;
 
   return nameBasedCheck || Boolean(pricingBasedCheck);
+};
+
+// Helper function to detect if model requires key
+const requiresKey = (name: string, pricing: unknown): boolean => {
+  // Check if it's a premium model with high pricing
+  if (
+    pricing &&
+    typeof pricing === "object" &&
+    pricing !== null &&
+    "prompt" in pricing
+  ) {
+    const promptPrice = (pricing as { prompt: unknown }).prompt;
+    if (typeof promptPrice === "number" && promptPrice > 0.01) {
+      return true;
+    }
+  }
+
+  // Some models that typically require keys
+  const lowercaseName = name.toLowerCase();
+  return (
+    lowercaseName.includes("opus") ||
+    (lowercaseName.includes("o3") && lowercaseName.includes("pro"))
+  );
+};
+
+// Helper function to detect if model is new
+const isNewModel = (name: string): boolean => {
+  const lowercaseName = name.toLowerCase();
+  return (
+    lowercaseName.includes("o3") ||
+    lowercaseName.includes("4.5") ||
+    lowercaseName.includes("deepseek-r1") ||
+    lowercaseName.includes("grok-3") ||
+    lowercaseName.includes("claude-4")
+  );
+};
+
+// Helper function to get special styling for certain models
+const getSpecialStyling = (
+  name: string
+): { border?: string; shadow?: string } => {
+  const lowercaseName = name.toLowerCase();
+
+  if (lowercaseName.includes("o3") && lowercaseName.includes("pro")) {
+    return {
+      border: "border-[#ffb525f7]",
+      shadow:
+        "shadow-[0px_3px_8px_#ffae1082,inset_0px_-4px_20px_#ffb52575] dark:border-amber-200/80 dark:shadow-[0px_3px_8px_rgba(186,130,21,0.32),inset_0px_-4px_20px_rgba(186,130,21,0.43)]",
+    };
+  }
+
+  return {};
+};
+
+// Capability generation logic
+const getCapabilities = (modelName: string, description?: string | null) => {
+  const capabilities = [];
+  const desc = description?.toLowerCase() || "";
+  const name = modelName.toLowerCase();
+
+  // Vision capability
+  if (
+    desc.includes("vision") ||
+    desc.includes("image") ||
+    desc.includes("multimodal") ||
+    name.includes("vision") ||
+    name.includes("turbo") ||
+    name.includes("4o") ||
+    name.includes("claude") ||
+    name.includes("gemini") ||
+    name.includes("grok")
+  ) {
+    capabilities.push({ icon: <Eye className="h-4 w-4" />, label: "Vision" });
+  }
+
+  // Web search capability
+  if (
+    desc.includes("search") ||
+    desc.includes("web") ||
+    desc.includes("browse") ||
+    name.includes("flash") ||
+    name.includes("gemini")
+  ) {
+    capabilities.push({
+      icon: <Globe className="h-4 w-4" />,
+      label: "Web Access",
+    });
+  }
+
+  // Code capability
+  if (
+    desc.includes("code") ||
+    desc.includes("programming") ||
+    name.includes("claude") ||
+    name.includes("gpt") ||
+    name.includes("deepseek") ||
+    name.includes("qwen")
+  ) {
+    capabilities.push({
+      icon: <FileText className="h-4 w-4" />,
+      label: "Files",
+    });
+  }
+
+  // Reasoning capability
+  if (
+    desc.includes("reasoning") ||
+    desc.includes("thinking") ||
+    name.includes("reasoning") ||
+    name.includes("o1") ||
+    name.includes("o3") ||
+    name.includes("r1") ||
+    name.includes("qwq") ||
+    name.includes("sonnet") ||
+    name.includes("grok")
+  ) {
+    capabilities.push({
+      icon: <Brain className="h-4 w-4" />,
+      label: "Reasoning",
+    });
+  }
+
+  // Image generation capability
+  if (
+    desc.includes("image generation") ||
+    desc.includes("dall") ||
+    name.includes("imagegen") ||
+    name.includes("dall")
+  ) {
+    capabilities.push({
+      icon: <ImagePlus className="h-4 w-4" />,
+      label: "Image Generation",
+    });
+  }
+
+  return capabilities;
 };
 
 // Custom hook for debounced value
@@ -80,17 +227,26 @@ export default function ModelSelector() {
     () =>
       dbModels.map((model) => {
         const icon = getProviderIcon(model.provider, "h-8 w-8 bg-transparent");
+        const capabilities = getCapabilities(model.name, model.description);
+        const isPro = isProModel(model.name, model.pricing);
+        const requiresApiKey = requiresKey(model.name, model.pricing);
+        const isNew = isNewModel(model.name);
+        const specialStyling = getSpecialStyling(model.name);
 
         return {
           id: model.modelId,
           name: model.name,
           subtitle: model.modelFamily || "",
           icon: icon,
-          capabilities: [],
+          capabilities,
           provider: model.provider,
-          isPro: isProModel(model.name, model.pricing),
+          isPro,
           isDisabled: false,
           isFavorite: preferredModelIds.has(model.modelId),
+          isExperimental: false,
+          requiresKey: requiresApiKey,
+          isNew,
+          specialStyling,
         };
       }),
     [dbModels, preferredModelIds]
@@ -262,7 +418,6 @@ export default function ModelSelector() {
                   <ModelCard
                     key={model.id}
                     model={model}
-                    isSelected={chatSettings?.model === model.id}
                     onSelect={handleModelSelect}
                   />
                 ))}
@@ -277,7 +432,6 @@ export default function ModelSelector() {
                       <ModelCard
                         key={model.id}
                         model={model}
-                        isSelected={chatSettings?.model === model.id}
                         onSelect={handleModelSelect}
                       />
                     ))}

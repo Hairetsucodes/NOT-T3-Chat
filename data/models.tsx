@@ -166,7 +166,7 @@ export async function getAvailableModels(): Promise<UnifiedModel[]> {
     direct: true,
   }));
 
-  // Combine all models and sort by provider then name
+  // Combine all models, filter out embedding models, and sort by provider then name
   const allModels = [
     ...normalizedOpenRouter,
     ...normalizedAnthropic,
@@ -174,12 +174,14 @@ export async function getAvailableModels(): Promise<UnifiedModel[]> {
     ...normalizedGoogle,
     ...normalizedDeepSeek,
     ...normalizedXai,
-  ].sort((a, b) => {
-    if (a.provider !== b.provider) {
-      return a.provider.localeCompare(b.provider);
-    }
-    return a.name.localeCompare(b.name);
-  });
+  ]
+    .filter(model => !model.name.toLowerCase().includes('embed'))
+    .sort((a, b) => {
+      if (a.provider !== b.provider) {
+        return a.provider.localeCompare(b.provider);
+      }
+      return a.name.localeCompare(b.name);
+    });
 
   return allModels;
 }

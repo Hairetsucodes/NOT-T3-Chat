@@ -6,7 +6,6 @@ export function LoadingBubbles() {
         <div className="w-2 h-2 bg-foreground/60 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
         <div className="w-2 h-2 bg-foreground/60 rounded-full animate-bounce"></div>
       </div>
-      <span className="text-sm text-foreground/60 ml-2">AI is thinking...</span>
     </div>
   );
 }
