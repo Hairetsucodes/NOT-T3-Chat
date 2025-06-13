@@ -13,8 +13,8 @@ COPY package.json pnpm-lock.yaml ./
 # Install dependencies (skip postinstall scripts)
 RUN pnpm install --force --ignore-scripts
 
-# Explicitly install @prisma/engines
-RUN pnpm add @prisma/engines
+# Explicitly install @prisma/engines and missing dependencies
+RUN pnpm add @prisma/engines hast-util-to-jsx-runtime @modelcontextprotocol/sdk
 
 # Copy the rest of the application code
 COPY . .
