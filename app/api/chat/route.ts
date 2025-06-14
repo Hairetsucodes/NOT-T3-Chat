@@ -1,10 +1,7 @@
 import { auth } from "@/auth";
 import {
   handleLLMRequestStreaming,
-  createErrorResponse,
-  validateProviderKey,
   generateConversationTitle,
-  createStreamTransformer,
 } from "@/ai/index";
 
 import { getModelById } from "@/data/models";
@@ -15,6 +12,9 @@ import {
 } from "@/lib/apiServerActions/chat";
 import { validateChatRequest } from "@/lib/apiValidation/validate";
 import { createMessageApi } from "@/lib/apiServerActions/chat";
+import { createErrorResponse } from "@/utils/response";
+import { validateProviderKey } from "@/utils/validation";
+import { createStreamTransformer } from "@/utils/stream";
 
 export async function POST(req: Request) {
   const validation = await validateChatRequest(req);
