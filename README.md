@@ -397,9 +397,9 @@ Users can retry any AI response with:
 
 ```
 ├── ai/                # AI provider configurations and utilities
-├── app/               # Next.js 13+ app directory
-│   ├── api/          # API routes
-│   ├── chat/         # Chat pages
+├── app/               # Next.js 15+ app directory
+│   ├── api/           # API routes
+│   ├── chat/          # Chat pages
 │   └── ...
 ├── components/        # React components
 ├── context/           # React context providers
@@ -476,18 +476,13 @@ pnpm db:migrate
 
 ### TODO in no particular order
 
-- Attachments
-- Refactor x100
-- Tweaks
 - Chat Sharing
 - Bug Reports
 - Image Gen / Analysis
-- Refactor x1000
+- Attachments
 - Optimize DB querying
-- Tweaks
 - Production Deployment / postGres
-- Refactor x9000
-- Tweaks
+- Refactor x100
 - Ollama Local
 - Extra Credit: Voice 2 Voice over websockets.
 
