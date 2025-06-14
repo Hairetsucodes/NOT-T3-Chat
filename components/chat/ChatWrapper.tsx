@@ -25,7 +25,6 @@ export function ChatWrapper({
     setConversationId,
     sendMessage,
     setChatSettings,
-    messages,
     chatSettings,
   } = useContext(ChatContext);
 
@@ -45,7 +44,7 @@ export function ChatWrapper({
 
     if (!isRetry || !retryMessage) return;
     if (hasRetriedRef.current) return;
-    if (messages.length > 0) return;
+    if (initialMessages.length > 0) return;
 
     if (retryModel && retryProvider) {
       setChatSettings({
@@ -63,14 +62,13 @@ export function ChatWrapper({
 
     sendMessage(userMessage, {
       conversationId: initialConversationId,
-      selectedModel: initialModel || chatSettings?.model,
-      provider: initialProvider || chatSettings?.provider,
+      selectedModel: retryModel || initialModel,
+      provider: retryProvider || initialProvider,
     });
 
     hasRetriedRef.current = true;
   }, [
     searchParams,
-    messages,
     sendMessage,
     setChatSettings,
     initialConversationId,
