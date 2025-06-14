@@ -45,3 +45,4 @@ next-env.d.ts
 dev.db
 prod.db
 docker-data/.auth_secret
+docker-data/.api_key_salt

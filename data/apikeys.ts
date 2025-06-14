@@ -2,6 +2,7 @@
 import { checkUser } from "@/lib/auth/check";
 import { prisma } from "@/prisma";
 import { z } from "zod";
+import { encrypt } from "@/lib/encryption/encrypt";
 import { populateOpenRouterModels } from "@/scripts/populate-openrouter-models";
 import { populateAnthropicModels } from "@/scripts/populate-anthropic-models";
 import { populateOpenAIModels } from "@/scripts/populate-openai-models";
@@ -28,6 +29,10 @@ export const createAPIKey = async (key: string, provider: string) => {
     // Validate inputs
     const validatedKey = apiKeySchema.parse(key);
     const validatedProvider = providerSchema.parse(provider);
+    
+    // Encrypt the API key before storing
+    const encryptedKey = await encrypt(validatedKey);
+    
     if (validatedProvider.toLowerCase() === "openrouter") {
       await populateOpenRouterModels();
     }
@@ -64,7 +69,7 @@ export const createAPIKey = async (key: string, provider: string) => {
           id: existingKey.id,
         },
         data: {
-          key: validatedKey,
+          key: encryptedKey,
           provider: validatedProvider,
         },
       });
@@ -73,7 +78,7 @@ export const createAPIKey = async (key: string, provider: string) => {
 
     const apiKey = await prisma.apiKey.create({
       data: {
-        key: validatedKey,
+        key: encryptedKey,
         provider: validatedProvider,
         userId: userId,
       },
@@ -123,19 +128,3 @@ export const deleteAPIKey = async (keyId: string) => {
   }
 };
 
-export const getProviders = async () => {
-  const { userId } = await checkUser();
-  if (!userId) {
-    return [];
-  }
-  const providers = await prisma.apiKey.findMany({
-    where: {
-      userId: userId,
-    },
-    select: {
-      id: true,
-      provider: true,
-    },
-  });
-  return providers;
-};

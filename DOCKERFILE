@@ -74,14 +74,27 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
     echo '    fi' >> /app/start.sh && \
     echo 'fi' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
+    echo '# Generate and persist API_KEY_SALT if not provided' >> /app/start.sh && \
+    echo 'if [ -z "$API_KEY_SALT" ]; then' >> /app/start.sh && \
+    echo '    if [ -f "/app/data/.api_key_salt" ]; then' >> /app/start.sh && \
+    echo '        echo "Loading existing API_KEY_SALT..."' >> /app/start.sh && \
+    echo '        API_KEY_SALT=$(cat /app/data/.api_key_salt)' >> /app/start.sh && \
+    echo '    else' >> /app/start.sh && \
+    echo '        echo "Generating new API_KEY_SALT..."' >> /app/start.sh && \
+    echo '        API_KEY_SALT=$(node -e "console.log(require('\''crypto'\'').randomBytes(32).toString('\''hex'\''))")' >> /app/start.sh && \
+    echo '        echo "$API_KEY_SALT" > /app/data/.api_key_salt' >> /app/start.sh && \
+    echo '        chmod 600 /app/data/.api_key_salt' >> /app/start.sh && \
+    echo '    fi' >> /app/start.sh && \
+    echo 'fi' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
     echo '# Initialize database if it does not exist' >> /app/start.sh && \
     echo 'if [ ! -f "/app/data/prod.db" ]; then' >> /app/start.sh && \
     echo '    echo "Initializing database..."' >> /app/start.sh && \
-    echo '    AUTH_SECRET="$AUTH_SECRET" pnpx prisma db push --skip-generate' >> /app/start.sh && \
+    echo '    AUTH_SECRET="$AUTH_SECRET" API_KEY_SALT="$API_KEY_SALT" pnpx prisma db push --skip-generate' >> /app/start.sh && \
     echo 'fi' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
-    echo '# Start the application with the secret' >> /app/start.sh && \
-    echo 'AUTH_SECRET="$AUTH_SECRET" exec pnpm start' >> /app/start.sh
+    echo '# Start the application with the secrets' >> /app/start.sh && \
+    echo 'AUTH_SECRET="$AUTH_SECRET" API_KEY_SALT="$API_KEY_SALT" exec pnpm start' >> /app/start.sh
 
 # Make the startup script executable
 RUN chmod +x /app/start.sh

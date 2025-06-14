@@ -140,13 +140,28 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
    npx auth secret
    ```
 
-   Configure your `.env` file with the `DATABASE_URL` & `AUTH_SECRET`:
+   Configure your `.env` file with the required environment variables:
 
    ```env
    DATABASE_URL="file:../dev.db"
    AUTH_SECRET="your-secret-key"
+   API_KEY_SALT="your-api-key-salt"
    NEXTAUTH_URL="http://localhost:3000"
    ```
+
+   **Generate API Key Salt:**
+
+   ```bash
+   openssl rand -hex 32
+   ```
+
+   Or use Node.js:
+
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
+
+   > **Note**: The `API_KEY_SALT` is used to securely encrypt API keys stored in your database. Keep this value secret and consistent across deployments.
 
 5. **Start the development server:**
    ```bash
@@ -175,6 +190,7 @@ Visit [http://localhost:3000](http://localhost:3000) to see the application.
 
    # NextAuth
    AUTH_SECRET="your-secure-production-secret"
+   API_KEY_SALT="your-secure-api-key-salt"
    NEXTAUTH_URL="https://your-domain.com"
 
    ```
@@ -210,6 +226,7 @@ The application will be available at [http://localhost:3000](http://localhost:30
 - ✅ Environment variables configured
 - ✅ Database properly migrated
 - ✅ AUTH_SECRET is secure and unique
+- ✅ API_KEY_SALT is secure and unique
 - ✅ NEXTAUTH_URL matches your domain
 - ✅ API keys are valid and properly configured
 - ✅ Application built successfully (`pnpm build`)
@@ -287,7 +304,7 @@ The Docker setup includes:
 
 - Automatic database initialization
 - Persistent data storage in `./docker-data` directory
-- Auto-generated `AUTH_SECRET` if not provided
+- Auto-generated `AUTH_SECRET` and `API_KEY_SALT` if not provided
 - Proper SQLite database handling for containers
 
 ### Using Docker directly
@@ -316,6 +333,7 @@ DATABASE_URL="file:/app/data/prod.db"
 
 # NextAuth (auto-generated if not provided)
 AUTH_SECRET="your-generated-secret-here"
+API_KEY_SALT="your-generated-api-key-salt"
 NEXTAUTH_URL="http://localhost:3000"
 
 ```
@@ -339,6 +357,7 @@ DATABASE_URL="file:./dev.db"
 
 # NextAuth
 AUTH_SECRET="your-nextauth-secret"
+API_KEY_SALT="your-api-key-salt"  # Used for encrypting API keys in database
 NEXTAUTH_URL="http://localhost:3000"
 ```
 
@@ -408,6 +427,7 @@ Ensure all environment variables are properly configured for your production env
 
 - `DATABASE_URL` (consider PostgreSQL for production)
 - `AUTH_SECRET` (use a secure random string)
+- `API_KEY_SALT` (use a secure random string for API key encryption)
 - `NEXTAUTH_URL` (your production domain)
 
 ### Database Migration for Production

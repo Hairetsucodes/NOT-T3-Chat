@@ -5,7 +5,7 @@ import { getModelById } from "@/data/models";
 import {
   createMessageApi,
   getPromptApi,
-  getAPIKeysApi,
+  getProviderApiKey,
   getChatSettingsApi,
 } from "@/lib/apiServerActions/chat";
 
@@ -50,8 +50,11 @@ export async function POST(req: Request) {
   const userId = session.user.id;
 
   try {
-    const apiKeys = await getAPIKeysApi(userId);
-    const settings = await getChatSettingsApi(userId);  
+    const providerKey = await getProviderApiKey(
+      userId,
+      selectedModel?.provider || "openai"
+    );
+    const settings = await getChatSettingsApi(userId);
     const prompt =
       !settings || "error" in settings || !settings.promptId
         ? null
@@ -65,7 +68,6 @@ export async function POST(req: Request) {
       provider = "openrouter";
     }
     // Find the appropriate API key for the provider
-    let providerKey = apiKeys.find((key) => key.provider === provider);
 
     // For unsupported providers (not openai, anthropic, google, xai, deepseek), use OpenRouter
     if (
@@ -79,7 +81,6 @@ export async function POST(req: Request) {
         "openrouter",
       ].includes(provider)
     ) {
-      providerKey = apiKeys.find((key) => key.provider === "openrouter");
       if (!providerKey) {
         return new Response(
           JSON.stringify({
@@ -119,7 +120,7 @@ export async function POST(req: Request) {
             lastUserMessage.content,
             provider,
             modelId,
-            providerKey.key
+            providerKey
           );
         } catch (error) {
           console.error("❌ Title generation failed, using fallback:", error);
@@ -162,7 +163,7 @@ export async function POST(req: Request) {
       messages,
       provider,
       modelId,
-      providerKey.key,
+      providerKey,
       (prompt && "prompt" in prompt ? prompt.prompt : "") || "",
       new AbortController().signal,
       maxTokens

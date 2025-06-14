@@ -2,6 +2,7 @@
 
 import { prisma } from "@/prisma";
 import { z } from "zod";
+import { decrypt } from "@/lib/encryption/encrypt";
 
 export const createMessageApi = async (
   userId: string,
@@ -56,14 +57,31 @@ export const getPromptApi = async (promptId: string, userId: string) => {
   return prompt;
 };
 
-export const getAPIKeysApi = async (userId: string) => {
+// Helper function to safely decrypt API keys
+async function safeDecrypt(encryptedKey: string): Promise<string | undefined> {
+  try {
+    // Check if it looks like base64 encrypted data (our encrypted keys should be base64)
+    if (encryptedKey.match(/^[A-Za-z0-9+/]+=*$/)) {
+      return await decrypt(encryptedKey);
+    }
+  } catch (error) {
+    console.warn("Failed to decrypt API key, returning as plain text:", error);
+    return encryptedKey;
+  }
+}
+
+export const getProviderApiKey = async (userId: string, provider: string) => {
   try {
     const apiKeys = await prisma.apiKey.findMany({
       where: {
         userId: userId,
+        provider: provider,
       },
     });
-    return apiKeys;
+
+    // Safely decrypt the API keys before returning
+    const decryptedApiKey = await safeDecrypt(apiKeys[0].key);
+    return decryptedApiKey;
   } catch (error) {
     console.error("Error fetching API keys:", error);
     if (error instanceof z.ZodError) {
@@ -71,13 +89,9 @@ export const getAPIKeysApi = async (userId: string) => {
     }
     throw new Error("Failed to fetch API keys");
   }
-}; 
-
-
-
+};
 
 export const getChatSettingsApi = async (userId: string) => {
-
   const chatSettings = await prisma.chatSettings.findFirst({
     where: { userId },
   });

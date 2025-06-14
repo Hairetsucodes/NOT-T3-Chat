@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getConversations } from "@/data/messages";
 import { ChatProvider } from "@/context/ChatContext";
 import { getUserById } from "@/data/user";
-import { getProviders } from "@/data/apikeys";
+import { getProviders } from "@/data/providers";
 import { getAvailableModels, getPreferredModels } from "@/data/models";
 import { UnifiedModel } from "@/types/models";
 import { getChatSettings, getUserSettings } from "@/data/settings";
