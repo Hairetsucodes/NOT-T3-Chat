@@ -473,7 +473,7 @@ pnpm db:migrate
 - Review the [Discussions](https://github.com/your-repo/discussions) section
 - Consult the documentation for [Next.js](https://nextjs.org/docs), [Prisma](https://prisma.io/docs), and [NextAuth](https://next-auth.js.org/)
 
-### TODO
+### TODO in no particular order
 
 - WebSearch
 - Refactor x10
@@ -485,6 +485,7 @@ pnpm db:migrate
 - Bug Reports
 - Image Gen / Analysis
 - Refactor x1000
+- Optimize DB querying
 - Tweaks
 - Production Deployment / postGres
 - Refactor x9000

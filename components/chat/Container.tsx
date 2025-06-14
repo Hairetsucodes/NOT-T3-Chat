@@ -5,8 +5,9 @@ import { WelcomeScreen } from "./welcome/Welcome";
 import { ChatHeader } from "./ui/Header";
 import CornerDecorator from "./ui/CornerDecorator";
 import { LoadingBubbles } from "./ui/LoadingBubbles";
+import { ChatSkeleton } from "./ui/ChatSkeleton";
 import { Message } from "@/types/chat";
-import { ChangeEvent, memo } from "react";
+import { ChangeEvent, memo, Suspense } from "react";
 import { SimpleMessageRenderer } from "./message/SimpleRenderer";
 import { useSearchParams } from "next/navigation";
 
@@ -67,8 +68,6 @@ export function ChatContainer({
   // Check for retry query parameter
   const searchParams = useSearchParams();
   const hasRetryParam = searchParams.get("retry") === "true";
-  
-  // Only get the minimal context data needed
 
   return (
     <main className="relative flex w-full h-full flex-col overflow-hidden transition-[width,height]">
@@ -98,8 +97,12 @@ export function ChatContainer({
       >
         {messages.length === 0 && !hasRetryParam ? (
           <WelcomeScreen onSelectSuggestion={handleSuggestionSelect} />
+        ) : hasRetryParam && messages.length === 0 ? (
+          <ChatSkeleton />
         ) : (
-          <MessageList messages={messages} isLoading={isLoading} />
+          <Suspense fallback={<ChatSkeleton />}>
+            <MessageList messages={messages} isLoading={isLoading} />
+          </Suspense>
         )}
       </div>
 
