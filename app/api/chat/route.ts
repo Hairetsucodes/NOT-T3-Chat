@@ -1,33 +1,15 @@
-import { auth } from "@/auth";
 import {
   handleLLMRequestStreaming,
   generateConversationTitle,
 } from "@/ai/index";
-
 import { getModelById } from "@/data/models";
-import {
-  getPromptApi,
-  getProviderApiKey,
-  getChatSettingsApi,
-} from "@/lib/apiServerActions/chat";
-import { validateChatRequest } from "@/lib/apiValidation/validate";
+import { getPromptApi, getChatSettingsApi } from "@/lib/apiServerActions/chat";
+import { validateChatRequestComplete } from "@/lib/apiValidation/validate";
 import { createMessageApi } from "@/lib/apiServerActions/chat";
-import { createErrorResponse } from "@/utils/response";
-import { validateProviderKey } from "@/utils/validation";
 import { createStreamTransformer } from "@/utils/stream";
+import { auth } from "@/auth";
 
 export async function POST(req: Request) {
-  const validation = await validateChatRequest(req);
-  if (validation.error) {
-    return validation.error;
-  }
-
-  const { messages, conversationId, selectedModel } = validation.data;
-
-  if (!selectedModel) {
-    return createErrorResponse("No model selected");
-  }
-
   const session = await auth();
   if (!session?.user?.id) {
     return new Response("Unauthorized", { status: 401 });
@@ -35,21 +17,15 @@ export async function POST(req: Request) {
 
   const userId = session.user.id;
 
-  try {
-    // Get required data
-    const [providerKey, settings] = await Promise.all([
-      getProviderApiKey(userId, selectedModel.provider || "openai"),
-      getChatSettingsApi(userId),
-    ]);
+  // Comprehensive validation including auth, model, and provider key
+  const validation = await validateChatRequestComplete(req, userId);
 
-    // Validate provider key
-    const providerError = validateProviderKey(
-      providerKey!,
-      selectedModel.provider || "openai"
-    );
-    if (providerError) {
-      return providerError;
-    }
+  const { messages, conversationId, selectedModel, providerKey } =
+    validation.data!;
+
+  try {
+    // Get chat settings
+    const settings = await getChatSettingsApi(userId);
 
     // Get prompt if settings are valid
     const hasValidSettings =
@@ -58,7 +34,7 @@ export async function POST(req: Request) {
       ? await getPromptApi(settings.promptId!, userId)
       : null;
 
-    // Generate title for new conversations (only if we have a provider key)
+    // Generate title for new conversations
     const generatedTitle =
       !conversationId && providerKey
         ? await generateConversationTitle(messages, selectedModel, providerKey)
@@ -96,7 +72,7 @@ export async function POST(req: Request) {
       messages,
       selectedModel.provider,
       selectedModel.model,
-      providerKey!,
+      providerKey,
       promptText,
       new AbortController().signal,
       maxTokens
