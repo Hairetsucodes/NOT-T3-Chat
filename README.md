@@ -20,7 +20,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 - 🎯 Syntax highlighting for code blocks
 - 🌳 Conversation branching support
 - 🔄 Retry responses with same or different models
-
+- 🐛 Streamlined Bug reporting 
 ## 📸 Screenshots
 
 ### Authentication & Registration
@@ -477,7 +477,6 @@ pnpm db:migrate
 
 ### TODO in no particular order
 
-- Bug Reports
 - Image Gen / Analysis
 - Attachments
 - Optimize DB querying
