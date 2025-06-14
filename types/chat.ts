@@ -5,6 +5,7 @@ import {
   PreferredModel,
 } from "@prisma/client";
 import { UnifiedModel } from "@/types/models";
+import { SUPPORTED_PROVIDERS } from "@/constants/supportedProviders";
 
 // Type definitions for chat message content
 export interface TextContentPart {
@@ -105,3 +106,16 @@ export interface ChatContextType {
   }) => void;
   handleSuggestionSelect: (suggestion: string) => void;
 }
+
+//API Types
+// Types
+export interface APIMessage {
+  role: string;
+  content: string;
+}
+
+export interface APISelectedModel {
+  provider: string;
+  model: string;
+}
+export type SupportedProvider = (typeof SUPPORTED_PROVIDERS)[number];
