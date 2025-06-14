@@ -220,6 +220,7 @@ export const ChatProvider = ({
               branchedIds: null,
               isPinned: false,
               isRetry: false,
+              isPublic: false,
             };
             addConversation(newConversation);
           }
@@ -380,6 +381,7 @@ export const ChatProvider = ({
             branchedIds: null,
             isPinned: false,
             isRetry: false,
+            isPublic: false,
           };
           addConversation(loadingConversation);
         }
@@ -430,6 +432,7 @@ export const ChatProvider = ({
           branchedIds: null,
           isPinned: false,
           isRetry: false,
+          isPublic: false,
         };
         addConversation(loadingConversation);
       }

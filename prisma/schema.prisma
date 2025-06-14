@@ -83,6 +83,7 @@ model Conversation {
   userId                String
   title                 String
   isPinned              Boolean        @default(false)
+  isPublic              Boolean        @default(false)
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
   isRetry               Boolean        @default(false)

@@ -4,12 +4,11 @@ import { ChatInput } from "./input/Input";
 import { WelcomeScreen } from "./welcome/Welcome";
 import { ChatHeader } from "./ui/Header";
 import CornerDecorator from "./ui/CornerDecorator";
-import { LoadingBubbles } from "./ui/LoadingBubbles";
 import { ChatSkeleton } from "./ui/ChatSkeleton";
 import { Message } from "@/types/chat";
-import { ChangeEvent, memo, Suspense } from "react";
-import { SimpleMessageRenderer } from "./message/SimpleRenderer";
+import { ChangeEvent, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { MessageList } from "./message/MessageList";
 
 interface ChatContainerProps {
   messages: Message[];
@@ -23,39 +22,6 @@ interface ChatContainerProps {
   ) => void;
   handleSuggestionSelect: (suggestion: string) => void;
 }
-
-// Memoized message list to prevent unnecessary re-renders
-const MessageList = memo(function MessageList({
-  messages,
-  isLoading,
-}: {
-  messages: Message[];
-  isLoading: boolean;
-}) {
-  return (
-    <div className="flex flex-col w-full max-w-[770px] mx-auto px-4 py-8 space-y-6">
-      {messages.map((message, index) => (
-        <div
-          key={
-            message.id ||
-            `message-${index}-${message.role}-${message.content?.slice(0, 50)}`
-          }
-          className={`flex flex-col ${
-            message.role === "user" ? "items-end" : "items-start"
-          }`}
-        >
-          <SimpleMessageRenderer message={message} />
-        </div>
-      ))}
-      {/* Show loading animation immediately when submitting */}
-      {isLoading && (
-        <div className="flex flex-col items-start">
-          <LoadingBubbles />
-        </div>
-      )}
-    </div>
-  );
-});
 
 export function ChatContainer({
   messages,

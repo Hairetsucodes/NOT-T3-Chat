@@ -14,22 +14,21 @@ export default auth((req) => {
   // Check if the route is an auth route
   const isAuthRoute = authRoutes.includes(nextUrl.pathname);
 
+  // Check if the route is a shared route
+  const isSharedRoute = nextUrl.pathname.startsWith("/shared/");
+
   // Check if the route is a chat route (exact match or dynamic route)
   const isChatRoute =
     nextUrl.pathname === "/chat" || nextUrl.pathname.startsWith("/chat/");
 
   // Define known routes (static routes from your app structure)
-  const knownRoutes = [
-    ...publicRoutes,
-    ...authRoutes,
-    "/chat",
-    // Add other known static routes here if needed
-  ];
+  const knownRoutes = [...publicRoutes, ...authRoutes, "/chat"];
 
   // Check if it's a known route or follows a known pattern
   const isKnownRoute =
     knownRoutes.includes(nextUrl.pathname) ||
     isChatRoute ||
+    isSharedRoute ||
     nextUrl.pathname.startsWith("/api/") ||
     nextUrl.pathname.startsWith("/_next/") ||
     nextUrl.pathname.includes(".");
