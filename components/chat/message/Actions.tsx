@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MessageActionsProps } from "@/types/chat";
 import { getProviderIcon } from "@/components/ui/provider-images";
-import { updateChatSettings } from "@/data/settings";
+import { updateModelAndProvider } from "@/data/settings";
 import { ChatSettings } from "@prisma/client";
 
 // Provider display names and order
@@ -263,7 +263,7 @@ export function MessageActions({
                     <DropdownMenuItem
                       key={modelData.modelId}
                       onClick={() => {
-                        updateChatSettings(
+                        updateModelAndProvider(
                           modelData.modelId,
                           modelData.provider
                         );

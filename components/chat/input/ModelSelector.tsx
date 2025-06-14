@@ -32,7 +32,7 @@ import { ModelListItem } from "./ModelListItem";
 import { ChatContext } from "@/context/ChatContext";
 import { getProviderIcon } from "@/components/ui/provider-images";
 import { ChatSettings } from "@prisma/client";
-import { updateChatSettings } from "@/data/settings";
+import { updateModelAndProvider } from "@/data/settings";
 
 // Helper function to detect if model is pro/premium
 const isProModel = (name: string, pricing: unknown): boolean => {
@@ -311,7 +311,7 @@ const ModelSelector = memo(function ModelSelector() {
           provider: selectedModelData.provider,
         } as ChatSettings);
 
-        updateChatSettings(modelId, selectedModelData.provider);
+        updateModelAndProvider(modelId, selectedModelData.provider);
       }
       setIsOpen(false);
       setSearchQuery("");

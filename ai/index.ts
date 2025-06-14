@@ -21,7 +21,8 @@ export async function handleLLMRequestStreaming(
   apiKey: string,
   prompt: string,
   signal?: AbortSignal,
-  maxTokens?: number
+  maxTokens?: number,
+  isWebSearch?: boolean
 ): Promise<ReadableStream> {
   // Use custom prompt or ensure system message
   const messagesWithSystem = prompt
@@ -34,7 +35,8 @@ export async function handleLLMRequestStreaming(
       messagesWithSystem,
       modelId,
       apiKey,
-      signal
+      signal,
+      isWebSearch
     );
   }
 

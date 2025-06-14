@@ -92,7 +92,8 @@ export async function callGoogleStreaming(
   messages: Message[],
   modelId: string,
   apiKey: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  isWebSearch?: boolean
 ): Promise<ReadableStream> {
   // Remove both "google/" prefix and ":thinking" suffix
   const cleanModelId = modelId.replace("google/", "").replace(":thinking", "");
@@ -114,7 +115,8 @@ export async function callGoogleStreaming(
         const requestConfig = createGoogleBody(
           prompt,
           cleanModelId,
-          isThinkingModel
+          isThinkingModel,
+          isWebSearch
         );
 
         const response = await ai.models.generateContentStream(requestConfig);

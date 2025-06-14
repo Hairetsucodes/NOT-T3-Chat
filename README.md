@@ -5,6 +5,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 ## ✨ Features
 
 - 🤖 Multiple AI provider support (OpenAI, Anthropic, Google, DeepSeek, Xai, OpenRouter, and more)
+- 🌐 Grounding/web search for Google models
 - 🔐 Authentication with NextAuth
 - 💾 Persistent chat history with Prisma
 - 📤 History Sync Export/Import functionality
@@ -367,7 +368,7 @@ The application supports multiple AI providers. Configure the API keys for the p
 
 - **OpenAI**: GPT models (gpt-4o, gpt-4o-mini, gpt-3.5-turbo, etc.)
 - **Anthropic**: Claude models (claude-3.5-sonnet, claude-3-opus, claude-3-haiku, etc.)
-- **Google**: Gemini models (gemini-pro, gemini-1.5-pro, etc.)
+- **Google**: Gemini models (gemini-pro, gemini-1.5-pro, etc.) with support for grounding/web search
 - **DeepSeek**: DeepSeek models (deepseek-chat, deepseek-coder, etc.)
 - **Xai**: Grok models (grok-beta, etc.)
 - **OpenRouter**: Access to hundreds of models through one unified API including many open-source options
@@ -475,9 +476,6 @@ pnpm db:migrate
 
 ### TODO in no particular order
 
-- WebSearch
-- Refactor x10
-- Tweak light mode
 - Attachments
 - Refactor x100
 - Tweaks

@@ -285,7 +285,21 @@ export const getChatSettings = async () => {
   return chatSettings;
 };
 
-export async function updateChatSettings(model: string, provider: string) {
+export const updateIsWebSearch = async (isWebSearch: boolean) => {
+  const { userId } = await checkUser();
+  const chatSettings = await prisma.chatSettings.findFirst({
+    where: { userId },
+  });
+  if (chatSettings) {
+    return await prisma.chatSettings.update({
+      where: { id: chatSettings.id },
+      data: { isWebSearch, updatedAt: new Date() },
+    });
+  }
+  return null;
+};
+
+export async function updateModelAndProvider(model: string, provider: string) {
   const { userId } = await checkUser();
 
   try {

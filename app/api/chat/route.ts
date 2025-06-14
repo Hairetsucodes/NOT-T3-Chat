@@ -75,7 +75,8 @@ export async function POST(req: Request) {
       providerKey,
       promptText,
       new AbortController().signal,
-      maxTokens
+      maxTokens,
+      settings?.isWebSearch || false
     );
 
     // Create transformed stream

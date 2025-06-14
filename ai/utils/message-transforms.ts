@@ -97,28 +97,53 @@ export function createAnthropicBody(
 export function createGoogleBody(
   prompt: string,
   modelId: string,
-  isThinking = false
+  isThinking = false,
+  isWebSearch = false
 ) {
+  const tools = isWebSearch ? [{ googleSearch: {} }] : [];
+
   const requestConfig: {
     model: string;
-    contents: string;
+    contents: Array<{
+      role: string;
+      parts: Array<{ text: string }>;
+    }>;
     config?: {
+      tools?: Array<{ googleSearch: object }>;
       thinkingConfig?: {
         includeThoughts?: boolean;
       };
+      responseMimeType?: string;
     };
   } = {
     model: modelId,
-    contents: prompt,
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            text: prompt,
+          },
+        ],
+      },
+    ],
   };
 
-  // Add thinking config for thinking models
-  if (isThinking) {
+  // Add config if needed
+  if (isThinking || isWebSearch) {
     requestConfig.config = {
-      thinkingConfig: {
-        includeThoughts: true,
-      },
+      responseMimeType: "text/plain",
     };
+
+    if (isWebSearch) {
+      requestConfig.config.tools = tools;
+    }
+
+    if (isThinking) {
+      requestConfig.config.thinkingConfig = {
+        includeThoughts: true,
+      };
+    }
   }
 
   return requestConfig;
