@@ -7,63 +7,26 @@ import {
 import { callProviderNonStreaming } from "./streaming";
 
 /**
- * Map complex reasoning models to simpler alternatives for title generation
+ * Map any model to a simple, fast alternative for title generation
  */
 function mapToTitleModel(modelId: string, provider: string): string {
   const actualProvider = modelId.includes("/") ? "openrouter" : provider;
 
-  if (actualProvider === "openrouter") {
-    // Map OpenRouter reasoning models to simpler alternatives
-    if (
-      modelId.includes("o1") ||
-      modelId.includes("o4") ||
-      modelId.includes("reasoning") ||
-      modelId.includes("qwq")
-    ) {
-      return "openai/gpt-4o-mini"; // Fast, reliable OpenAI model via OpenRouter
-    } else if (modelId.includes("claude") && modelId.includes("3.5")) {
-      return "anthropic/claude-3-5-haiku-20241022"; // Fast Claude model
-    } else if (modelId.includes("deepseek") && modelId.includes("reasoner")) {
-      return "deepseek/deepseek-chat"; // Simpler DeepSeek model
-    }
-  } else {
-    // Map direct provider reasoning models to simpler alternatives
-    switch (actualProvider.toLowerCase()) {
-      case "openai":
-        if (modelId.includes("o1")) {
-          return "gpt-4o-mini";
-        }
-        break;
-      case "anthropic":
-        if (modelId.includes("opus")) {
-          return "claude-3-5-haiku-20241022";
-        }
-        break;
-      case "deepseek":
-        if (modelId.includes("reasoner")) {
-          return "deepseek-chat";
-        }
-        break;
-      case "xai":
-        // Map all xai models to grok-3-fast for faster title generation
-        return "grok-3-fast";
-        break;
-      case "google":
-        // Map premium/experimental Google models to free alternatives
-        if (
-          modelId.includes("2.5") ||
-          modelId.includes("preview") ||
-          modelId.includes("exp")
-        ) {
-          return "gemini-1.5-flash"; // Fast, free Google model
-        } else if (modelId.includes("pro") && !modelId.includes("1.0")) {
-          return "gemini-1.0-pro"; // Free pro model
-        }
-        break;
-    }
+  // For direct providers, always use the fastest/cheapest model
+  switch (actualProvider.toLowerCase()) {
+    case "openai":
+      return "gpt-4o-mini";
+    case "anthropic":
+      return "claude-3-5-haiku-20241022";
+    case "deepseek":
+      return "deepseek-chat";
+    case "xai":
+      return "grok-3-fast";
+    case "google":
+      return "gemini-1.5-flash";
+    default:
+      return "openai/gpt-3.5-turbo-1106";
   }
-
-  return modelId; // Return original if no mapping needed
 }
 
 /**
