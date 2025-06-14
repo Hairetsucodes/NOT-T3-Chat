@@ -1,6 +1,5 @@
 import { auth } from "@/auth";
 import { handleLLMRequestStreaming, generateTitle } from "@/ai/index";
-import { ChatRequestSchema } from "@/schemas/chatEndpoint";
 import { getModelById } from "@/data/models";
 import {
   createMessageApi,
@@ -8,39 +7,17 @@ import {
   getProviderApiKey,
   getChatSettingsApi,
 } from "@/lib/apiServerActions/chat";
-
+import { validateChatRequest } from "@/lib/apiValidation/validate";
 export async function POST(req: Request) {
-  // Parse and validate JSON body
-  let body;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON format" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+  // Validate request
+  const validation = await validateChatRequest(req);
+  if (validation.error) {
+    return validation.error;
   }
-
-  // Validate request body structure
-  const validationResult = ChatRequestSchema.safeParse(body);
-  if (!validationResult.success) {
-    return new Response(
-      JSON.stringify({
-        error: "Invalid request format",
-        details: validationResult.error.errors.map((err) => ({
-          field: err.path.join("."),
-          message: err.message,
-        })),
-      }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+  const { messages, conversationId, selectedModel } = validation.data;
+  if (!selectedModel) {
+    return new Response("No model selected", { status: 400 });
   }
-
-  const { messages, conversationId, selectedModel } = validationResult.data;
-
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -59,17 +36,7 @@ export async function POST(req: Request) {
       !settings || "error" in settings || !settings.promptId
         ? null
         : await getPromptApi(settings.promptId, userId);
-    // Determine provider from selectedModel or default to openai
-    let provider = selectedModel?.provider || "openai";
-    const modelId = selectedModel?.model || "gpt-4o-mini";
 
-    // If model has a "/" in it, it's an OpenRouter model regardless of provider
-    if (modelId.includes("/")) {
-      provider = "openrouter";
-    }
-    // Find the appropriate API key for the provider
-
-    // For unsupported providers (not openai, anthropic, google, xai, deepseek), use OpenRouter
     if (
       !providerKey &&
       ![
@@ -79,7 +46,7 @@ export async function POST(req: Request) {
         "xai",
         "deepseek",
         "openrouter",
-      ].includes(provider)
+      ].includes(selectedModel?.provider || "openai")
     ) {
       if (!providerKey) {
         return new Response(
@@ -97,9 +64,11 @@ export async function POST(req: Request) {
       return new Response(
         JSON.stringify({
           error: `${
-            provider.charAt(0).toUpperCase() + provider.slice(1)
+            selectedModel?.provider?.charAt(0).toUpperCase() +
+            selectedModel?.provider?.slice(1)
           } API key not found. Please add your ${
-            provider.charAt(0).toUpperCase() + provider.slice(1)
+            selectedModel?.provider?.charAt(0).toUpperCase() +
+            selectedModel?.provider?.slice(1)
           } API key in settings.`,
         }),
         {
@@ -115,11 +84,10 @@ export async function POST(req: Request) {
       const lastUserMessage = messages[messages.length - 1];
       if (lastUserMessage?.role === "user") {
         try {
-          // Use LLM to generate a meaningful title with the corrected provider
           generatedTitle = await generateTitle(
             lastUserMessage.content,
-            provider,
-            modelId,
+            selectedModel.provider,
+            selectedModel.model,
             providerKey
           );
         } catch (error) {
@@ -142,8 +110,8 @@ export async function POST(req: Request) {
         userId,
         lastUserMessage.content,
         "user",
-        provider,
-        modelId,
+        selectedModel.provider,
+        selectedModel.model,
         "",
         currentConversationId,
         generatedTitle || undefined
@@ -155,14 +123,14 @@ export async function POST(req: Request) {
     }
 
     // Get model information to determine max tokens
-    const modelInfo = await getModelById(modelId);
+    const modelInfo = await getModelById(selectedModel.model);
     const maxTokens = modelInfo?.maxOutput || undefined;
 
     // Get streaming response from handleLLMRequestStreaming
     const stream = await handleLLMRequestStreaming(
       messages,
-      provider,
-      modelId,
+      selectedModel.provider,
+      selectedModel.model,
       providerKey,
       (prompt && "prompt" in prompt ? prompt.prompt : "") || "",
       new AbortController().signal,
@@ -188,8 +156,8 @@ export async function POST(req: Request) {
                     userId,
                     fullContent,
                     "assistant",
-                    provider,
-                    modelId,
+                    selectedModel?.provider || "openai",
+                    selectedModel?.model || "gpt-4o-mini",
                     fullReasoning,
                     currentConversationId
                   );
@@ -235,7 +203,6 @@ export async function POST(req: Request) {
       },
     });
 
-    // Return streaming response with conversation metadata in headers
     // Use cache headers that don't completely block bfcache
     const responseHeaders: Record<string, string> = {
       "Content-Type": "text/plain; charset=utf-8",

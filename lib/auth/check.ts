@@ -1,3 +1,4 @@
+"use server";
 import { auth } from "@/auth";
 
 export const checkUser = async () => {
