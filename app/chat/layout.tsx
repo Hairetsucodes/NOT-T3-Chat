@@ -6,7 +6,7 @@ import { ChatProvider } from "@/context/ChatContext";
 import { getUserById } from "@/data/user";
 import { getProviders } from "@/data/apikeys";
 import { getAvailableModels, getPreferredModels } from "@/data/models";
-import { UnifiedModel } from "@/data/models";
+import { UnifiedModel } from "@/types/models";
 import { getChatSettings, getUserSettings } from "@/data/settings";
 
 export default async function ChatLayout({
