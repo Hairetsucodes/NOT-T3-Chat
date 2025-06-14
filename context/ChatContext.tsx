@@ -6,86 +6,16 @@ import {
   ChatSettings,
 } from "@prisma/client";
 import { createContext, useState, useCallback, useRef, useMemo } from "react";
-import { UnifiedModel } from "@/data/models";
+import { UnifiedModel } from "@/types/models";
 import { getPreferredModels } from "@/data/models";
-import { Message } from "@/types/chat";
+import {
+  Message,
+  ChatContextType,
+  ChatUser,
+  ConversationWithLoading,
+} from "@/types/chat";
 import { pinConversation } from "@/data/convo";
 import { deleteConversation as deleteConversationAction } from "@/data/history";
-
-type ChatUser = {
-  name: string | null;
-  id: string;
-  username: string | null;
-  email: string | null;
-  image: string | null;
-} | null;
-
-// Extend Conversation type to include loading state
-type ConversationWithLoading = Conversation & {
-  isLoading?: boolean;
-  isRetry?: boolean;
-};
-
-interface ChatContextType {
-  conversations: ConversationWithLoading[];
-  pinnedConversations: ConversationWithLoading[];
-  unpinnedConversations: ConversationWithLoading[];
-  setConversations: (conversations: ConversationWithLoading[]) => void;
-  addConversation: (conversation: ConversationWithLoading) => void;
-  updateConversation: (
-    id: string,
-    updates: Partial<ConversationWithLoading>
-  ) => void;
-  removeLoadingConversation: (id: string) => void;
-  togglePinConversation: (id: string) => Promise<void>;
-  deleteConversation: (id: string) => Promise<void>;
-  activeUser: ChatUser;
-  userSettings: UserCustomization | null;
-  chatSettings: ChatSettings | null;
-  setChatSettings: (settings: ChatSettings) => void;
-  setUserSettings: (settings: UserCustomization) => void;
-  activeProviders: {
-    id: string;
-    provider: string;
-  }[];
-  setActiveProviders: (
-    providers: {
-      id: string;
-      provider: string;
-    }[]
-  ) => void;
-  currentProvider: string | null;
-  availableModels: UnifiedModel[];
-  preferredModels: PreferredModel[];
-  setPreferredModels: (models: PreferredModel[]) => void;
-  refreshPreferredModels: () => Promise<void>;
-  messages: Message[];
-  setMessages: (messages: Message[]) => void;
-  input: string;
-  setInput: (input: string) => void;
-  isLoading: boolean;
-  conversationId: string | null;
-  setConversationId: (id: string | null) => void;
-  conversationTitle: string | null;
-  setConversationTitle: (title: string | null) => void;
-  sendMessage: (
-    message: Message,
-    options?: {
-      conversationId?: string;
-      selectedModel?: string;
-      provider?: string;
-      model?: string;
-    }
-  ) => Promise<void>;
-  handleInputChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => void;
-  handleSubmit: (event?: {
-    preventDefault?: () => void;
-    currentInput?: string;
-  }) => void;
-  handleSuggestionSelect: (suggestion: string) => void;
-}
 
 export const ChatContext = createContext<ChatContextType>({
   conversations: [],
