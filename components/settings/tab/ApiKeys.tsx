@@ -149,7 +149,22 @@ export function ApiKeysTab() {
       </CardHeader>
       <CardContent className="flex-1 overflow-auto space-y-6 min-h-0">
         {/* Add New API Key Section */}
-        <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+        <form 
+          className="space-y-4 p-4 border rounded-lg bg-muted/50"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSaveApiKey();
+          }}
+        >
+          {/* Hidden username field for accessibility - required when using password type inputs */}
+          <input
+            type="text"
+            name="username"
+            autoComplete="username"
+            style={{ display: 'none' }}
+            tabIndex={-1}
+            aria-hidden="true"
+          />
           <Label className="text-base font-medium">Add New API Key</Label>
 
           <div className="grid gap-3">
@@ -197,12 +212,13 @@ export function ApiKeysTab() {
               placeholder="Enter your API key..."
               value={apiKey}
               className="rounded-lg border-[.1rem] border-chat-border p-2"
+              autoComplete="new-password"
               onChange={(e) => setApiKey(e.target.value)}
             />
           </div>
 
           <Button
-            onClick={handleSaveApiKey}
+            type="submit"
             disabled={
               !selectedProvider ||
               !apiKey.trim() ||
@@ -220,7 +236,7 @@ export function ApiKeysTab() {
               "Save API Key"
             )}
           </Button>
-        </div>
+        </form>
 
         <div className="space-y-2">
           <Label>API Usage</Label>

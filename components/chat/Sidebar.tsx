@@ -367,7 +367,10 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                     </div>
                   </button>
                 </DialogTrigger>
-                <DialogContent className="h-[90vh] w-[90vw] max-w-[90vw] max-sm:h-[90vh] max-sm:w-[90vw]">
+                <DialogContent
+                  aria-describedby={undefined}
+                  className="h-[90vh] w-[90vw] max-w-[90vw] max-sm:h-[90vh] max-sm:w-[90vw]"
+                >
                   <DialogTitle className="sr-only">Settings</DialogTitle>
                   <SettingsModal />
                 </DialogContent>
