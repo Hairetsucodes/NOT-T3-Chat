@@ -17,7 +17,7 @@ export async function POST(req: Request) {
 
   const userId = session.user.id;
 
-  // Comprehensive validation including auth, model, and provider key
+  // Comprehensive validation including model, and provider key
   const validation = await validateChatRequestComplete(req, userId);
 
   const { messages, conversationId, selectedModel, providerKey } =

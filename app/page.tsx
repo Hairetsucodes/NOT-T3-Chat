@@ -8,9 +8,7 @@ import { redirect } from "next/navigation";
 import { ModeToggle } from "@/components/settings/theme/Toggle";
 
 export default function Home() {
-  const [selectedModal, setSelectedModal] = useState<"signIn" | "register">(
-    "signIn"
-  );
+  const [isSignIn, setIsSignIn] = useState(true);
   const { data: session } = useSession();
   if (session) {
     redirect("/chat");
@@ -30,7 +28,7 @@ export default function Home() {
               Welcome to OSS T3 Chat
             </h1>
             <p className="text-muted-foreground text-base">
-              {selectedModal === "signIn"
+              {isSignIn
                 ? "Sign in to your account to continue"
                 : "Create your account to get started"}
             </p>
@@ -38,29 +36,27 @@ export default function Home() {
 
           {/* Auth Form Container */}
           <div className="bg-card border border-border rounded-xl shadow-lg p-8">
-            {selectedModal === "signIn" ? <SignIn /> : <Register />}
+            {isSignIn ? <SignIn /> : <Register />}
           </div>
 
           {/* Swap Button */}
           <div className="text-center space-y-4">
             <p className="text-sm text-muted-foreground">
-              {selectedModal === "signIn"
-                ? "Don't have an account?"
-                : "Already have an account?"}
+              {isSignIn ? "Don't have an account?" : "Already have an account?"}
             </p>
             <Button
               variant="outline"
               size="lg"
               className="w-full sm:w-auto px-8 bg-background hover:bg-accent hover:text-accent-foreground border-border text-foreground"
               onClick={() => {
-                if (selectedModal === "signIn") {
-                  setSelectedModal("register");
+                if (isSignIn) {
+                  setIsSignIn(false);
                 } else {
-                  setSelectedModal("signIn");
+                  setIsSignIn(true);
                 }
               }}
             >
-              {selectedModal === "signIn" ? "Create Account" : "Sign In"}
+              {isSignIn ? "Create Account" : "Sign In"}
             </Button>
           </div>
         </div>
