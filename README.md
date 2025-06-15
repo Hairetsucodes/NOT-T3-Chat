@@ -136,7 +136,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 3. **Initialize the database:**
 
    ```bash
-   pnpm setup
+   pnpm run setup
    ```
 
 4. **Set up environment variables:**
@@ -181,7 +181,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 
 Visit [http://localhost:3000](http://localhost:3000) to see the application.
 
-> **Note**: Always run `pnpm setup` before `pnpm dev` or `pnpm build` to ensure the database is properly initialized.
+> **Note**: Always run `pnpm run setup` before `pnpm dev` or `pnpm build` to ensure the database is properly initialized.
 
 ## 🏭 Production Build & Start
 
@@ -216,7 +216,7 @@ Visit [http://localhost:3000](http://localhost:3000) to see the application.
 1. **Ensure database is initialized:**
 
    ```bash
-   pnpm setup
+   pnpm run setup
    ```
 
 2. **Build the application:**
@@ -253,7 +253,7 @@ The application will be available at [http://localhost:3000](http://localhost:30
 
 #### Database Management
 
-- `pnpm setup` - **Quick setup** (generate + push schema)
+- `pnpm run setup` - **Quick setup** (creates, generates + push schema to db)
 - `pnpm db:generate` - Generate Prisma client
 - `pnpm db:push` - Push schema to database (development)
 - `pnpm db:migrate` - Create and apply migrations (production)
@@ -268,7 +268,7 @@ This project uses SQLite for local development and Prisma as the ORM.
 #### First-time Setup
 
 ```bash
-pnpm setup
+pnpm run setup
 ```
 
 #### Schema Changes
@@ -452,7 +452,7 @@ pnpm db:migrate
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
 3. Install dependencies: `pnpm install`
-4. Set up the database: `pnpm setup`
+4. Set up the database: `pnpm run setup`
 5. Make your changes
 6. Run tests: `pnpm lint`
 7. Commit your changes: `git commit -m 'Add amazing feature'`
