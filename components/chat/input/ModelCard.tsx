@@ -1,8 +1,9 @@
-import { FlaskConical, Gem, Key, Pin, PinOff } from "lucide-react";
+import { Pin, PinOff, ImageIcon } from "lucide-react";
 import { useContext, useState, useCallback, memo } from "react";
 import { ChatContext } from "@/context/ChatContext";
 import { addPreferredModel, removePreferredModel } from "@/data/models";
 import { toast } from "sonner";
+import { imageCapableModels } from "@/constants/imageModels";
 
 interface Capability {
   label: string;
@@ -55,9 +56,7 @@ export const ModelCard = memo(function ModelCard({
   const [isToggling, setIsToggling] = useState(false);
 
   const isDisabled = model.isDisabled;
-  const isExperimental = model.isExperimental;
-  const isPremium = model.isPro;
-  const isKeyRequired = model.requiresKey;
+
   const isNew = model.isNew;
   const specialStyling = model.specialStyling;
   const hasCapabilities = model.capabilities.length > 0;
@@ -177,19 +176,6 @@ export const ModelCard = memo(function ModelCard({
                 NEW
               </div>
             )}
-
-            {/* Top-right indicators */}
-            {(isExperimental || isPremium || isKeyRequired) && (
-              <div
-                className={`absolute right-1.5 text-[--model-muted] opacity-80 ${
-                  isNew ? "top-6" : "top-1.5"
-                }`}
-              >
-                {isExperimental && <FlaskConical className="size-4" />}
-                {isPremium && <Gem className="size-4" />}
-                {isKeyRequired && <Key className="size-4" />}
-              </div>
-            )}
           </div>
         </div>
 
@@ -227,6 +213,12 @@ export const ModelCard = memo(function ModelCard({
                 </div>
               );
             })}
+            {model.provider === "openai" &&
+              imageCapableModels.includes(model.id) && (
+                <div title="Vision capable">
+                  <ImageIcon className="size-4" />
+                </div>
+              )}
           </div>
         ) : (
           <div className="w-full flex items-center justify-center">

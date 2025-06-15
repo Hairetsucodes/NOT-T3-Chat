@@ -21,6 +21,7 @@ import {
   Zap,
   ChevronDown,
   Loader2,
+  ImageIcon,
 } from "lucide-react";
 import {
   getProviderIcon,
@@ -44,6 +45,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { imageCapableModels } from "@/constants/imageModels";
 
 // Capability mapping
 const getCapabilities = (
@@ -146,7 +148,8 @@ type FilterType =
   | "openai"
   | "anthropic"
   | "xai"
-  | "deepseek";
+  | "deepseek"
+  | "image";
 
 export default function Models() {
   const {
@@ -182,6 +185,8 @@ export default function Models() {
 
       return selectedFilters.some((filter) => {
         switch (filter) {
+          case "image":
+            return model.provider === "openai" && imageCapableModels.includes(model.modelId);
           case "vision":
             return capabilities.some((cap) => cap.label === "Vision");
           case "reasoning":
@@ -408,6 +413,13 @@ export default function Models() {
                   All Models
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
+                  checked={selectedFilters.includes("image")}
+                  onCheckedChange={() => toggleFilter("image")}
+                >
+                  <ImageIcon className="mr-2 h-4 w-4" />
+                  Image Generation
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
                   checked={selectedFilters.includes("vision")}
                   onCheckedChange={() => toggleFilter("vision")}
                 >
@@ -593,7 +605,9 @@ export default function Models() {
                         </div>
                       </div>
 
-                      {(capabilities.length > 0 || modelTypes.length > 0) && (
+                                            {(capabilities.length > 0 || 
+                        modelTypes.length > 0 || 
+                        (model.provider === "openai" && imageCapableModels.includes(model.modelId))) && (
                         <div className="flex flex-wrap gap-2">
                           {capabilities.map((capability, index) => (
                             <div
@@ -604,6 +618,13 @@ export default function Models() {
                               {capability.label}
                             </div>
                           ))}
+                          {model.provider === "openai" &&
+                            imageCapableModels.includes(model.modelId) && (
+                              <div className="flex items-center gap-1 rounded-full bg-yellow-500/10 px-2 py-1 text-xs text-yellow-600 dark:text-yellow-400">
+                                <ImageIcon className="h-3 w-3" />
+                                Image Generation
+                              </div>
+                            )}
                           {modelTypes.map((type, index) => (
                             <div
                               key={index}
