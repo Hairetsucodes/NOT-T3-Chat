@@ -66,7 +66,7 @@ export function StreamingCodeBlock({
     };
 
     highlightCode();
-  }, [code, language, shikiTheme]);
+  }, [code, language, shikiTheme]); 
 
   const codeStyle = getStreamingCodeStyle();
 

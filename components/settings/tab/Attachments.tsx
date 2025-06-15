@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { getAttachments } from "@/data/attachments";
 import { Attachment } from "@prisma/client";
 import { Download, X } from "lucide-react";
+import Image from "next/image";
 
 export function AttachmentsTab() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -31,13 +32,13 @@ export function AttachmentsTab() {
         setLoading(true);
         const userAttachments = await getAttachments();
         // Filter for image files only since our API route handles images
-        const imageAttachments = userAttachments.filter(attachment => 
-          attachment.fileType.startsWith('image/')
+        const imageAttachments = userAttachments.filter((attachment) =>
+          attachment.fileType.startsWith("image/")
         );
         setAttachments(imageAttachments);
       } catch (err) {
-        setError('Failed to load attachments');
-        console.error('Error fetching attachments:', err);
+        setError("Failed to load attachments");
+        console.error("Error fetching attachments:", err);
       } finally {
         setLoading(false);
       }
@@ -61,20 +62,20 @@ export function AttachmentsTab() {
       const imageUrl = `/api/images/${attachment.userId}-${attachment.filename}`;
       const response = await fetch(imageUrl);
       const blob = await response.blob();
-      
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = attachment.filename;
       document.body.appendChild(link);
       link.click();
-      
+
       // Cleanup
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Error downloading image:', error);
+      console.error("Error downloading image:", error);
     }
   };
 
@@ -100,9 +101,7 @@ export function AttachmentsTab() {
               </div>
             ) : error ? (
               <div className="p-4 border rounded-lg text-center">
-                <span className="text-sm text-red-500">
-                  {error}
-                </span>
+                <span className="text-sm text-red-500">{error}</span>
               </div>
             ) : attachments.length === 0 ? (
               <div className="p-4 border rounded-lg text-center">
@@ -117,18 +116,16 @@ export function AttachmentsTab() {
                     key={attachment.id}
                     className="border rounded-lg p-2 hover:bg-muted/50 transition-colors"
                   >
-                    <div 
+                    <div
                       className="aspect-square mb-2 overflow-hidden rounded border cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={() => openImageModal(attachment)}
                     >
-                      <img
+                      <Image
+                        width={100}
+                        height={100}
                         src={`/api/images/${attachment.userId}-${attachment.filename}`}
                         alt={attachment.filename}
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDMuMUwyLjkgMjEuMiIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjIiIGQ9Ik05IDlhMyAzIDAgMSAwIDMgM0w5IDl6bS0xLTFIMjFWNWEyIDIgMCAwIDAtMi0ySDVhMiAyIDAgMCAwLTIgMnYxNGEyIDIgMCAwIDAgMiAyaDExbC05LTlWOHoiLz4KPC9zdmc+';
-                        }}
                       />
                     </div>
                     <div className="text-xs text-muted-foreground space-y-1">
@@ -176,13 +173,14 @@ export function AttachmentsTab() {
             {selectedImage && (
               <div className="space-y-4">
                 <div className="flex justify-center">
-                  <img
+                  <Image
                     src={`/api/images/${selectedImage.userId}-${selectedImage.filename}`}
                     alt={selectedImage.filename}
                     className="max-w-full max-h-[60vh] object-contain rounded border"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDMuMUwyLjkgMjEuMiIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjIiIGQ9Ik05IDlhMyAzIDAgMSAwIDMgM0w5IDl6bS0xLTFIMjFWNWEyIDIgMCAwIDAtMi0ySDVhMiAyIDAgMCAwLTIgMnYxNGEyIDIgMCAwIDAgMiAyaDExbC05LTlWOHoiLz4KPC9zdmc+';
+                      target.src =
+                        "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDMuMUwyLjkgMjEuMiIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjIiIGQ9Ik05IDlhMyAzIDAgMSAwIDMgM0w5IDl6bS0xLTFIMjFWNWEyIDIgMCAwIDAtMi0ySDVhMiAyIDAgMCAwLTIgMnYxNGEyIDIgMCAwIDAgMiAyaDExbC05LTlWOHoiLz4KPC9zdmc+";
                     }}
                   />
                 </div>
@@ -201,7 +199,10 @@ export function AttachmentsTab() {
                 <div className="text-sm text-muted-foreground text-center space-y-1">
                   <div>Filename: {selectedImage.filename}</div>
                   <div>Type: {selectedImage.fileType}</div>
-                  <div>Uploaded: {new Date(selectedImage.createdAt).toLocaleString()}</div>
+                  <div>
+                    Uploaded:{" "}
+                    {new Date(selectedImage.createdAt).toLocaleString()}
+                  </div>
                 </div>
               </div>
             )}
