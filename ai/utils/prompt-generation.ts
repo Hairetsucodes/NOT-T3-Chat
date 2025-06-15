@@ -5,9 +5,7 @@ import {
   callGoogleNonStreaming,
 } from "../providers";
 import { callProviderNonStreaming } from "./non-stream";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/prisma";
 
 /**
  * Map complex reasoning models to simpler alternatives for prompt generation
