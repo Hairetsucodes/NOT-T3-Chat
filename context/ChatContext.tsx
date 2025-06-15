@@ -34,7 +34,6 @@ export const ChatContext = createContext<ChatContextType>({
   setUserSettings: () => {},
   activeProviders: [],
   setActiveProviders: () => {},
-  currentProvider: null,
   availableModels: [],
   preferredModels: [],
   setPreferredModels: () => {},
@@ -58,7 +57,6 @@ export const ChatProvider = ({
   activeUser,
   initialConversations,
   initialActiveProviders,
-  currentProvider,
   availableModels,
   preferredModels: initialPreferredModels,
   initialMessages,
@@ -73,7 +71,6 @@ export const ChatProvider = ({
     id: string;
     provider: string;
   }[];
-  currentProvider: string | null;
   availableModels: UnifiedModel[];
   preferredModels: PreferredModel[];
   initialMessages?: Message[];
@@ -562,7 +559,6 @@ export const ChatProvider = ({
       setUserSettings,
       activeProviders,
       setActiveProviders,
-      currentProvider,
       availableModels,
       preferredModels,
       setPreferredModels,
@@ -593,7 +589,6 @@ export const ChatProvider = ({
       setUserSettings,
       activeProviders,
       setActiveProviders,
-      currentProvider,
       availableModels,
       preferredModels,
       setPreferredModels,

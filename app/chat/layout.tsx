@@ -41,7 +41,6 @@ export default async function ChatLayout({
       }
       initialConversations={conversations}
       initialActiveProviders={providers}
-      currentProvider={providers[0]?.provider || null}
       availableModels={models}
       preferredModels={preferredModels}
       initialChatSettings={

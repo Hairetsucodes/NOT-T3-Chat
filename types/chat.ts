@@ -74,7 +74,6 @@ export interface ChatContextType {
       provider: string;
     }[]
   ) => void;
-  currentProvider: string | null;
   availableModels: UnifiedModel[];
   preferredModels: PreferredModel[];
   setPreferredModels: (models: PreferredModel[]) => void;
