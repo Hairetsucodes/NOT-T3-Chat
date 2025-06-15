@@ -149,11 +149,11 @@ export async function callOpenAIStreaming(
 
             fs.writeFileSync(filepath, Buffer.from(imageBase64, "base64"));
             createAttachmentApi(userId, filename, "image/png", filepath);
-            // create entry into dat
+
             controller.enqueue(
               new TextEncoder().encode(
                 `data: ${JSON.stringify({
-                  image_url: `![${filename}](${`http://localhost:3000/api/images/${userId}-${filename}`}) `,
+                  image_url: `![${filename}](${`http://localhost:3000/api/images/${userId}-${filename}`}) [Download](${`http://localhost:3000/api/images/${userId}-${filename}?download=true`})\n\n `,
                 })}\n\n`
               )
             );
