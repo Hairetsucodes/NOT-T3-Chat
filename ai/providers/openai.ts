@@ -116,7 +116,6 @@ export async function callOpenAIStreaming(
               filepath,
               Buffer.from(event.partial_image_b64, "base64")
             );
-            createAttachmentApi(userId, filename, "image/png", filepath);
             controller.enqueue(
               new TextEncoder().encode(
                 `data: ${JSON.stringify({

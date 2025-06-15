@@ -600,7 +600,7 @@ export default function Models() {
                           <p className="mt-1 text-sm text-muted-foreground">
                             {model.provider} •{" "}
                             {formatContextLength(model.contextLength || 0)}{" "}
-                            context
+                            context   
                           </p>
                         </div>
                       </div>
