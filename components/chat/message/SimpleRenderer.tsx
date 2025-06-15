@@ -181,6 +181,18 @@ export const SimpleMessageRenderer = memo(function SimpleMessageRenderer({
           {message.image_generation_status}
         </div>
       )}
+      {message.role === "assistant" &&
+        (message.image_generation_status === "Starting image generation..." ||
+          message.image_generation_status ===
+            "Image generation in progress...") && (
+          <div className="animate-pulse">
+            <div className="w-full h-88 bg-muted rounded-lg"></div>
+            <div className="mt-2 flex items-center gap-2">
+              <div className="h-4 w-24 bg-muted rounded"></div>
+              <div className="h-4 w-16 bg-muted rounded"></div>
+            </div>
+          </div>
+        )}
       {/* Show partial image for assistant messages during generation */}
       {message.role === "assistant" && message.partial_image && (
         <div className="mt-4">
