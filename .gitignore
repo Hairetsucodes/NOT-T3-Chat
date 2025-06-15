@@ -46,3 +46,7 @@ dev.db
 prod.db
 docker-data/.auth_secret
 docker-data/.api_key_salt
+
+
+# local storage
+/local-attachment-store

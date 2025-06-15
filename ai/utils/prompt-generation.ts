@@ -4,7 +4,7 @@ import {
   getProviderName,
   callGoogleNonStreaming,
 } from "../providers";
-import { callProviderNonStreaming } from "./streaming";
+import { callProviderNonStreaming } from "./non-stream";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();

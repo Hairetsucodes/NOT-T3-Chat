@@ -1,31 +1,11 @@
 import { createErrorStream } from "./errors";
 import { ProviderConfig } from "@/types/llms";
 import { Message } from "@/types/chat";
+import { ParsedStreamResponse } from "@/types/stream";
 
-interface ParsedStreamResponse {
-  choices?: Array<{
-    delta?: {
-      content?: string;
-      reasoning?: string;
-      reasoning_content?: string;
-      thought?: string;
-      thinking?: string;
-    };
-  }>;
-  type?: string;
-  delta?: {
-    text?: string;
-  };
-  content?: string;
-}
-
-/**
- * Tokenize content into smaller chunks for better streaming experience
- */
 function tokenizeContent(content: string): string[] {
   if (!content) return [];
 
-  // Split by word boundaries and punctuation while preserving spaces and punctuation
   const tokens: string[] = [];
   const regex = /(\s+|[.,!?;:]|\S+)/g;
   let match;
@@ -37,9 +17,6 @@ function tokenizeContent(content: string): string[] {
   return tokens.filter((token) => token.length > 0);
 }
 
-/**
- * Extract content from parsed response
- */
 function extractContentFromParsed(
   parsed: unknown
 ): { content?: string; reasoning?: string } | null {
@@ -48,11 +25,9 @@ function extractContentFromParsed(
   const result: { content?: string; reasoning?: string } = {};
   const parsedObj = parsed as ParsedStreamResponse;
 
-  // Handle OpenAI/XAI format
   if (parsedObj.choices?.[0]?.delta) {
     const delta = parsedObj.choices[0].delta;
 
-    // Handle different reasoning content formats
     const reasoningContent =
       delta.reasoning ||
       delta.reasoning_content ||
@@ -66,24 +41,18 @@ function extractContentFromParsed(
     if (delta.content) {
       result.content = delta.content;
     }
-  }
-
-  // Handle Anthropic format
-  else if (parsedObj.type === "content_block_delta" && parsedObj.delta?.text) {
+  } else if (
+    parsedObj.type === "content_block_delta" &&
+    parsedObj.delta?.text
+  ) {
     result.content = parsedObj.delta.text;
-  }
-
-  // Handle direct content
-  else if (parsedObj.content) {
+  } else if (parsedObj.content) {
     result.content = parsedObj.content;
   }
 
   return Object.keys(result).length > 0 ? result : null;
 }
 
-/**
- * Generic streaming handler for all LLM providers
- */
 export async function createProviderStream(
   messages: Message[],
   modelId: string,
@@ -94,7 +63,6 @@ export async function createProviderStream(
   signal?: AbortSignal,
   maxTokens?: number
 ): Promise<ReadableStream> {
-  // Use custom prompt or ensure system message
   const messagesWithSystem = prompt
     ? ensureCustomSystemMessage(messages, prompt)
     : ensureSystemMessage(messages);
@@ -124,10 +92,6 @@ export async function createProviderStream(
       const decoder = new TextDecoder();
       let buffer = "";
 
-      // Helper function to sleep for consistent timing
-      const sleep = (ms: number) =>
-        new Promise((resolve) => setTimeout(resolve, ms));
-
       if (!reader) {
         controller.error(new Error("No response body reader"));
         return;
@@ -141,9 +105,8 @@ export async function createProviderStream(
           const chunk = decoder.decode(value, { stream: true });
           buffer += chunk;
 
-          // Process individual SSE messages as they come in
           const lines = buffer.split("\n");
-          buffer = lines.pop() || ""; // Keep incomplete line in buffer
+          buffer = lines.pop() || "";
 
           for (const line of lines) {
             const trimmedLine = line.trim();
@@ -158,7 +121,6 @@ export async function createProviderStream(
               const result = extractContentFromParsed(parsed);
 
               if (result) {
-                // Stream reasoning tokens with consistent timing
                 if (result.reasoning) {
                   const tokens = tokenizeContent(result.reasoning);
                   for (const token of tokens) {
@@ -169,11 +131,9 @@ export async function createProviderStream(
                         })}\n\n`
                       )
                     );
-                    await sleep(8); // 25ms delay between tokens
                   }
                 }
 
-                // Stream content tokens with consistent timing
                 if (result.content) {
                   const tokens = tokenizeContent(result.content);
                   for (const token of tokens) {
@@ -184,7 +144,6 @@ export async function createProviderStream(
                         })}\n\n`
                       )
                     );
-                    await sleep(8); // 25ms delay between tokens
                   }
                 }
               }
@@ -216,7 +175,6 @@ export async function createProviderStream(
                           })}\n\n`
                         )
                       );
-                      await sleep(25);
                     }
                   }
 
@@ -230,7 +188,6 @@ export async function createProviderStream(
                           })}\n\n`
                         )
                       );
-                      await sleep(25);
                     }
                   }
                 }
@@ -250,49 +207,6 @@ export async function createProviderStream(
   });
 }
 
-/**
- * Generic non-streaming handler for all LLM providers
- */
-export async function callProviderNonStreaming(
-  messages: Message[],
-  modelId: string,
-  apiKey: string,
-  config: ProviderConfig,
-  providerName: string,
-  maxTokens: number = 50
-): Promise<string> {
-  const transformedMessages = config.transformMessages
-    ? config.transformMessages(messages)
-    : messages;
-  let body = config.transformBody
-    ? config.transformBody(transformedMessages, modelId, maxTokens)
-    : transformedMessages;
-
-  // Override max_tokens and temperature for title generation
-  if (typeof body === "object" && body !== null) {
-    body = { ...body, max_tokens: maxTokens, temperature: 0.3, stream: false };
-  }
-
-  const response = await fetch(config.endpoint, {
-    method: "POST",
-    headers: config.headers(apiKey),
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `${providerName} API error: ${response.status} - ${errorText}`
-    );
-  }
-
-  const data = await response.json();
-  return config.parseNonStreamContent ? config.parseNonStreamContent(data) : "";
-}
-
-/**
- * Add system message if not present
- */
 export function ensureSystemMessage(messages: Message[]): Message[] {
   return messages.some((m) => m.role === "system")
     ? messages
@@ -306,9 +220,6 @@ export function ensureSystemMessage(messages: Message[]): Message[] {
       ];
 }
 
-/**
- * Add or replace system message with custom prompt
- */
 export function ensureCustomSystemMessage(
   messages: Message[],
   prompt: string
@@ -319,7 +230,6 @@ export function ensureCustomSystemMessage(
     timestamp: new Date(),
   };
 
-  // Remove existing system messages and add the custom one at the beginning
   const nonSystemMessages = messages.filter((m) => m.role !== "system");
   return [systemMessage, ...nonSystemMessages];
 }
