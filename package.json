@@ -14,7 +14,7 @@
     "db:reset": "prisma migrate reset",
     "db:seed": "prisma db seed",
     "postinstall": "prisma generate",
-    "setup": "prisma generate && prisma db push"
+    "setup": "bash scripts/setup.sh"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.9.1",

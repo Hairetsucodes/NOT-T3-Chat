@@ -117,6 +117,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 - Node.js 18+
 - pnpm (recommended) or npm
 - Git
+- OpenSSL
 
 ### Installation
 
@@ -133,32 +134,10 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
    pnpm install
    ```
 
-3. **Set up environment variables:**
-
-   ```bash
-   cp .env.example .env.local
-   ```
-
-4. **Initialize the database:**
+3. **Initial Setup (setup local .env, create & push schema, generate salt/secret)**
 
    ```bash
    pnpm run setup
-   ```
-
-
-5. **Generate random secret:**
-
-   ```bash
-   npx auth secret
-   ```
-
-   Configure your `.env` file with the required environment variables:
-
-   ```env
-   DATABASE_URL="file:../dev.db"
-   AUTH_SECRET="your-secret-key"
-   API_KEY_SALT="your-api-key-salt"
-   NEXTAUTH_URL="http://localhost:3000"
    ```
 
 6. **Generate API Key Salt:**
