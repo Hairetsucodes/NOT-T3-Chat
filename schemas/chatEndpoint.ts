@@ -23,6 +23,7 @@ export const ChatRequestSchema = z.object({
     .max(100, "Too many messages"),
   conversationId: z.string().nullable().optional(),
   selectedModel: SelectedModelSchema,
+  lastResponseId: z.string().nullable().optional(),
 });
 
 export type ChatRequest = z.infer<typeof ChatRequestSchema>;

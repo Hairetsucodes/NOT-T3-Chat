@@ -4,7 +4,7 @@ import {
   getProviderName,
   callGoogleNonStreaming,
 } from "../providers";
-import { callProviderNonStreaming } from "./non-stream";
+import { callProviderNonStreaming } from "./nonStream";
 import { prisma } from "@/prisma";
 
 /**

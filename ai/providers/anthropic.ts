@@ -1,5 +1,5 @@
 import { ProviderConfig, AnthropicStreamResponse, AnthropicNonStreamResponse } from '@/types/llms';
-import { transformAnthropicMessages, createAnthropicBody } from '../utils/message-transforms';
+import { transformAnthropicMessages, createAnthropicBody } from '../utils/messageTransforms';
 
 export const anthropicConfig: ProviderConfig = {
   endpoint: "https://api.anthropic.com/v1/messages",

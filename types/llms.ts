@@ -40,31 +40,13 @@ export interface ProviderConfig {
   endpoint: string;
   headers: (apiKey: string) => Record<string, string>;
   transformMessages?: (messages: Message[]) => unknown;
-  transformBody?: (messages: unknown, modelId: string, maxTokens?: number) => unknown;
+  transformBody?: (
+    messages: unknown,
+    modelId: string,
+    maxTokens?: number
+  ) => unknown;
   parseStreamContent?: (
     parsed: unknown
   ) => { content?: string; reasoning?: string } | null;
   parseNonStreamContent?: (data: unknown) => string;
-}
-
-export interface StreamChunk {
-  content?: string;
-  reasoning?: string;
-}
-
-export interface ParsedResponse {
-  choices?: Array<{
-    delta?: {
-      content?: string;
-      reasoning?: string;
-      reasoning_content?: string;
-      thought?: string;
-      thinking?: string;
-    };
-  }>;
-  type?: string;
-  delta?: {
-    text?: string;
-  };
-  content?: string;
 }

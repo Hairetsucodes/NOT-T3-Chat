@@ -176,6 +176,18 @@ export const SimpleMessageRenderer = memo(function SimpleMessageRenderer({
         {processedContent}
       </div>
 
+      {message.role === "assistant" && message.image_generation_status && (
+        <div className="text-sm text-muted-foreground mt-2">
+          {message.image_generation_status}
+        </div>
+      )}
+      {/* Show partial image for assistant messages during generation */}
+      {message.role === "assistant" && message.partial_image && (
+        <div className="mt-4">
+          <MarkdownContent content={message.partial_image} />
+        </div>
+      )}
+
       {/* Show branch button for assistant messages at the bottom - only visible on hover */}
       {message.role === "assistant" && activeUser?.id && (
         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">

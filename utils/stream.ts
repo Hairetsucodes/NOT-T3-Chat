@@ -13,7 +13,7 @@ export function createStreamTransformer(
 ) {
   let fullContent = "";
   let fullReasoning = "";
-
+  let responseId: string | undefined;
   return new ReadableStream({
     start(controller) {
       const reader = stream.getReader();
@@ -33,7 +33,9 @@ export function createStreamTransformer(
                   selectedModel.provider,
                   selectedModel.model,
                   fullReasoning,
-                  currentConversationId
+                  currentConversationId,
+                  undefined,
+                  responseId
                 );
               }
               controller.close();
@@ -51,11 +53,14 @@ export function createStreamTransformer(
                     const data = line.slice(6);
                     if (data.trim()) {
                       const parsed = JSON.parse(data);
-                      if (parsed.content) {
-                        fullContent += parsed.content;
+                      if (parsed.content || parsed.image_url) {
+                        fullContent += parsed.content || parsed.image_url;
                       }
                       if (parsed.reasoning) {
                         fullReasoning += parsed.reasoning;
+                      }
+                      if (parsed.previous_response_id) {
+                        responseId = parsed.previous_response_id;
                       }
                     }
                   }
@@ -75,4 +80,4 @@ export function createStreamTransformer(
       pump();
     },
   });
-} 
+}

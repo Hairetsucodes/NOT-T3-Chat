@@ -394,6 +394,14 @@
   .contentMarkdown li > p:not(:last-child) {
     @apply block mb-2;
   }
+
+  /* Image Styles */
+  .contentMarkdown img {
+    @apply max-w-full h-auto rounded-lg my-4 shadow-md;
+    max-height: 500px;
+    object-fit: contain;
+  }
+
   /* Code Styles */
   code {
     white-space: pre-wrap !important;

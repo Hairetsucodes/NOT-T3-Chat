@@ -1,5 +1,5 @@
 import { ProviderConfig, OpenAIStreamResponse, OpenAINonStreamResponse } from '@/types/llms';
-import { transformOpenAIMessages, createOpenAIBody } from '../utils/message-transforms';
+import { transformOpenAIMessages, createOpenAIBody } from '../utils/messageTransforms';
 
 export const deepseekConfig: ProviderConfig = {
   endpoint: "https://api.deepseek.com/v1/chat/completions",

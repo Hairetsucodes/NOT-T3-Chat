@@ -82,7 +82,6 @@ export const ChatProvider = ({
   const [conversations, setConversations] =
     useState<ConversationWithLoading[]>(initialConversations);
 
-  // Derived state for pinned and unpinned conversations
   const pinnedConversations = conversations.filter((conv) => conv.isPinned);
   const unpinnedConversations = conversations.filter((conv) => !conv.isPinned);
 
@@ -246,6 +245,8 @@ export const ChatProvider = ({
           role: "assistant",
           content: "",
           reasoning_content: "",
+          partial_image: "",
+          image_generation_status: "",
           provider: options?.provider || chatSettings?.provider || "openai",
           model: options?.model || chatSettings?.model || "gpt-4o-mini",
         };
@@ -253,7 +254,7 @@ export const ChatProvider = ({
         setMessages([...newMessages, assistantMessage]);
 
         let done = false;
-        let hasReceivedFirstToken = false; // Track if we've received the first content token
+        let hasReceivedFirstToken = false;
 
         while (!done) {
           const { value, done: streamDone } = await reader.read();
@@ -269,8 +270,8 @@ export const ChatProvider = ({
 
                 try {
                   const parsed = JSON.parse(data);
+
                   if (parsed.content) {
-                    // Stop loading animation as soon as first content token arrives
                     if (!hasReceivedFirstToken) {
                       setIsLoading(false);
                       hasReceivedFirstToken = true;
@@ -293,6 +294,46 @@ export const ChatProvider = ({
                               reasoning_content:
                                 (msg.reasoning_content || "") +
                                 parsed.reasoning,
+                            }
+                          : msg
+                      )
+                    );
+                  }
+                  if (parsed.partial_image) {
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === assistantMessage.id
+                          ? {
+                              ...msg,
+                              partial_image: parsed.partial_image,
+                              image_generation_status: "Generating image...",
+                            }
+                          : msg
+                      )
+                    );
+                  }
+                  if (parsed.image_generation_status) {
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === assistantMessage.id
+                          ? {
+                              ...msg,
+                              image_generation_status:
+                                parsed.image_generation_status,
+                            }
+                          : msg
+                      )
+                    );
+                  }
+                  if (parsed.image_url) {
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === assistantMessage.id
+                          ? {
+                              ...msg,
+                              content: msg.content + `\n\n${parsed.image_url} `,
+                              partial_image: "", // Clear partial_image when final image arrives
+                              image_generation_status: "", // Clear status when done
                             }
                           : msg
                       )

@@ -12,7 +12,7 @@ export async function processMarkdown(text: string): Promise<string> {
     .use(remarkParse)
     .use(remarkFrontmatter)
     .use(remarkGfm)
-    .use(remarkRehype)
+    .use(remarkRehype, { allowDangerousHtml: true })
     .use(() => (tree: Root) => {
       // Transform links to open in new window
       visit(tree, "element", (node: Element) => {

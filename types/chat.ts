@@ -22,6 +22,10 @@ export type Message = {
   conversationId?: string;
   provider?: string;
   model?: string;
+  image_url?: string;
+  partial_image?: string;
+  image_generation_status?: string;
+  previous_response_id?: string;
 };
 
 export interface MessageActionsProps {

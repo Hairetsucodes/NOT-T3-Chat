@@ -2,6 +2,10 @@ import { createErrorStream } from "./errors";
 import { ProviderConfig } from "@/types/llms";
 import { Message } from "@/types/chat";
 import { ParsedStreamResponse } from "@/types/stream";
+import {
+  ensureCustomSystemMessage,
+  ensureSystemMessage,
+} from "./systemMessage";
 
 function tokenizeContent(content: string): string[] {
   if (!content) return [];
@@ -52,8 +56,7 @@ function extractContentFromParsed(
 
   return Object.keys(result).length > 0 ? result : null;
 }
-
-export async function createProviderStream(
+export async function createUniversalProviderStream(
   messages: Message[],
   modelId: string,
   apiKey: string,
@@ -205,31 +208,4 @@ export async function createProviderStream(
       }
     },
   });
-}
-
-export function ensureSystemMessage(messages: Message[]): Message[] {
-  return messages.some((m) => m.role === "system")
-    ? messages
-    : [
-        {
-          role: "system",
-          content: "You are a helpful assistant.",
-          timestamp: new Date(),
-        } as Message,
-        ...messages,
-      ];
-}
-
-export function ensureCustomSystemMessage(
-  messages: Message[],
-  prompt: string
-): Message[] {
-  const systemMessage: Message = {
-    role: "system",
-    content: prompt,
-    timestamp: new Date(),
-  };
-
-  const nonSystemMessages = messages.filter((m) => m.role !== "system");
-  return [systemMessage, ...nonSystemMessages];
 }

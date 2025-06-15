@@ -1,5 +1,5 @@
 import { ProviderConfig, OpenAIStreamResponse, OpenAINonStreamResponse } from '@/types/llms';
-import { transformOpenAIMessages, createOpenAIBody } from '../utils/message-transforms';
+import { transformOpenAIMessages, createOpenAIBody } from '../utils/messageTransforms';
 
 export const xaiConfig: ProviderConfig = {
   endpoint: "https://api.x.ai/v1/chat/completions",

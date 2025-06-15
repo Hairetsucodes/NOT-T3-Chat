@@ -4,17 +4,16 @@ import {
   getProviderName,
   callGoogleStreaming,
 } from "./providers";
+import { createUniversalProviderStream } from "./utils/streaming";
+import { generateTitle } from "./utils/titleGeneration";
+import { callOpenAIStreaming } from "./providers/openai";
 import {
-  createProviderStream,
   ensureCustomSystemMessage,
   ensureSystemMessage,
-} from "./utils/streaming";
-import { generateTitle } from "./utils/title-generation";
+} from "./utils/systemMessage";
 
-/**
- * Handle streaming LLM requests for all providers
- */
 export async function handleLLMRequestStreaming(
+  userId: string,
   messages: Message[],
   provider: string,
   modelId: string,
@@ -22,7 +21,9 @@ export async function handleLLMRequestStreaming(
   prompt: string,
   signal?: AbortSignal,
   maxTokens?: number,
-  isWebSearch?: boolean
+  isWebSearch?: boolean,
+  isImageGeneration?: boolean,
+  lastResponseId?: string
 ): Promise<ReadableStream> {
   // Use custom prompt or ensure system message
   const messagesWithSystem = prompt
@@ -40,11 +41,21 @@ export async function handleLLMRequestStreaming(
     );
   }
 
+  if (provider.toLowerCase() === "openai") {
+    return await callOpenAIStreaming(
+      userId,
+      messagesWithSystem,
+      modelId,
+      apiKey,
+      isImageGeneration,
+      lastResponseId
+    );
+  }
   // Use generic provider streaming for all other providers
   const config = getProviderConfig(provider);
   const providerName = getProviderName(provider);
 
-  return await createProviderStream(
+  return await createUniversalProviderStream(
     messagesWithSystem,
     modelId,
     apiKey,

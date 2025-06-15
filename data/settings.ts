@@ -3,7 +3,7 @@
 import { checkUser } from "@/lib/auth/check";
 import { prisma } from "@/prisma";
 import { UserCustomization } from "@prisma/client";
-import { generateAndApplyPersonalizedPrompt } from "@/ai/utils/prompt-generation";
+import { generateAndApplyPersonalizedPrompt } from "@/ai/utils/promptGeneration";
 
 export const getUserSettings = async () => {
   const { userId } = await checkUser();
@@ -321,3 +321,17 @@ export async function updateModelAndProvider(model: string, provider: string) {
     throw error;
   }
 }
+
+export const updateIsImageGeneration = async (isImageGeneration: boolean) => {
+  const { userId } = await checkUser();
+  const chatSettings = await prisma.chatSettings.findFirst({
+    where: { userId },
+  });
+  if (chatSettings) {
+    return await prisma.chatSettings.update({
+      where: { id: chatSettings.id },
+      data: { isImageGeneration, updatedAt: new Date() },
+    });
+  }
+  return null;
+};

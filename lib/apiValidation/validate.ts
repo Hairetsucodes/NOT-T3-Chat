@@ -50,7 +50,8 @@ export async function validateChatRequestComplete(
     return basicValidation;
   }
 
-  const { messages, conversationId, selectedModel } = basicValidation.data;
+  const { messages, conversationId, selectedModel, lastResponseId } =
+    basicValidation.data;
 
   // Validate model selection
   if (!selectedModel) {
@@ -83,6 +84,7 @@ export async function validateChatRequestComplete(
         conversationId,
         selectedModel,
         providerKey: providerKey!,
+        lastResponseId,
       },
     };
   } catch (error) {

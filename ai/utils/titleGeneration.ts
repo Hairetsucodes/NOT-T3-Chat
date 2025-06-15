@@ -4,7 +4,7 @@ import {
   getProviderName,
   callGoogleNonStreaming,
 } from "../providers";
-import { callProviderNonStreaming } from "./non-stream";
+import { callProviderNonStreaming } from "./nonStream";
 
 /**
  * Map any model to a simple, fast alternative for title generation

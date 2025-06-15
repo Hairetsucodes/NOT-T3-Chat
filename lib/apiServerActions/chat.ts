@@ -12,7 +12,8 @@ export const createMessageApi = async (
   modelId: string,
   reasoningContent: string,
   conversationId?: string,
-  title?: string
+  title?: string,
+  responseId?: string
 ) => {
   // Create conversation if it doesn't exist
   if (!conversationId) {
@@ -32,7 +33,6 @@ export const createMessageApi = async (
   if (!role) {
     throw new Error("Role is required");
   }
-
   // Create and return the message
   const message = await prisma.message.create({
     data: {
@@ -43,6 +43,7 @@ export const createMessageApi = async (
       provider,
       model: modelId,
       reasoningContent,
+      responseId,
     },
   });
 
@@ -97,4 +98,32 @@ export const getChatSettingsApi = async (userId: string) => {
   });
 
   return chatSettings;
+};
+
+export const createAttachmentApi = async (
+  userId: string,
+  filename: string,
+  fileType: string,
+  tileLocation: string
+) => {
+  await prisma.attachment.create({
+    data: {
+      userId,
+      filename,
+      fileUrl: tileLocation,
+      fileType: fileType,
+    },
+  });
+};
+
+export const getLastResponseId = async (conversationId: string) => {
+  const lastResponseId = await prisma.message.findFirst({
+    where: { conversationId, role: "assistant" },
+    orderBy: { createdAt: "desc" },
+    select: {
+      responseId: true,
+    },
+  });
+
+  return lastResponseId?.responseId || undefined;
 };

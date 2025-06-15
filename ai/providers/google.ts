@@ -3,7 +3,7 @@ import { Message } from "@/types/chat";
 import {
   transformGoogleMessages,
   createGoogleBody,
-} from "../utils/message-transforms";
+} from "../utils/messageTransforms";
 import {
   createErrorStream,
   createStandardError,

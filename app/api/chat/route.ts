@@ -5,7 +5,10 @@ import {
 import { getModelById } from "@/data/models";
 import { getPromptApi, getChatSettingsApi } from "@/lib/apiServerActions/chat";
 import { validateChatRequestComplete } from "@/lib/apiValidation/validate";
-import { createMessageApi } from "@/lib/apiServerActions/chat";
+import {
+  createMessageApi,
+  getLastResponseId,
+} from "@/lib/apiServerActions/chat";
 import { createStreamTransformer } from "@/utils/stream";
 import { auth } from "@/auth";
 
@@ -19,7 +22,6 @@ export async function POST(req: Request) {
 
   // Comprehensive validation including model, and provider key
   const validation = await validateChatRequestComplete(req, userId);
-
   const { messages, conversationId, selectedModel, providerKey } =
     validation.data!;
 
@@ -43,7 +45,11 @@ export async function POST(req: Request) {
     // Save user message and create/get conversation
     let currentConversationId: string | undefined = conversationId || undefined;
     const lastUserMessage = messages[messages.length - 1];
+    let lastResponseId: string | undefined = undefined;
 
+    if (conversationId && selectedModel.provider.toLowerCase() === "openai") {
+      lastResponseId = await getLastResponseId(conversationId);
+    }
     if (lastUserMessage?.role === "user") {
       const savedMessage = await createMessageApi(
         userId,
@@ -69,6 +75,7 @@ export async function POST(req: Request) {
       (prompt && "prompt" in prompt ? prompt.prompt : "") || "";
 
     const stream = await handleLLMRequestStreaming(
+      userId,
       messages,
       selectedModel.provider,
       selectedModel.model,
@@ -76,7 +83,9 @@ export async function POST(req: Request) {
       promptText,
       new AbortController().signal,
       maxTokens,
-      settings?.isWebSearch || false
+      settings?.isWebSearch || false,
+      settings?.isImageGeneration || false,
+      lastResponseId || undefined
     );
 
     // Create transformed stream

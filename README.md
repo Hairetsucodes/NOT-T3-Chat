@@ -6,6 +6,14 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 
 - 🤖 Multiple AI provider support (OpenAI, Anthropic, Google, DeepSeek, Xai, OpenRouter, and more)
 - 🌐 Grounding/web search for Google models
+- 🖼️ Image generation with OpenAI models with follow ups (
+  "gpt-4o-mini",
+  "gpt-4o",
+  "gpt-4.1",
+  "gpt-4.1-mini",
+  "gpt-4.1-nano",
+  "o3",
+  )
 - 🔐 Authentication with NextAuth
 - 💾 Persistent chat history with Prisma
 - 📤 History Sync Export/Import functionality
@@ -478,7 +486,7 @@ pnpm db:migrate
 
 ### TODO in no particular order
 
-- Image Gen / Analysis
+- ✅ Image Gen (OpenAI models) / Image Analysis (pending)
 - Attachments
 - Optimize DB querying
 - Production Deployment / postGres
