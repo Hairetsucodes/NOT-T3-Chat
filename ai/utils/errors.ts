@@ -1,10 +1,4 @@
-/**
- * Error handling utilities for LLM providers
- */
 
-/**
- * Create a user-friendly error message from provider error
- */
 export function createUserFriendlyError(
   providerName: string,
   status: number,
@@ -26,9 +20,7 @@ export function createUserFriendlyError(
   return userFriendlyError;
 }
 
-/**
- * Create an error stream for streaming responses
- */
+
 export function createErrorStream(
   providerName: string,
   status: number,
@@ -54,9 +46,7 @@ export function createErrorStream(
   });
 }
 
-/**
- * Create a standard error for non-streaming responses
- */
+
 export function createStandardError(
   providerName: string,
   status: number,
@@ -72,9 +62,7 @@ export function createStandardError(
   );
 }
 
-/**
- * Handle abort signals and create appropriate errors
- */
+
 export function handleAbortError(signal?: AbortSignal): Error | null {
   if (signal?.aborted) {
     return new Error("Request was aborted");
