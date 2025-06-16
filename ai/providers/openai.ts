@@ -1,12 +1,3 @@
-import {
-  ProviderConfig,
-  OpenAIStreamResponse,
-  OpenAINonStreamResponse,
-} from "@/types/llms";
-import {
-  transformOpenAIMessages,
-  createOpenAIBody,
-} from "../utils/messageTransforms";
 import { Message } from "@/types/chat";
 import OpenAI from "openai";
 import { imageCapableModels } from "@/constants/imageModels";
@@ -14,25 +5,6 @@ import fs from "fs";
 import { createAttachmentApi } from "@/lib/apiServerActions/chat";
 
 const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-
-export const openaiConfig: ProviderConfig = {
-  endpoint: "https://api.openai.com/v1/chat/completions",
-  headers: (apiKey) => ({
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${apiKey}`,
-  }),
-  transformMessages: transformOpenAIMessages,
-  transformBody: createOpenAIBody,
-  parseStreamContent: (parsed: unknown) => {
-    const response = parsed as OpenAIStreamResponse;
-    const content = response.choices?.[0]?.delta?.content;
-    return content ? { content } : null;
-  },
-  parseNonStreamContent: (data: unknown) => {
-    const response = data as OpenAINonStreamResponse;
-    return response.choices?.[0]?.message?.content?.trim() || "";
-  },
-};
 
 export async function callOpenAIStreaming(
   userId: string,

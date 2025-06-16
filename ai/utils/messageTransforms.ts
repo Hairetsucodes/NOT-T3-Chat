@@ -38,15 +38,12 @@ export function transformGoogleMessages(messages: Message[]): string {
     prompt += systemMessage.content + "\n\n";
   }
 
-  // Add conversation history
-  for (const msg of conversationMessages) {
-    if (msg.role === "user") {
-      prompt += `User: ${msg.content}\n`;
-    } else if (msg.role === "assistant") {
-      prompt += `Assistant: ${msg.content}\n`;
-    }
-  }
-
+  prompt += conversationMessages
+    .map(
+      (msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`
+    )
+    .join("\n");
+  console.log("prompt", prompt);
   return prompt.trim();
 }
 
