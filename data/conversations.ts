@@ -1,3 +1,4 @@
+"use server";
 import { prisma } from "@/prisma";
 import { Conversation } from "@prisma/client";
 
@@ -31,7 +32,7 @@ export const getSharedChat = async (id: string) => {
 
 export const updateIsPublic = async (
   id: string,
-  isPublic: boolean,
+  isPublic: boolean
 ): Promise<Conversation | { error: string }> => {
   try {
     const updatedConversation = await prisma.conversation.update({
@@ -43,4 +44,4 @@ export const updateIsPublic = async (
     console.error(`Error updating isPublic for conversation ${id}:`, error);
     return { error: "Failed to update conversation" };
   }
-}; 
+};

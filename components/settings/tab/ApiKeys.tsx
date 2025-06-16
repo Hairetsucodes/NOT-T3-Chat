@@ -17,7 +17,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState, useContext } from "react";
-import { useSession } from "next-auth/react";
 import { createAPIKey, deleteAPIKey } from "@/data/apikeys";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -25,7 +24,6 @@ import ActiveProviders from "@/components/settings/ActiveProviders";
 import { ChatContext } from "@/context/ChatContext";
 
 export function ApiKeysTab() {
-  const { data: session, status } = useSession();
   const [selectedProvider, setSelectedProvider] = useState("");
   const [customProviderName, setCustomProviderName] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -81,7 +79,7 @@ export function ApiKeysTab() {
   };
 
   const handleDeleteApiKey = async (keyId: string) => {
-    if (!session?.user?.id) return;
+    if (!activeUser?.id) return;
 
     try {
       await deleteAPIKey(keyId);
@@ -127,7 +125,7 @@ export function ApiKeysTab() {
   }
 
   // Show error if no session
-  if (!session?.user) {
+  if (!activeUser) {
     return (
       <Card className="h-full flex flex-col">
         <CardContent className="flex items-center justify-center h-64">
@@ -149,7 +147,7 @@ export function ApiKeysTab() {
       </CardHeader>
       <CardContent className="flex-1 overflow-auto space-y-6 min-h-0">
         {/* Add New API Key Section */}
-        <form 
+        <form
           className="space-y-4 p-4 border rounded-lg bg-muted/50"
           onSubmit={(e) => {
             e.preventDefault();
@@ -161,7 +159,7 @@ export function ApiKeysTab() {
             type="text"
             name="username"
             autoComplete="username"
-            style={{ display: 'none' }}
+            style={{ display: "none" }}
             tabIndex={-1}
             aria-hidden="true"
           />
