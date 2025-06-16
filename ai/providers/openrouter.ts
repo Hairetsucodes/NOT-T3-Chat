@@ -7,7 +7,7 @@ export const openrouterConfig: ProviderConfig = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${apiKey}`,
     "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-    "X-Title": "OSS T3 Chat",
+    "X-Title": "NOT T3 Chat",
   }),
   transformMessages: transformOpenAIMessages,
   transformBody: createOpenAIBody,

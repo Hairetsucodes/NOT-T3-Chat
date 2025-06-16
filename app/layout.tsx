@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OSS T3 Chat",
+  title: "NOT T3 Chat",
   description: "A modern chat application built with Next.js and NextAuth",
 };
 

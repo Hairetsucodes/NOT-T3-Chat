@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Setting up OSS T3 Chat..."
+echo "🚀 Setting up NOT T3 Chat..."
 
 # Check if .env file exists, create if not
 if [ ! -f .env ]; then

@@ -25,7 +25,7 @@ export default function Home() {
           {/* Header */}
           <div className="text-center space-y-2">
             <h1 className="text-4xl font-bold tracking-tight text-foreground">
-              Welcome to OSS T3 Chat
+              Welcome to NOT T3 Chat
             </h1>
             <p className="text-muted-foreground text-base">
               {isSignIn

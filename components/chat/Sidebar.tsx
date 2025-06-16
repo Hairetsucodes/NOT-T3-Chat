@@ -56,7 +56,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           <div className="flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow">
             {/* Header */}
             <div className="w-full justify-center items-center flex pb-3 flex-shrink-0">
-              OSS T3.chat
+              NOT T3.Chat
             </div>
             <div className="flex flex-col gap-2 relative m-1 mb-0 space-y-1 p-0 !pt-safe flex-shrink-0">
               <div className="px-1">

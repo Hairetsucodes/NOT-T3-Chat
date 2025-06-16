@@ -198,7 +198,7 @@ export function CustomizationTab() {
             Customization
           </CardTitle>
           <CardDescription className="text-foreground/70">
-            Customize your OSS T3 Chat experience.
+            Customize your NOT T3 Chat experience.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex-1 overflow-auto">
@@ -214,7 +214,7 @@ export function CustomizationTab() {
               {/* Name Input */}
               <div className="relative grid gap-2">
                 <Label className="text-base font-medium text-foreground/80">
-                  What should OSS T3 Chat call you?
+                  What should NOT T3 Chat call you?
                 </Label>
                 <Input
                   placeholder="Enter your name"
@@ -251,7 +251,7 @@ export function CustomizationTab() {
               <div className="grid gap-2">
                 <div className="flex items-center gap-2">
                   <Label className="text-base font-medium text-foreground/80">
-                    What traits should OSS T3 Chat have?
+                    What traits should NOT T3 Chat have?
                     <span className="ml-2 text-xs font-normal text-muted-foreground">
                       (up to 50, max 100 chars each)
                     </span>
@@ -320,7 +320,7 @@ export function CustomizationTab() {
               <div className="relative grid gap-2">
                 <div className="flex items-center gap-2">
                   <Label className="text-base font-medium text-foreground/80">
-                    Anything else OSS T3 Chat should know about you?
+                    Anything else NOT T3 Chat should know about you?
                   </Label>
                 </div>
                 <Textarea
