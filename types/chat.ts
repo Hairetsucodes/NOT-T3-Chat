@@ -68,6 +68,8 @@ export interface ChatContextType {
   chatSettings: ChatSettings | null;
   setChatSettings: (settings: ChatSettings) => void;
   setUserSettings: (settings: UserCustomization) => void;
+  filteredModels: UnifiedModel[];
+  setFilteredModels: (models: UnifiedModel[]) => void;
   activeProviders: {
     id: string;
     provider: string;

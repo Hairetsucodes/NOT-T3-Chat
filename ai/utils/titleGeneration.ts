@@ -5,6 +5,7 @@ import {
   callGoogleNonStreaming,
 } from "../providers";
 import { callProviderNonStreaming } from "./nonStream";
+import { callOpenAINonStreaming } from "../providers/openai";
 
 /**
  * Map any model to a simple, fast alternative for title generation
@@ -62,6 +63,8 @@ export async function generateTitle(
     // Handle Google separately due to different SDK
     if (actualProvider.toLowerCase() === "google") {
       title = await callGoogleNonStreaming(titlePrompt, titleModelId, apiKey);
+    } else if (actualProvider.toLowerCase() === "openai") {
+      title = await callOpenAINonStreaming(titlePrompt, titleModelId, apiKey);
     } else {
       // Use generic provider non-streaming for all other providers
       const config = getProviderConfig(actualProvider);

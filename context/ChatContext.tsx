@@ -5,7 +5,14 @@ import {
   UserCustomization,
   ChatSettings,
 } from "@prisma/client";
-import { createContext, useState, useCallback, useRef, useMemo } from "react";
+import {
+  createContext,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+  useEffect,
+} from "react";
 import { UnifiedModel } from "@/types/models";
 import { getPreferredModels } from "@/data/models";
 import {
@@ -32,6 +39,8 @@ export const ChatContext = createContext<ChatContextType>({
   chatSettings: null,
   setChatSettings: () => {},
   setUserSettings: () => {},
+  filteredModels: [],
+  setFilteredModels: () => {},
   activeProviders: [],
   setActiveProviders: () => {},
   availableModels: [],
@@ -81,6 +90,14 @@ export const ChatProvider = ({
 }) => {
   const [conversations, setConversations] =
     useState<ConversationWithLoading[]>(initialConversations);
+
+  const [filteredModels, setFilteredModels] = useState<UnifiedModel[]>(
+    availableModels.filter((model) =>
+      initialActiveProviders.some(
+        (activeProvider) => activeProvider.provider === model.provider
+      )
+    )
+  );
 
   const pinnedConversations = conversations.filter((conv) => conv.isPinned);
   const unpinnedConversations = conversations.filter((conv) => !conv.isPinned);
@@ -144,6 +161,19 @@ export const ChatProvider = ({
       console.error("Failed to refresh preferred models:", error);
     }
   }, []);
+
+  // Optimistically update filtered models when active providers change
+  useEffect(() => {
+    setFilteredModels(
+      availableModels.filter((model) =>
+        activeProviders.some(
+          (activeProvider) =>
+            activeProvider.provider.toLowerCase() ===
+            model.provider.toLowerCase()
+        )
+      )
+    );
+  }, [activeProviders, availableModels]);
 
   // New chat messaging functions
   const sendMessage = useCallback(
@@ -587,6 +617,8 @@ export const ChatProvider = ({
       setUserSettings,
       activeProviders,
       setActiveProviders,
+      filteredModels,
+      setFilteredModels,
       availableModels,
       preferredModels,
       setPreferredModels,
@@ -617,6 +649,8 @@ export const ChatProvider = ({
       setUserSettings,
       activeProviders,
       setActiveProviders,
+      filteredModels,
+      setFilteredModels,
       availableModels,
       preferredModels,
       setPreferredModels,

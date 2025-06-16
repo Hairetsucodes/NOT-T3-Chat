@@ -18,7 +18,6 @@ import { RegisterSchema } from "@/schemas/register";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "@/lib/auth/login";
-import { motion } from "motion/react";
 import { Loader2 } from "lucide-react";
 
 export default function Register() {
@@ -54,12 +53,7 @@ export default function Register() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="w-full"
-    >
+    <div className="w-full">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
@@ -150,6 +144,6 @@ export default function Register() {
           </div>
         </form>
       </Form>
-    </motion.div>
+    </div>
   );
 }

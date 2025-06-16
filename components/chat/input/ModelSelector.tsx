@@ -208,6 +208,85 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
+// Helper function to get default models based on available providers
+const getDefaultModels = (
+  availableModels: Array<{
+    id: string;
+    name: string;
+    subtitle: string;
+    icon: React.ReactNode;
+    capabilities: Array<{ icon: React.ReactNode; label: string }>;
+    provider: string;
+    isPro: boolean;
+    requiresKey: boolean;
+    isDisabled: boolean;
+    isFavorite: boolean;
+    isExperimental?: boolean;
+    isNew?: boolean;
+    specialStyling?: { border?: string; shadow?: string };
+  }>
+) => {
+  if (availableModels.length === 0) return [];
+
+  // Get unique providers
+  const providers = [
+    ...new Set(availableModels.map((model) => model.provider)),
+  ];
+  const defaults: typeof availableModels = [];
+
+  // Default model preferences by provider (in order of preference)
+  const providerDefaults: Record<string, string[]> = {
+    anthropic: ["claude-3-5-sonnet", "claude-3-5-haiku", "claude-3-opus"],
+    openai: ["gpt-4o", "gpt-4o-mini", "o1-preview", "o1-mini"],
+    google: ["gemini-2.0-flash-exp", "gemini-1.5-pro", "gemini-1.5-flash"],
+    deepseek: ["deepseek-chat", "deepseek-reasoner"],
+    xai: ["grok-beta", "grok-vision-beta"],
+    openrouter: [
+      "anthropic/claude-3.5-sonnet",
+      "openai/gpt-4o",
+      "google/gemini-2.0-flash-exp",
+    ],
+  };
+
+  // For each provider, try to find the best available model
+  providers.forEach((provider) => {
+    const providerModels = availableModels.filter(
+      (model) => model.provider === provider
+    );
+    const preferredNames = providerDefaults[provider] || [];
+
+    // Try to find preferred models in order
+    for (const preferredName of preferredNames) {
+      const found = providerModels.find(
+        (model) =>
+          (model.name?.toLowerCase()?.includes(preferredName.toLowerCase()) ??
+            false) ||
+          (model.id?.toLowerCase()?.includes(preferredName.toLowerCase()) ??
+            false)
+      );
+      if (found && !defaults.some((d) => d.id === found.id)) {
+        defaults.push(found);
+        break; // Only add one model per provider for now
+      }
+    }
+
+    // If no preferred model found, add the first non-pro model from this provider
+    if (!defaults.some((d) => d.provider === provider)) {
+      const fallback =
+        providerModels.find(
+          (model) => !model.isPro && !model.requiresKey && !model.isDisabled
+        ) || providerModels[0]; // Fallback to first model if all are pro/require keys
+
+      if (fallback && !defaults.some((d) => d.id === fallback.id)) {
+        defaults.push(fallback);
+      }
+    }
+  });
+
+  // Limit to 8 default models to avoid overwhelming the user
+  return defaults.slice(0, 8);
+};
+
 const ModelSelector = memo(function ModelSelector() {
   const {
     preferredModels,
@@ -215,7 +294,12 @@ const ModelSelector = memo(function ModelSelector() {
     chatSettings,
     setChatSettings,
     activeUser,
+    activeProviders,
   } = useContext(ChatContext);
+  console.log(
+    "activeProviders",
+    activeProviders.map((p) => p.provider)
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [showAllModels, setShowAllModels] = useState(false);
@@ -229,10 +313,16 @@ const ModelSelector = memo(function ModelSelector() {
     [preferredModels]
   );
 
-  // Memoize available models conversion
-  const availableModels = useMemo(
-    () =>
-      dbModels.map((model) => {
+  // Memoize available models conversion - only show models from active providers
+  const availableModels = useMemo(() => {
+    const activeProviderNames = new Set(activeProviders.map((p) => p.provider));
+
+    return dbModels
+      .filter(
+        (model) =>
+          activeProviderNames.has(model.provider) && model.modelId && model.name
+      )
+      .map((model) => {
         const icon = getProviderIcon(model.provider, "h-8 w-8 bg-transparent");
         const capabilities = getCapabilities(model.name, model.description);
         const isPro = isProModel(model.name, model.pricing);
@@ -255,14 +345,28 @@ const ModelSelector = memo(function ModelSelector() {
           isNew,
           specialStyling,
         };
-      }),
-    [dbModels, preferredModelIds]
-  );
+      });
+  }, [dbModels, preferredModelIds, activeProviders]);
+
+  // Memoize default models when no preferences exist
+  const defaultModels = useMemo(() => {
+    if (preferredModels.length > 0) return [];
+    return getDefaultModels(availableModels).map((model) => ({
+      ...model,
+      isFavorite: true, // Mark as favorite for display purposes only
+    }));
+  }, [availableModels, preferredModels.length]);
 
   // Memoize filtered models
   const { favoriteModels, otherModels, enabledModels } = useMemo(() => {
     const enabled = availableModels.filter((model) => !model.isDisabled);
-    const favorites = availableModels.filter((model) => model.isFavorite);
+
+    // Use actual favorites if they exist, otherwise use defaults
+    const favorites =
+      preferredModels.length > 0
+        ? availableModels.filter((model) => model.isFavorite)
+        : defaultModels;
+
     const others = availableModels.filter((model) => !model.isFavorite);
 
     return {
@@ -270,7 +374,7 @@ const ModelSelector = memo(function ModelSelector() {
       otherModels: others,
       enabledModels: enabled,
     };
-  }, [availableModels]);
+  }, [availableModels, defaultModels, preferredModels.length]);
 
   // Memoize search filtered models
   const filteredModels = useMemo(() => {
@@ -292,12 +396,6 @@ const ModelSelector = memo(function ModelSelector() {
     return { filteredFavorites: favorites, filteredOthers: others };
   }, [favoriteModels, otherModels, debouncedSearchQuery]);
 
-  // Memoize selected model data
-  const selectedModelData = useMemo(
-    () => availableModels.find((model) => model.id === chatSettings?.model),
-    [availableModels, chatSettings]
-  );
-
   // Memoize handlers
   const handleModelSelect = useCallback(
     (modelId: string) => {
@@ -314,7 +412,6 @@ const ModelSelector = memo(function ModelSelector() {
         updateModelAndProvider(modelId, selectedModelData.provider);
       }
       setIsOpen(false);
-      setSearchQuery("");
     },
     [availableModels, setChatSettings, chatSettings, activeUser]
   );
@@ -329,6 +426,15 @@ const ModelSelector = memo(function ModelSelector() {
     },
     []
   );
+
+  const handleOpenChange = useCallback((open: boolean) => {
+    setIsOpen(open);
+    if (!open) {
+      // Reset to favorites when popover closes
+      setShowAllModels(false);
+      setSearchQuery("");
+    }
+  }, []);
 
   // If no models are available, show a fallback
   if (enabledModels.length === 0) {
@@ -348,7 +454,7 @@ const ModelSelector = memo(function ModelSelector() {
   }
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
@@ -356,12 +462,9 @@ const ModelSelector = memo(function ModelSelector() {
           className="text-xs h-auto gap-2 rounded-full border-secondary-foreground/10 py-1.5 pl-2 pr-2.5 text-muted-foreground max-sm:p-2"
         >
           <div className="flex items-center gap-2 text-sm">
-            {getProviderIcon(
-              selectedModelData?.provider || "",
-              "bg-transparent"
-            )}
+            {getProviderIcon(chatSettings?.provider || "", "bg-transparent")}
 
-            <span>{selectedModelData?.name}</span>
+            <span>{chatSettings?.model}</span>
           </div>
           <ChevronDown className="w-4 h-4" />
         </Button>

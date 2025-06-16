@@ -43,7 +43,6 @@ export function transformGoogleMessages(messages: Message[]): string {
       (msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`
     )
     .join("\n");
-  console.log("prompt", prompt);
   return prompt.trim();
 }
 

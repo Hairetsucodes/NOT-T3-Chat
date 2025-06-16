@@ -17,7 +17,6 @@ import { login } from "@/lib/auth/login";
 import { startTransition, useState } from "react";
 import { LoginSchema } from "@/schemas/login";
 import { useRouter } from "next/navigation";
-import { motion } from "motion/react";
 import { Loader2 } from "lucide-react";
 
 export default function SignIn() {
@@ -64,12 +63,7 @@ export default function SignIn() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="w-full"
-    >
+    <div className="w-full">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
@@ -137,6 +131,6 @@ export default function SignIn() {
           </div>
         </form>
       </Form>
-    </motion.div>
+    </div>
   );
 }

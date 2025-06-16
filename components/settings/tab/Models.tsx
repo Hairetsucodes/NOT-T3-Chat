@@ -2,42 +2,12 @@
 
 import { useContext, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatContext } from "@/context/ChatContext";
 import { addPreferredModel, removePreferredModel } from "@/data/models";
-import {
-  Search,
-  Filter,
-  Sparkles,
-  Eye,
-  Globe,
-  FileText,
-  Brain,
-  Key,
-  Gem,
-  FlaskConical,
-  Zap,
-  ChevronDown,
-  Loader2,
-  ImageIcon,
-} from "lucide-react";
-import {
-  getProviderIcon,
-  GeminiIcon,
-  OpenAIIcon,
-  AnthropicIcon,
-  GrokIcon,
-  DeepSeekIcon,
-  OpenRouterIcon,
-} from "@/components/ui/provider-images";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Search, Sparkles, Loader2, ImageIcon } from "lucide-react";
+import { getProviderIcon } from "@/components/ui/provider-images";
 import {
   Card,
   CardContent,
@@ -46,185 +16,20 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { imageCapableModels } from "@/constants/imageModels";
-
-// Capability mapping
-const getCapabilities = (
-  modelName: string,
-  description: string | null | undefined
-) => {
-  const capabilities = [];
-  const desc = description?.toLowerCase() || "";
-  const name = modelName.toLowerCase();
-
-  if (
-    desc.includes("vision") ||
-    desc.includes("image") ||
-    desc.includes("multimodal")
-  ) {
-    capabilities.push({ icon: Eye, label: "Vision" });
-  }
-
-  if (
-    desc.includes("reasoning") ||
-    desc.includes("thinking") ||
-    name.includes("reasoning")
-  ) {
-    capabilities.push({ icon: Brain, label: "Reasoning" });
-  }
-
-  if (
-    desc.includes("search") ||
-    desc.includes("web") ||
-    desc.includes("browse")
-  ) {
-    capabilities.push({ icon: Globe, label: "Web Search" });
-  }
-
-  if (desc.includes("code") || desc.includes("programming")) {
-    capabilities.push({ icon: FileText, label: "Code" });
-  }
-
-  if (
-    desc.includes("fast") ||
-    desc.includes("speed") ||
-    name.includes("flash")
-  ) {
-    capabilities.push({ icon: Zap, label: "Fast" });
-  }
-
-  return capabilities;
-};
-
-// Model type detection
-const getModelType = (modelName: string, pricing: string | null) => {
-  const types = [];
-
-  // Check if experimental
-  if (
-    modelName.toLowerCase().includes("exp") ||
-    modelName.toLowerCase().includes("preview") ||
-    modelName.toLowerCase().includes("beta") ||
-    modelName.toLowerCase().includes("scout") ||
-    modelName.toLowerCase().includes("maverick")
-  ) {
-    types.push({ icon: FlaskConical, label: "Experimental Model" });
-  }
-
-  // Check if premium/pro
-  if (
-    modelName.toLowerCase().includes("pro") ||
-    modelName.toLowerCase().includes("plus") ||
-    modelName.includes("opus")
-  ) {
-    types.push({ icon: Gem, label: "Premium Model" });
-  }
-
-  // Check if requires API key (high pricing indicates direct API access)
-  if (pricing) {
-    try {
-      const pricingData = JSON.parse(pricing);
-      if (pricingData.prompt > 0.00001) {
-        types.push({ icon: Key, label: "Premium Pricing" });
-      }
-    } catch {
-      // Ignore parsing errors
-    }
-  }
-
-  return types;
-};
-
-type FilterType =
-  | "all"
-  | "vision"
-  | "reasoning"
-  | "code"
-  | "experimental"
-  | "premium"
-  | "fast"
-  | "direct"
-  | "openrouter"
-  | "google"
-  | "openai"
-  | "anthropic"
-  | "xai"
-  | "deepseek"
-  | "image";
+import { ModelFilter } from "./ModelFilter";
+import { getCapabilities } from "./helpers/modelCapability";
 
 export default function Models() {
   const {
     availableModels,
+    filteredModels,
     refreshPreferredModels,
     preferredModels,
     setPreferredModels,
   } = useContext(ChatContext);
-  const [searchTerm, setSearchTerm] = useState("");
   const [showNotification, setShowNotification] = useState(true);
-  const [selectedFilters, setSelectedFilters] = useState<FilterType[]>(["all"]);
   const [displayedCount, setDisplayedCount] = useState(50);
   const [loading, setLoading] = useState(false);
-
-  const filteredModels = useMemo(() => {
-    if (!availableModels) return [];
-
-    const filtered = availableModels.filter((model) => {
-      const matchesSearch =
-        model.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        model.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        model.provider.toLowerCase().includes(searchTerm.toLowerCase());
-
-      if (!matchesSearch) return false;
-
-      if (selectedFilters.includes("all")) return true;
-
-      const capabilities = getCapabilities(model.name, model.description);
-      const types = getModelType(
-        model.name,
-        typeof model.pricing === "string" ? model.pricing : null
-      );
-
-      return selectedFilters.some((filter) => {
-        switch (filter) {
-          case "image":
-            return model.provider === "openai" && imageCapableModels.includes(model.modelId);
-          case "vision":
-            return capabilities.some((cap) => cap.label === "Vision");
-          case "reasoning":
-            return capabilities.some((cap) => cap.label === "Reasoning");
-          case "code":
-            return capabilities.some((cap) => cap.label === "Code");
-          case "fast":
-            return capabilities.some((cap) => cap.label === "Fast");
-          case "experimental":
-            return types.some((type) => type.label === "Experimental Model");
-          case "premium":
-            return types.some(
-              (type) =>
-                type.label === "Premium Model" ||
-                type.label === "Premium Pricing"
-            );
-          case "direct":
-            return model.direct === true;
-          case "openrouter":
-            return model.direct === false;
-          case "google":
-            return model.provider.toLowerCase() === "google";
-          case "openai":
-            return model.provider.toLowerCase() === "openai";
-          case "anthropic":
-            return model.provider.toLowerCase() === "anthropic";
-          case "xai":
-            return model.provider.toLowerCase() === "xai";
-          case "deepseek":
-            return model.provider.toLowerCase() === "deepseek";
-          default:
-            return false;
-        }
-      });
-    });
-
-    return filtered;
-  }, [availableModels, searchTerm, selectedFilters]);
 
   const displayedModels = filteredModels.slice(0, displayedCount);
   const hasMore = displayedCount < filteredModels.length;
@@ -249,23 +54,6 @@ export default function Models() {
       setDisplayedCount((prev) => prev + 10);
       setLoading(false);
     }, 300);
-  };
-
-  const toggleFilter = (filter: FilterType) => {
-    if (filter === "all") {
-      setSelectedFilters(["all"]);
-    } else {
-      setSelectedFilters((prev) => {
-        const newFilters = prev.filter((f) => f !== "all");
-        if (newFilters.includes(filter)) {
-          const updated = newFilters.filter((f) => f !== filter);
-          return updated.length === 0 ? ["all"] : updated;
-        } else {
-          return [...newFilters, filter];
-        }
-      });
-    }
-    setDisplayedCount(50); // Reset pagination when filters change
   };
 
   const toggleModel = async (modelId: string) => {
@@ -335,8 +123,8 @@ export default function Models() {
         <div>
           <h2 className="text-xl font-bold sm:text-2xl">Models</h2>
           <p className="mt-2 text-sm text-muted-foreground/80 sm:text-base">
-            No models available. Make sure you have OpenRouter configured in
-            your API keys.
+            No models available. Make sure you have API keys configured for your
+            providers.
           </p>
         </div>
       </div>
@@ -395,155 +183,11 @@ export default function Models() {
           </div>
         )}
 
-        <div className="w-full flex flex-col md:flex-row items-baseline justify-between gap-3 sm:items-center sm:gap-2 my-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="whitespace-nowrap">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filter features/providers
-                  <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuCheckboxItem
-                  checked={selectedFilters.includes("all")}
-                  onCheckedChange={() => toggleFilter("all")}
-                >
-                  All Models
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={selectedFilters.includes("image")}
-                  onCheckedChange={() => toggleFilter("image")}
-                >
-                  <ImageIcon className="mr-2 h-4 w-4" />
-                  Image Generation
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={selectedFilters.includes("vision")}
-                  onCheckedChange={() => toggleFilter("vision")}
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  Vision
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={selectedFilters.includes("reasoning")}
-                  onCheckedChange={() => toggleFilter("reasoning")}
-                >
-                  <Brain className="mr-2 h-4 w-4" />
-                  Reasoning
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={selectedFilters.includes("code")}
-                  onCheckedChange={() => toggleFilter("code")}
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Code
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={selectedFilters.includes("fast")}
-                  onCheckedChange={() => toggleFilter("fast")}
-                >
-                  <Zap className="mr-2 h-4 w-4" />
-                  Fast
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={selectedFilters.includes("experimental")}
-                  onCheckedChange={() => toggleFilter("experimental")}
-                >
-                  <FlaskConical className="mr-2 h-4 w-4" />
-                  Experimental
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={selectedFilters.includes("premium")}
-                  onCheckedChange={() => toggleFilter("premium")}
-                >
-                  <Gem className="mr-2 h-4 w-4" />
-                  Premium
-                </DropdownMenuCheckboxItem>
-                <div className="border-t my-1" />
-                <DropdownMenuCheckboxItem
-                  checked={selectedFilters.includes("direct")}
-                  onCheckedChange={() => toggleFilter("direct")}
-                >
-                  <Key className="mr-2 h-4 w-4" />
-                  Direct API
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={selectedFilters.includes("openrouter")}
-                  onCheckedChange={() => toggleFilter("openrouter")}
-                >
-                  <OpenRouterIcon className="mr-2 h-4 w-4" />
-                  OpenRouter
-                </DropdownMenuCheckboxItem>
-                <div className="border-t my-1" />
-                <DropdownMenuCheckboxItem
-                  checked={selectedFilters.includes("openai")}
-                  onCheckedChange={() => toggleFilter("openai")}
-                >
-                  <div className="mr-2 h-4 w-4">
-                    <OpenAIIcon className="h-4 w-4" />
-                  </div>
-                  OpenAI
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={selectedFilters.includes("google")}
-                  onCheckedChange={() => toggleFilter("google")}
-                >
-                  <div className="mr-2 h-4 w-4">
-                    <GeminiIcon className="h-4 w-4" />
-                  </div>
-                  Google
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={selectedFilters.includes("anthropic")}
-                  onCheckedChange={() => toggleFilter("anthropic")}
-                >
-                  <div className="mr-2 h-4 w-4">
-                    <AnthropicIcon className="h-4 w-4" />
-                  </div>
-                  Anthropic
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={selectedFilters.includes("xai")}
-                  onCheckedChange={() => toggleFilter("xai")}
-                >
-                  <div className="mr-2 h-4 w-4">
-                    <GrokIcon className="h-4 w-4" />
-                  </div>
-                  xAI
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={selectedFilters.includes("deepseek")}
-                  onCheckedChange={() => toggleFilter("deepseek")}
-                >
-                  <div className="mr-2 h-4 w-4">
-                    <DeepSeekIcon className="h-4 w-4" />
-                  </div>
-                  DeepSeek
-                </DropdownMenuCheckboxItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="text-sm text-muted-foreground">
-              Showing {displayedModels.length} of {filteredModels.length} models
-            </div>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search models..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setDisplayedCount(50); // Reset pagination when searching
-                }}
-                className="pl-10 w-64"
-              />
-            </div>
-          </div>
-        </div>
+        <ModelFilter
+          setDisplayedCount={setDisplayedCount}
+          displayedCount={displayedCount}
+          filteredCount={filteredModels.length}
+        />
 
         <ScrollArea className="flex-1">
           <div className="space-y-4">
@@ -552,10 +196,7 @@ export default function Models() {
                 model.name,
                 model.description
               );
-              const modelTypes = getModelType(
-                model.name,
-                typeof model.pricing === "string" ? model.pricing : null
-              );
+
               const isEnabled = preferredModels.some(
                 (m) => m.model === model.modelId
               );
@@ -600,14 +241,14 @@ export default function Models() {
                           <p className="mt-1 text-sm text-muted-foreground">
                             {model.provider} •{" "}
                             {formatContextLength(model.contextLength || 0)}{" "}
-                            context   
+                            context
                           </p>
                         </div>
                       </div>
 
-                                            {(capabilities.length > 0 || 
-                        modelTypes.length > 0 || 
-                        (model.provider === "openai" && imageCapableModels.includes(model.modelId))) && (
+                      {(capabilities.length > 0 ||
+                        (model.provider === "openai" &&
+                          imageCapableModels.includes(model.modelId))) && (
                         <div className="flex flex-wrap gap-2">
                           {capabilities.map((capability, index) => (
                             <div
@@ -619,21 +260,14 @@ export default function Models() {
                             </div>
                           ))}
                           {model.provider === "openai" &&
-                            imageCapableModels.includes(model.modelId) && (
+                            imageCapableModels.includes(
+                              model.modelId.toLowerCase()
+                            ) && (
                               <div className="flex items-center gap-1 rounded-full bg-yellow-500/10 px-2 py-1 text-xs text-yellow-600 dark:text-yellow-400">
                                 <ImageIcon className="h-3 w-3" />
                                 Image Generation
                               </div>
                             )}
-                          {modelTypes.map((type, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-1 text-xs text-amber-600 dark:text-amber-400"
-                            >
-                              <type.icon className="h-3 w-3" />
-                              {type.label}
-                            </div>
-                          ))}
                         </div>
                       )}
 

@@ -15,7 +15,7 @@ export default function Home() {
     redirect("/chat");
   }
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-sidebar flex flex-col">
       {/* Theme toggle positioned at top right */}
       <div className="absolute top-6 right-6 z-10">
         <ModeToggle />
@@ -32,7 +32,7 @@ export default function Home() {
                 </span>
                 <br />
                 <span className="bg-gradient-to-r from-pink-700 via-rose-800 to-pink-900 dark:from-pink-500 dark:via-rose-400 dark:to-pink-600 bg-clip-text text-transparent">
-                                     <span className="underline decoration-pink-700 dark:decoration-pink-400 decoration-4 underline-offset-4">
+                  <span className="underline underline-offset-3 decoration-pink-700 dark:decoration-pink-400 decoration-4">
                     NOT
                   </span>{" "}
                   T3 Chat
@@ -47,7 +47,7 @@ export default function Home() {
           </div>
 
           {/* Auth Form Container */}
-          <div className="bg-card border border-border rounded-xl shadow-lg p-8">
+          <div className="bg-chat-background border border-border rounded-xl shadow-lg p-8">
             {isSignIn ? <SignIn /> : <Register />}
           </div>
 

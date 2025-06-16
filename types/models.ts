@@ -18,3 +18,20 @@ export interface UnifiedModel {
   capabilities?: JsonValue | null;
   direct: boolean; // true if hosted directly by provider, false if through proxy like OpenRouter
 }
+
+export type FilterType =
+  | "all"
+  | "vision"
+  | "reasoning"
+  | "code"
+  | "experimental"
+  | "premium"
+  | "fast"
+  | "direct"
+  | "openrouter"
+  | "google"
+  | "openai"
+  | "anthropic"
+  | "xai"
+  | "deepseek"
+  | "image";

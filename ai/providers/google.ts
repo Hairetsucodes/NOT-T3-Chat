@@ -118,7 +118,6 @@ export async function callGoogleStreaming(
           isThinkingModel,
           isWebSearch
         );
-        console.log("requestConfig", JSON.stringify(requestConfig, null, 2));
         const response = await ai.models.generateContentStream(requestConfig);
 
         for await (const chunk of response) {

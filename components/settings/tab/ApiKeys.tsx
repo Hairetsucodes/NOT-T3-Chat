@@ -48,18 +48,22 @@ export function ApiKeysTab() {
     }
 
     setIsLoading(true);
+    
+    // Optimistically update UI immediately
+    const newProvider = { id: apiKey.trim(), provider: finalProvider };
+    const originalProviders = [...activeProviders];
+    setActiveProviders([...activeProviders, newProvider]);
+    
     try {
       await createAPIKey(apiKey.trim(), finalProvider);
       toast.success("API key saved successfully");
-      setActiveProviders([
-        ...activeProviders,
-        { id: apiKey.trim(), provider: finalProvider },
-      ]);
       // Reset form
       setApiKey("");
       setSelectedProvider("");
       setCustomProviderName("");
     } catch (error) {
+      // Revert the optimistic update on error
+      setActiveProviders(originalProviders);
       console.error("Failed to save API key:", error);
       if (error instanceof Error) {
         // Handle specific error messages from server

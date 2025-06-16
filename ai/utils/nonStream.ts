@@ -25,7 +25,6 @@ export async function callProviderNonStreaming(
     headers: config.headers(apiKey),
     body: JSON.stringify(body),
   });
-
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(

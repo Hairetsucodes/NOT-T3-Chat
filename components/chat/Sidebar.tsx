@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -34,8 +34,6 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const [searchValue, setSearchValue] = useState("");
   const {
     conversations,
-    pinnedConversations,
-    unpinnedConversations,
     activeUser,
     setConversationId,
     setMessages,
@@ -44,6 +42,28 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     conversationId,
     isLoading,
   } = useContext(ChatContext);
+  const [searchResults, setSearchResults] =
+    useState<ConversationWithLoading[]>(conversations);
+
+  useEffect(() => {
+    if (searchValue) {
+      setSearchResults(
+        conversations.filter((conversation) =>
+          conversation.title.toLowerCase().includes(searchValue.toLowerCase())
+        )
+      );
+    } else {
+      setSearchResults(conversations);
+    }
+  }, [searchValue, conversations]);
+
+  const filteredPinnedConversations = searchResults.filter(
+    (conv) => conv.isPinned
+  );
+  const filteredUnpinnedConversations = searchResults.filter(
+    (conv) => !conv.isPinned
+  );
+
   return (
     <>
       {/* Sidebar - Hidden on desktop md+, toggleable on mobile */}
@@ -139,46 +159,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                       };
                     };
 
-                    // Group unpinned conversations by time
-                    const groupedConversations = unpinnedConversations.reduce(
-                      (groups, conversation) => {
-                        const updatedAt = conversation.updatedAt || new Date();
-                        const { label, daysAgo } = getTimeLabel(updatedAt);
-
-                        if (!groups[label]) {
-                          groups[label] = { conversations: [], daysAgo };
-                        }
-                        groups[label].conversations.push(conversation);
-                        return groups;
-                      },
-                      {} as Record<
-                        string,
-                        { conversations: typeof conversations; daysAgo: number }
-                      >
-                    );
-
-                    const sortedGroups = Object.entries(
-                      groupedConversations
-                    ).sort(([, a], [, b]) => {
-                      return a.daysAgo - b.daysAgo;
-                    });
-
-                    if (conversations.length === 0) {
-                      return (
-                        <div className="w-full text-sm">
-                          <ul className="flex w-full min-w-0 flex-col gap-1">
-                            <li className="group/menu-item relative">
-                              <div className="relative flex h-9 w-full items-center overflow-hidden rounded-lg px-2 py-1 text-sm text-muted-foreground/50">
-                                No conversations yet
-                              </div>
-                            </li>
-                          </ul>
-                        </div>
-                      );
-                    }
-
                     const renderConversationList = (
-                      conversations: (typeof groupedConversations)[0]["conversations"]
+                      conversations: typeof searchResults
                     ) => (
                       <div className="w-full text-sm">
                         <ul className="flex w-full min-w-0 flex-col gap-1">
@@ -303,7 +285,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                     return (
                       <>
                         {/* Pinned conversations section */}
-                        {pinnedConversations.length > 0 && (
+                        {filteredPinnedConversations.length > 0 && (
                           <div className="mb-4">
                             <div className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 ">
                               <span className="text-color-heading flex items-center gap-1">
@@ -311,26 +293,67 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                                 Pinned
                               </span>
                             </div>
-                            {renderConversationList(pinnedConversations)}
+                            {renderConversationList(
+                              filteredPinnedConversations
+                            )}
                           </div>
                         )}
 
                         {/* Time-grouped unpinned conversations */}
-                        {sortedGroups.map(
-                          ([
-                            timeLabel,
-                            { conversations: groupConversations },
-                          ]) => (
-                            <div key={timeLabel} className="mb-4">
-                              <div className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 ">
-                                <span className="text-color-heading font-semibold">
-                                  {timeLabel}
-                                </span>
-                              </div>
-                              {renderConversationList(groupConversations)}
-                            </div>
-                          )
-                        )}
+                        {(() => {
+                          // Group unpinned conversations by time
+                          const groupedConversations =
+                            filteredUnpinnedConversations.reduce(
+                              (groups, conversation) => {
+                                const updatedAt =
+                                  conversation.updatedAt || new Date();
+                                const { label, daysAgo } =
+                                  getTimeLabel(updatedAt);
+
+                                if (!groups[label]) {
+                                  groups[label] = {
+                                    conversations: [],
+                                    daysAgo,
+                                  };
+                                }
+                                groups[label].conversations.push(conversation);
+                                return groups;
+                              },
+                              {} as Record<
+                                string,
+                                {
+                                  conversations: typeof searchResults;
+                                  daysAgo: number;
+                                }
+                              >
+                            );
+
+                          const sortedGroups = Object.entries(
+                            groupedConversations
+                          ).sort(([, a], [, b]) => {
+                            return a.daysAgo - b.daysAgo;
+                          });
+
+                          return (
+                            <>
+                              {sortedGroups.map(
+                                ([
+                                  timeLabel,
+                                  { conversations: groupConversations },
+                                ]) => (
+                                  <div key={timeLabel} className="mb-4">
+                                    <div className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 ">
+                                      <span className="text-color-heading font-semibold">
+                                        {timeLabel}
+                                      </span>
+                                    </div>
+                                    {renderConversationList(groupConversations)}
+                                  </div>
+                                )
+                              )}
+                            </>
+                          );
+                        })()}
                       </>
                     );
                   })()}
