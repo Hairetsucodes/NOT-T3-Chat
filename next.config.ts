@@ -4,10 +4,16 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'lh3.googleusercontent.com',
-        port: '',
-        pathname: '/**',
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "avatars.githubusercontent.com",
+        port: "",
+        pathname: "/**",
       },
     ],
   },
@@ -15,11 +21,11 @@ const nextConfig: NextConfig = {
     return [
       {
         // Apply to all page routes (not API routes)
-        source: '/((?!api/).*)',
+        source: "/((?!api/).*)",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'public, max-age=0, must-revalidate',
+            key: "Cache-Control",
+            value: "public, max-age=0, must-revalidate",
           },
         ],
       },
