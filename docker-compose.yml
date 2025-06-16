@@ -6,15 +6,13 @@ services:
     volumes:
       # Mount a volume for the SQLite database to persist data
       - ./docker-data:/app/data
+    # Use .env file from docker-data folder if it exists
+    env_file:
+      - ./docker-data/.env
     environment:
-      # Database configuration for container
-      - DATABASE_URL=file:/app/data/prod.db
-      # NextAuth configuration
-      - NEXTAUTH_URL=http://localhost:3000
-      # AUTH_SECRET will be auto-generated and exported by startup script
-    # Uncomment the following lines if you want to use an external .env file
-    # env_file:
-    #   - .env.docker
+      # Fallback values if not provided in .env file
+      - DATABASE_URL=${DATABASE_URL:-file:/app/data/prod.db}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/auth/session"]

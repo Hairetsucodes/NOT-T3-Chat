@@ -13,8 +13,6 @@ COPY package.json pnpm-lock.yaml ./
 # Install all dependencies (skip postinstall scripts)
 RUN pnpm install --force --ignore-scripts
 
-# Install missing dependencies explicitly
-RUN pnpm add hast-util-to-jsx-runtime @modelcontextprotocol/sdk
 
 # Copy source code
 COPY . .
@@ -62,27 +60,17 @@ COPY .env* ./
 # Create startup script
 RUN echo '#!/bin/sh' > /app/start.sh && \
     echo '' >> /app/start.sh && \
-    echo '# Check if .env file exists in data volume or app directory' >> /app/start.sh && \
-    echo 'if [ -f "/app/data/.env" ]; then' >> /app/start.sh && \
-    echo '    echo "Using .env file from data volume..."' >> /app/start.sh && \
-    echo '    # Load environment variables from .env file in data volume' >> /app/start.sh && \
-    echo '    export $(grep -v "^#" /app/data/.env | xargs)' >> /app/start.sh && \
-    echo '    echo "Skipping database initialization (using .env configuration)"' >> /app/start.sh && \
-    echo 'elif [ -f "/app/.env" ]; then' >> /app/start.sh && \
-    echo '    echo "Using .env file from app directory..."' >> /app/start.sh && \
-    echo '    # Load environment variables from .env file in app directory' >> /app/start.sh && \
-    echo '    export $(grep -v "^#" /app/.env | xargs)' >> /app/start.sh && \
-    echo '    echo "Skipping database initialization (using .env configuration)"' >> /app/start.sh && \
-    echo 'else' >> /app/start.sh && \
-    echo '    echo "No .env file found, using production defaults..."' >> /app/start.sh && \
+    echo '# Check if we are using custom database (non-SQLite) or production SQLite' >> /app/start.sh && \
+    echo 'if echo "$DATABASE_URL" | grep -q "^file:/app/data/prod.db"; then' >> /app/start.sh && \
+    echo '    echo "Production SQLite mode detected..."' >> /app/start.sh && \
     echo '    # Generate and persist AUTH_SECRET if not provided' >> /app/start.sh && \
     echo '    if [ -z "$AUTH_SECRET" ]; then' >> /app/start.sh && \
     echo '        if [ -f "/app/data/.auth_secret" ]; then' >> /app/start.sh && \
     echo '            echo "Loading existing AUTH_SECRET..."' >> /app/start.sh && \
-    echo '            AUTH_SECRET=$(cat /app/data/.auth_secret)' >> /app/start.sh && \
+    echo '            export AUTH_SECRET=$(cat /app/data/.auth_secret)' >> /app/start.sh && \
     echo '        else' >> /app/start.sh && \
     echo '            echo "Generating new AUTH_SECRET..."' >> /app/start.sh && \
-    echo '            AUTH_SECRET=$(node -e "console.log(require('\''crypto'\'').randomBytes(32).toString('\''hex'\''))")' >> /app/start.sh && \
+    echo '            export AUTH_SECRET=$(node -e "console.log(require('\''crypto'\'').randomBytes(32).toString('\''hex'\''))")' >> /app/start.sh && \
     echo '            echo "$AUTH_SECRET" > /app/data/.auth_secret' >> /app/start.sh && \
     echo '            chmod 600 /app/data/.auth_secret' >> /app/start.sh && \
     echo '        fi' >> /app/start.sh && \
@@ -91,19 +79,22 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
     echo '    if [ -z "$API_KEY_SALT" ]; then' >> /app/start.sh && \
     echo '        if [ -f "/app/data/.api_key_salt" ]; then' >> /app/start.sh && \
     echo '            echo "Loading existing API_KEY_SALT..."' >> /app/start.sh && \
-    echo '            API_KEY_SALT=$(cat /app/data/.api_key_salt)' >> /app/start.sh && \
+    echo '            export API_KEY_SALT=$(cat /app/data/.api_key_salt)' >> /app/start.sh && \
     echo '        else' >> /app/start.sh && \
     echo '            echo "Generating new API_KEY_SALT..."' >> /app/start.sh && \
-    echo '            API_KEY_SALT=$(node -e "console.log(require('\''crypto'\'').randomBytes(32).toString('\''hex'\''))")' >> /app/start.sh && \
+    echo '            export API_KEY_SALT=$(node -e "console.log(require('\''crypto'\'').randomBytes(32).toString('\''hex'\''))")' >> /app/start.sh && \
     echo '            echo "$API_KEY_SALT" > /app/data/.api_key_salt' >> /app/start.sh && \
     echo '            chmod 600 /app/data/.api_key_salt' >> /app/start.sh && \
     echo '        fi' >> /app/start.sh && \
     echo '    fi' >> /app/start.sh && \
     echo '    # Initialize database if it does not exist (production mode only)' >> /app/start.sh && \
     echo '    if [ ! -f "/app/data/prod.db" ]; then' >> /app/start.sh && \
-    echo '        echo "Initializing production database..."' >> /app/start.sh && \
-    echo '        AUTH_SECRET="$AUTH_SECRET" API_KEY_SALT="$API_KEY_SALT" pnpx prisma db push --skip-generate' >> /app/start.sh && \
+    echo '        echo "Initializing production SQLite database..."' >> /app/start.sh && \
+    echo '        pnpx prisma db push --skip-generate' >> /app/start.sh && \
     echo '    fi' >> /app/start.sh && \
+    echo 'else' >> /app/start.sh && \
+    echo '    echo "Custom database configuration detected (using .env settings)..."' >> /app/start.sh && \
+    echo '    echo "Skipping SQLite database initialization"' >> /app/start.sh && \
     echo 'fi' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo '# Start the application' >> /app/start.sh && \
