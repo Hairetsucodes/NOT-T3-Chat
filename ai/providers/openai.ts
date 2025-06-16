@@ -13,6 +13,8 @@ import { imageCapableModels } from "@/constants/imageModels";
 import fs from "fs";
 import { createAttachmentApi } from "@/lib/apiServerActions/chat";
 
+const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+
 export const openaiConfig: ProviderConfig = {
   endpoint: "https://api.openai.com/v1/chat/completions",
   headers: (apiKey) => ({
@@ -119,7 +121,7 @@ export async function callOpenAIStreaming(
             controller.enqueue(
               new TextEncoder().encode(
                 `data: ${JSON.stringify({
-                  partial_image: `![${filename}](${`http://localhost:3000/api/images/${filename}`}) `,
+                  partial_image: `![${filename}](${`${baseUrl}/api/images/${filename}`}) `,
                 })}\n\n`
               )
             );
@@ -153,7 +155,7 @@ export async function callOpenAIStreaming(
             controller.enqueue(
               new TextEncoder().encode(
                 `data: ${JSON.stringify({
-                  image_url: `![${filename}](${`http://localhost:3000/api/images/${userId}-${filename}`}) [Download](${`http://localhost:3000/api/images/${userId}-${filename}?download=true`})\n\n `,
+                  image_url: `![${filename}](${`${baseUrl}/api/images/${userId}-${filename}`}) [Download](${`${baseUrl}/api/images/${userId}-${filename}?download=true`})\n\n `,
                 })}\n\n`
               )
             );
