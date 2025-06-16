@@ -3,10 +3,13 @@ import OpenAI from "openai";
 import { imageCapableModels } from "@/constants/imageModels";
 import fs from "fs";
 import { createAttachmentApi } from "@/lib/apiServerActions/chat";
-import { parseOpenAIError, createModelAccessErrorMessage, createRateLimitErrorMessage } from "../utils/errors";
+import {
+  parseOpenAIError,
+  createModelAccessErrorMessage,
+  createRateLimitErrorMessage,
+} from "../utils/errors";
 
 const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-
 
 export async function callOpenAIStreaming(
   userId: string,
@@ -102,15 +105,7 @@ export async function callOpenAIStreaming(
                 )
               );
             }
-            if (event.type === "response.image_generation_call.completed") {
-              controller.enqueue(
-                new TextEncoder().encode(
-                  `data: ${JSON.stringify({
-                    content: "Image generation completed!",
-                  })}\n\n`
-                )
-              );
-            }
+
             if (
               event.type === "response.output_item.done" &&
               event.item.type === "image_generation_call"
@@ -157,18 +152,22 @@ export async function callOpenAIStreaming(
           controller.close();
         } catch (error) {
           // Parse the error and create appropriate user-friendly message
-          const { message, isModelAccessError, isRateLimitError } = parseOpenAIError(error);
-          
+          const { message, isModelAccessError, isRateLimitError } =
+            parseOpenAIError(error);
+
           let userFriendlyMessage: string;
-          
+
           if (isModelAccessError) {
-            userFriendlyMessage = createModelAccessErrorMessage(modelId, message);
+            userFriendlyMessage = createModelAccessErrorMessage(
+              modelId,
+              message
+            );
           } else if (isRateLimitError) {
             userFriendlyMessage = createRateLimitErrorMessage(message);
           } else {
             userFriendlyMessage = `❌ **OpenAI API Error**: ${message}`;
           }
-          
+
           // Stream the error message
           controller.enqueue(
             new TextEncoder().encode(
@@ -181,10 +180,11 @@ export async function callOpenAIStreaming(
     });
   } catch (error) {
     // Handle errors that occur before streaming starts
-    const { message, isModelAccessError, isRateLimitError } = parseOpenAIError(error);
-    
+    const { message, isModelAccessError, isRateLimitError } =
+      parseOpenAIError(error);
+
     let userFriendlyMessage: string;
-    
+
     if (isModelAccessError) {
       userFriendlyMessage = createModelAccessErrorMessage(modelId, message);
     } else if (isRateLimitError) {
@@ -192,7 +192,7 @@ export async function callOpenAIStreaming(
     } else {
       userFriendlyMessage = `❌ **OpenAI API Error**: ${message}`;
     }
-    
+
     return new ReadableStream({
       start(controller) {
         controller.enqueue(
@@ -235,10 +235,11 @@ export async function callOpenAINonStreaming(
 
     return content;
   } catch (error) {
-    const { message, isModelAccessError, isRateLimitError } = parseOpenAIError(error);
-    
+    const { message, isModelAccessError, isRateLimitError } =
+      parseOpenAIError(error);
+
     let userFriendlyMessage: string;
-    
+
     if (isModelAccessError) {
       userFriendlyMessage = createModelAccessErrorMessage(modelId, message);
     } else if (isRateLimitError) {
@@ -246,7 +247,7 @@ export async function callOpenAINonStreaming(
     } else {
       userFriendlyMessage = `OpenAI API Error: ${message}`;
     }
-    
+
     throw new Error(userFriendlyMessage);
   }
 }
