@@ -3,7 +3,7 @@
 import React from "react";
 import { notFound } from "next/navigation";
 import { getSharedChat } from "@/data/conversations";
-import SharedChat from "@/components/chat/SharedChat";
+import SharedChat from "@/components/chat/Shared";
 import { transformDatabaseMessages } from "@/lib/utils/message-transform";
 
 export default async function SharedPage({

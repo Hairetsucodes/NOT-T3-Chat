@@ -1,9 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Globe, Paperclip, Share2, Image as ImageIcon } from "lucide-react";
+import { Globe, Paperclip, Image as ImageIcon } from "lucide-react";
 import { updateIsWebSearch } from "@/data/settings";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { ChatContext } from "@/context/ChatContext";
 import { updateIsPublic } from "@/data/shared";
 import {
@@ -13,6 +13,9 @@ import {
 } from "@/components/ui/tooltip";
 import { imageCapableModels } from "@/constants/imageModels";
 import { updateIsImageGeneration } from "@/data/settings";
+import { toast } from "sonner";
+import ShareDialog from "./ShareDialog";
+
 export function InputActions() {
   const {
     chatSettings,
@@ -21,12 +24,72 @@ export function InputActions() {
     conversationId,
     setConversations,
   } = useContext(ChatContext);
+  const [copied, setCopied] = useState(false);
+
   const isWebSearch = chatSettings?.isWebSearch;
   const provider = chatSettings?.provider;
   const isImageGeneration = chatSettings?.isImageGeneration;
   const isPublic = conversations.find(
     (conversation) => conversation.id === conversationId
   )?.isPublic;
+
+  const shareUrl = conversationId
+    ? `${window.location.origin}/shared/${conversationId}`
+    : "";
+
+  const handleCopyLink = async () => {
+    if (shareUrl) {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        toast.success("Share link copied to clipboard!");
+      } catch (error) {
+        console.error("Failed to copy link:", error);
+        toast.error("Failed to copy link to clipboard");
+      }
+    }
+  };
+
+  const togglePublic = async (makePublic: boolean) => {
+    if (!conversationId) {
+      toast.error("No conversation selected");
+      return;
+    }
+
+    try {
+      // Optimistic update
+      setConversations(
+        conversations.map((conversation) =>
+          conversation.id === conversationId
+            ? { ...conversation, isPublic: makePublic }
+            : conversation
+        )
+      );
+
+      // Update on server
+      await updateIsPublic(conversationId, makePublic);
+
+      // Show success message and close dialog
+      toast.success(
+        makePublic
+          ? "Chat is now public! Link generated."
+          : "Chat is now private."
+      );
+    } catch (error) {
+      // Revert optimistic update on error
+      setConversations(
+        conversations.map((conversation) =>
+          conversation.id === conversationId
+            ? { ...conversation, isPublic: !makePublic }
+            : conversation
+        )
+      );
+      toast.error("Failed to update chat privacy");
+      console.error("Error updating privacy:", error);
+    }
+  };
+
   return (
     <>
       <Tooltip>
@@ -78,37 +141,13 @@ export function InputActions() {
           <p>Attach files</p>
         </TooltipContent>
       </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            className={`text-xs h-auto gap-2 rounded-full border border-solid border-secondary-foreground/10 px-2 py-1.5 pr-2.5 text-muted-foreground max-sm:p-2 ${
-              isPublic
-                ? "border-primary bg-primary text-primary-foreground"
-                : ""
-            }`}
-            aria-label="Share chat"
-            type="button"
-            onClick={() => {
-              setConversations(
-                conversations.map((conversation) =>
-                  conversation.id === conversationId
-                    ? { ...conversation, isPublic: !isPublic }
-                    : conversation
-                )
-              );
-              if (conversationId) {
-                updateIsPublic(conversationId, !isPublic);
-              }
-            }}
-          >
-            <Share2 className="size-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Share chat</p>
-        </TooltipContent>
-      </Tooltip>
+      <ShareDialog
+        isPublic={isPublic || false}
+        shareUrl={shareUrl}
+        handleCopyLink={handleCopyLink}
+        copied={copied}
+        togglePublic={togglePublic}
+      />
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
