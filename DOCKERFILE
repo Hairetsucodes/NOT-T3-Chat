@@ -62,10 +62,15 @@ COPY .env* ./
 # Create startup script
 RUN echo '#!/bin/sh' > /app/start.sh && \
     echo '' >> /app/start.sh && \
-    echo '# Check if .env file exists' >> /app/start.sh && \
-    echo 'if [ -f "/app/.env" ]; then' >> /app/start.sh && \
-    echo '    echo "Using .env file configuration..."' >> /app/start.sh && \
-    echo '    # Load environment variables from .env file' >> /app/start.sh && \
+    echo '# Check if .env file exists in data volume or app directory' >> /app/start.sh && \
+    echo 'if [ -f "/app/data/.env" ]; then' >> /app/start.sh && \
+    echo '    echo "Using .env file from data volume..."' >> /app/start.sh && \
+    echo '    # Load environment variables from .env file in data volume' >> /app/start.sh && \
+    echo '    export $(grep -v "^#" /app/data/.env | xargs)' >> /app/start.sh && \
+    echo '    echo "Skipping database initialization (using .env configuration)"' >> /app/start.sh && \
+    echo 'elif [ -f "/app/.env" ]; then' >> /app/start.sh && \
+    echo '    echo "Using .env file from app directory..."' >> /app/start.sh && \
+    echo '    # Load environment variables from .env file in app directory' >> /app/start.sh && \
     echo '    export $(grep -v "^#" /app/.env | xargs)' >> /app/start.sh && \
     echo '    echo "Skipping database initialization (using .env configuration)"' >> /app/start.sh && \
     echo 'else' >> /app/start.sh && \
