@@ -52,7 +52,7 @@ export default function ShareDialog({
         </TooltipContent>
       </Tooltip>
 
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg bg-chat-background">
         <DialogHeader className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
@@ -97,7 +97,9 @@ export default function ShareDialog({
                     size="sm"
                     onClick={handleCopyLink}
                     className={`shrink-0 min-w-[80px] transition-all duration-200 ${
-                      copied ? "bg-green-600 hover:bg-green-700" : ""
+                      copied
+                        ? "bg-green-600 hover:bg-green-700 text-white"
+                        : "text-primary"
                     }`}
                   >
                     {copied ? (
@@ -141,7 +143,10 @@ export default function ShareDialog({
 
         <DialogFooter className="gap-2">
           {!isPublic ? (
-            <Button onClick={() => togglePublic(true)} className="flex-1">
+            <Button
+              onClick={() => togglePublic(true)}
+              className="flex-1 bg-primary text-primary-foreground"
+            >
               <Share2 className="h-4 w-4 mr-2" />
               Make Public & Generate Link
             </Button>

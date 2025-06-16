@@ -332,6 +332,7 @@ Add any other context about the problem here.
           onClick={openGitHubIssue}
           className="flex items-center gap-2"
           disabled={!formData.title.trim()}
+          variant="ghost"
         >
           <ExternalLink className="h-4 w-4" />
           Submit to GitHub

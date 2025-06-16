@@ -10,15 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useState, useContext } from "react";
 import { toast } from "sonner";
 import { Loader2, Plus, X } from "lucide-react";
@@ -33,7 +25,6 @@ const CustomizationBackground = ({
 }) => (
   <div className="relative h-full flex flex-col bg-chat-background">
     {/* Background layers */}
-
     {children}
   </div>
 );
@@ -363,193 +354,6 @@ export function CustomizationTab() {
                 </Button>
               </div>
             </form>
-          </div>
-
-          {/* Visual Options Section */}
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-foreground/90">
-              Visual Options
-            </h2>
-            <div className="space-y-6 py-2">
-              {/* Theme Toggles */}
-              <div className="flex items-center justify-between gap-x-1">
-                <div className="space-y-0.5">
-                  <Label className="font-medium text-base text-foreground/80">
-                    Boring Theme
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    If you think the pink is too much, turn this on to tone it
-                    down.
-                  </p>
-                </div>
-                <Switch
-                  checked={boringTheme}
-                  onCheckedChange={(value) => setBoringTheme(value)}
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="flex items-center justify-between gap-x-1">
-                <div className="space-y-0.5">
-                  <Label className="font-medium text-base text-foreground/80">
-                    Hide Personal Information
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Hides your name and email from the UI.
-                  </p>
-                </div>
-                <Switch
-                  checked={hidePersonalInfo}
-                  onCheckedChange={(value) => setHidePersonalInfo(value)}
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="flex items-center justify-between gap-x-1">
-                <div className="space-y-0.5">
-                  <Label className="font-medium text-base text-foreground/80">
-                    Disable Thematic Breaks
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Hides horizontal lines in chat messages. (Some browsers have
-                    trouble rendering these, turn off if you have bugs with
-                    duplicated lines)
-                  </p>
-                </div>
-                <Switch
-                  checked={disableThematicBreaks}
-                  onCheckedChange={(value) => setDisableThematicBreaks(value)}
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="flex items-center justify-between gap-x-1">
-                <div className="space-y-0.5">
-                  <Label className="font-medium text-base text-foreground/80">
-                    Stats for Nerds
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Enables more insights into message stats including tokens
-                    per second, time to first token, and estimated tokens in the
-                    message.
-                  </p>
-                </div>
-                <Switch
-                  checked={statsForNerds}
-                  onCheckedChange={(value) => setStatsForNerds(value)}
-                  disabled={isLoading}
-                />
-              </div>
-
-              {/* Font Selection */}
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                  <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <div className="space-y-0.5">
-                        <Label className="font-medium text-base text-foreground/80">
-                          Main Text Font
-                        </Label>
-                        <p className="text-sm text-muted-foreground">
-                          Used in general text throughout the app.
-                        </p>
-                      </div>
-                      <Select
-                        value={mainFont}
-                        onValueChange={(value) => setMainFont(value)}
-                        disabled={isLoading}
-                      >
-                        <SelectTrigger className="w-full bg-chat-input-background/80 border-chat-border/60 text-foreground">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Inter">
-                            Inter{" "}
-                            <span className="text-xs text-muted-foreground">
-                              (default)
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="Proxima Vara">
-                            Proxima Vara
-                          </SelectItem>
-                          <SelectItem value="System Font">
-                            System Font
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <div className="space-y-0.5">
-                        <Label className="font-medium text-base text-foreground/80">
-                          Code Font
-                        </Label>
-                        <p className="text-sm text-muted-foreground">
-                          Used in code blocks and inline code in chat messages.
-                        </p>
-                      </div>
-                      <Select
-                        value={codeFont}
-                        onValueChange={(value) => setCodeFont(value)}
-                        disabled={isLoading}
-                      >
-                        <SelectTrigger className="w-full bg-chat-input-background/80 border-chat-border/60 text-foreground">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="mono">
-                            System Monospace Font
-                          </SelectItem>
-                          <SelectItem value="fira">Fira Code</SelectItem>
-                          <SelectItem value="jetbrains">
-                            JetBrains Mono
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Font Preview */}
-                  <div>
-                    <h3 className="text-base font-medium text-foreground/80 mb-4">
-                      Fonts Preview
-                    </h3>
-                    <div className="rounded-lg border border-dashed border-input p-4 bg-gradient-chat-overlay/30">
-                      <div className="space-y-4">
-                        {/* User message */}
-                        <div className="flex justify-end">
-                          <div className="group relative inline-block max-w-[80%] break-words rounded-xl border border-secondary/50 bg-secondary/50 px-4 py-3 text-left text-foreground">
-                            Can you write me a simple hello world program?
-                          </div>
-                        </div>
-
-                        {/* Assistant message */}
-                        <div className="mb-2 mt-4">
-                          <div className="max-w-[80%] text-foreground">
-                            Sure, here you go:
-                          </div>
-                        </div>
-
-                        {/* Code block */}
-                        <div className="relative flex w-full flex-col">
-                          <div className="rounded-t bg-secondary px-4 py-2 text-sm text-secondary-foreground">
-                            <span className="font-mono">typescript</span>
-                          </div>
-                          <div className="bg-chat-accent text-sm text-secondary-foreground rounded-b p-4">
-                            <pre className="font-mono text-sm">
-                              {`function greet(name: string) {
-  console.log(\`Hello, \${name}!\`);
-  return true;
-}`}
-                            </pre>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>
