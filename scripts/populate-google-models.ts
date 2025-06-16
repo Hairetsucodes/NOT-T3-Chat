@@ -248,10 +248,10 @@ export async function populateGoogleModels(apiKey: string) {
                 enhancement?.maxOutput || model.outputTokenLimit || null,
               pricing: enhancement?.pricing
                 ? JSON.stringify(enhancement.pricing)
-                : null,
+                : undefined,
               capabilities: enhancement?.capabilities
                 ? JSON.stringify(enhancement.capabilities)
-                : null,
+                : undefined,
               isActive: true,
             },
           });

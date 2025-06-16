@@ -205,10 +205,10 @@ export async function populateAnthropicModels(apiKey: string) {
               maxOutput: enhancement?.maxOutput || null,
               pricing: enhancement?.pricing
                 ? JSON.stringify(enhancement.pricing)
-                : null,
+                : undefined,
               capabilities: enhancement?.capabilities
                 ? JSON.stringify(enhancement.capabilities)
-                : null,
+                : undefined,
               createdAt: new Date(model.created_at),
               isActive: true,
             },

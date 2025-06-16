@@ -40,10 +40,8 @@ RUN mkdir -p /app/data
 # Set environment to production
 ENV NODE_ENV=production
 
-# Set default database location for container
+# Default environment variables (will be overridden by .env if present)
 ENV DATABASE_URL="file:/app/data/prod.db"
-
-# Set default NextAuth URL for container
 ENV NEXTAUTH_URL="http://localhost:3000"
 
 # Copy built application from base stage
@@ -58,43 +56,53 @@ COPY --from=base /app/node_modules ./node_modules
 COPY --from=base /app/package.json ./package.json
 COPY --from=base /app/prisma ./prisma
 
+# Copy .env file if it exists (optional)
+COPY .env* ./
+
 # Create startup script
 RUN echo '#!/bin/sh' > /app/start.sh && \
     echo '' >> /app/start.sh && \
-    echo '# Generate and persist AUTH_SECRET if not provided' >> /app/start.sh && \
-    echo 'if [ -z "$AUTH_SECRET" ]; then' >> /app/start.sh && \
-    echo '    if [ -f "/app/data/.auth_secret" ]; then' >> /app/start.sh && \
-    echo '        echo "Loading existing AUTH_SECRET..."' >> /app/start.sh && \
-    echo '        AUTH_SECRET=$(cat /app/data/.auth_secret)' >> /app/start.sh && \
-    echo '    else' >> /app/start.sh && \
-    echo '        echo "Generating new AUTH_SECRET..."' >> /app/start.sh && \
-    echo '        AUTH_SECRET=$(node -e "console.log(require('\''crypto'\'').randomBytes(32).toString('\''hex'\''))")' >> /app/start.sh && \
-    echo '        echo "$AUTH_SECRET" > /app/data/.auth_secret' >> /app/start.sh && \
-    echo '        chmod 600 /app/data/.auth_secret' >> /app/start.sh && \
+    echo '# Check if .env file exists' >> /app/start.sh && \
+    echo 'if [ -f "/app/.env" ]; then' >> /app/start.sh && \
+    echo '    echo "Using .env file configuration..."' >> /app/start.sh && \
+    echo '    # Load environment variables from .env file' >> /app/start.sh && \
+    echo '    export $(grep -v "^#" /app/.env | xargs)' >> /app/start.sh && \
+    echo '    echo "Skipping database initialization (using .env configuration)"' >> /app/start.sh && \
+    echo 'else' >> /app/start.sh && \
+    echo '    echo "No .env file found, using production defaults..."' >> /app/start.sh && \
+    echo '    # Generate and persist AUTH_SECRET if not provided' >> /app/start.sh && \
+    echo '    if [ -z "$AUTH_SECRET" ]; then' >> /app/start.sh && \
+    echo '        if [ -f "/app/data/.auth_secret" ]; then' >> /app/start.sh && \
+    echo '            echo "Loading existing AUTH_SECRET..."' >> /app/start.sh && \
+    echo '            AUTH_SECRET=$(cat /app/data/.auth_secret)' >> /app/start.sh && \
+    echo '        else' >> /app/start.sh && \
+    echo '            echo "Generating new AUTH_SECRET..."' >> /app/start.sh && \
+    echo '            AUTH_SECRET=$(node -e "console.log(require('\''crypto'\'').randomBytes(32).toString('\''hex'\''))")' >> /app/start.sh && \
+    echo '            echo "$AUTH_SECRET" > /app/data/.auth_secret' >> /app/start.sh && \
+    echo '            chmod 600 /app/data/.auth_secret' >> /app/start.sh && \
+    echo '        fi' >> /app/start.sh && \
+    echo '    fi' >> /app/start.sh && \
+    echo '    # Generate and persist API_KEY_SALT if not provided' >> /app/start.sh && \
+    echo '    if [ -z "$API_KEY_SALT" ]; then' >> /app/start.sh && \
+    echo '        if [ -f "/app/data/.api_key_salt" ]; then' >> /app/start.sh && \
+    echo '            echo "Loading existing API_KEY_SALT..."' >> /app/start.sh && \
+    echo '            API_KEY_SALT=$(cat /app/data/.api_key_salt)' >> /app/start.sh && \
+    echo '        else' >> /app/start.sh && \
+    echo '            echo "Generating new API_KEY_SALT..."' >> /app/start.sh && \
+    echo '            API_KEY_SALT=$(node -e "console.log(require('\''crypto'\'').randomBytes(32).toString('\''hex'\''))")' >> /app/start.sh && \
+    echo '            echo "$API_KEY_SALT" > /app/data/.api_key_salt' >> /app/start.sh && \
+    echo '            chmod 600 /app/data/.api_key_salt' >> /app/start.sh && \
+    echo '        fi' >> /app/start.sh && \
+    echo '    fi' >> /app/start.sh && \
+    echo '    # Initialize database if it does not exist (production mode only)' >> /app/start.sh && \
+    echo '    if [ ! -f "/app/data/prod.db" ]; then' >> /app/start.sh && \
+    echo '        echo "Initializing production database..."' >> /app/start.sh && \
+    echo '        AUTH_SECRET="$AUTH_SECRET" API_KEY_SALT="$API_KEY_SALT" pnpx prisma db push --skip-generate' >> /app/start.sh && \
     echo '    fi' >> /app/start.sh && \
     echo 'fi' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
-    echo '# Generate and persist API_KEY_SALT if not provided' >> /app/start.sh && \
-    echo 'if [ -z "$API_KEY_SALT" ]; then' >> /app/start.sh && \
-    echo '    if [ -f "/app/data/.api_key_salt" ]; then' >> /app/start.sh && \
-    echo '        echo "Loading existing API_KEY_SALT..."' >> /app/start.sh && \
-    echo '        API_KEY_SALT=$(cat /app/data/.api_key_salt)' >> /app/start.sh && \
-    echo '    else' >> /app/start.sh && \
-    echo '        echo "Generating new API_KEY_SALT..."' >> /app/start.sh && \
-    echo '        API_KEY_SALT=$(node -e "console.log(require('\''crypto'\'').randomBytes(32).toString('\''hex'\''))")' >> /app/start.sh && \
-    echo '        echo "$API_KEY_SALT" > /app/data/.api_key_salt' >> /app/start.sh && \
-    echo '        chmod 600 /app/data/.api_key_salt' >> /app/start.sh && \
-    echo '    fi' >> /app/start.sh && \
-    echo 'fi' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# Initialize database if it does not exist' >> /app/start.sh && \
-    echo 'if [ ! -f "/app/data/prod.db" ]; then' >> /app/start.sh && \
-    echo '    echo "Initializing database..."' >> /app/start.sh && \
-    echo '    AUTH_SECRET="$AUTH_SECRET" API_KEY_SALT="$API_KEY_SALT" pnpx prisma db push --skip-generate' >> /app/start.sh && \
-    echo 'fi' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# Start the application with the secrets' >> /app/start.sh && \
-    echo 'AUTH_SECRET="$AUTH_SECRET" API_KEY_SALT="$API_KEY_SALT" exec pnpm start' >> /app/start.sh
+    echo '# Start the application' >> /app/start.sh && \
+    echo 'exec pnpm start' >> /app/start.sh
 
 # Make the startup script executable
 RUN chmod +x /app/start.sh

@@ -9,7 +9,7 @@ yarn-error.log*
 out
 
 # Environment files
-.env
+# .env - Allow .env to be copied for optional use
 .env.local
 .env.development.local
 .env.test.local

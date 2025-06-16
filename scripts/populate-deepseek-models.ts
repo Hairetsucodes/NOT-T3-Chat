@@ -172,10 +172,10 @@ export async function populateDeepSeekModels(apiKey: string) {
               maxOutput: enhancement?.maxOutput || null,
               pricing: enhancement?.pricing
                 ? JSON.stringify(enhancement.pricing)
-                : null,
+                : undefined,
               capabilities: enhancement?.capabilities
                 ? JSON.stringify(enhancement.capabilities)
-                : null,
+                : undefined,
               createdAt:
                 model.created && !isNaN(model.created)
                   ? new Date(model.created * 1000)
