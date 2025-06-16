@@ -56,7 +56,14 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           <div className="flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow">
             {/* Header */}
             <div className="w-full justify-center items-center flex pb-3 flex-shrink-0">
-              NOT T3.Chat
+              <h2 className="text-lg font-semibold tracking-tight pt-2">
+                <span className="bg-gradient-to-r from-pink-700 to-pink-900 dark:from-pink-400 dark:to-pink-300 bg-clip-text text-transparent">
+                  <span className="underline decoration-pink-700 dark:decoration-pink-400 decoration-2 underline-offset-2 font-extrabold">
+                    NOT
+                  </span>{" "}
+                  T3.Chat
+                </span>
+              </h2>
             </div>
             <div className="flex flex-col gap-2 relative m-1 mb-0 space-y-1 p-0 !pt-safe flex-shrink-0">
               <div className="px-1">

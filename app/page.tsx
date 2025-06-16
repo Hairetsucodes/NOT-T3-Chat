@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { ModeToggle } from "@/components/settings/theme/Toggle";
+import Footer from "@/components/Footer";
 
 export default function Home() {
   const [isSignIn, setIsSignIn] = useState(true);
@@ -14,23 +15,34 @@ export default function Home() {
     redirect("/chat");
   }
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Theme toggle positioned at top right */}
       <div className="absolute top-6 right-6 z-10">
         <ModeToggle />
       </div>
 
-      <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
         <div className="w-full max-w-md space-y-8">
           {/* Header */}
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight text-foreground">
-              Welcome to NOT T3 Chat
-            </h1>
-            <p className="text-muted-foreground text-base">
+          <div className="text-center space-y-4">
+            <div className="space-y-2">
+              <h1 className="text-5xl font-extrabold tracking-tight">
+                <span className="bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent">
+                  Welcome to
+                </span>
+                <br />
+                <span className="bg-gradient-to-r from-pink-700 via-rose-800 to-pink-900 dark:from-pink-500 dark:via-rose-400 dark:to-pink-600 bg-clip-text text-transparent">
+                                     <span className="underline decoration-pink-700 dark:decoration-pink-400 decoration-4 underline-offset-4">
+                    NOT
+                  </span>{" "}
+                  T3 Chat
+                </span>
+              </h1>
+            </div>
+            <p className="text-muted-foreground text-lg font-medium max-w-sm mx-auto leading-relaxed">
               {isSignIn
-                ? "Sign in to your account to continue"
-                : "Create your account to get started"}
+                ? "Sign in to your account to continue your AI conversations"
+                : "Create your account to start chatting with AI"}
             </p>
           </div>
 
@@ -60,7 +72,9 @@ export default function Home() {
             </Button>
           </div>
         </div>
-      </div>
+      </main>
+
+      <Footer />
     </div>
   );
 }
