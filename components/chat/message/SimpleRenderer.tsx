@@ -231,7 +231,7 @@ export const SimpleMessageRenderer = memo(function SimpleMessageRenderer({
     <div
       className={`group ${
         message.role === "user"
-          ? "whitespace-pre-wrap bg-secondary rounded-2xl rounded-br-sm px-4 py-4 max-w-[80%]"
+          ? "break-words overflow-wrap-anywhere bg-secondary rounded-2xl rounded-br-sm px-4 py-4 max-w-[80%]"
           : "text-foreground w-full"
       }`}
     >
@@ -246,7 +246,7 @@ export const SimpleMessageRenderer = memo(function SimpleMessageRenderer({
       {/* Processed content with syntax highlighting and markdown */}
       <div
         className={
-          isUser ? "break-words overflow-wrap-anywhere" : "whitespace-pre-wrap"
+          isUser ? "break-words overflow-wrap-anywhere" : ""
         }
       >
         {processedContent}

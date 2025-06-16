@@ -6,8 +6,6 @@
 @theme {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
-  --font-sans: ProximaVara, ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: hsl(var(--sidebar-ring));
   --color-sidebar-border: hsl(var(--sidebar-border));
@@ -225,81 +223,81 @@
 
   /* Markdown Styles */
   .contentMarkdown {
-    @apply text-foreground space-y-3;
+    @apply text-foreground/90 space-y-4 leading-8 text-[15px];
   }
 
   .contentMarkdown h1 {
-    @apply text-3xl font-bold mb-4 text-foreground/90;
+    @apply text-3xl font-bold mb-6 text-foreground mt-8 tracking-tight;
   }
 
   .contentMarkdown h2 {
-    @apply text-2xl font-bold mb-3 text-foreground/90;
+    @apply text-2xl font-semibold mb-4 text-foreground mt-6 tracking-tight;
   }
 
   .contentMarkdown h3 {
-    @apply text-xl font-semibold mb-2.5 mt-4 text-foreground/90;
+    @apply text-xl font-semibold mb-3 mt-5 text-foreground/90 tracking-tight;
   }
 
   .contentMarkdown h4 {
-    @apply text-lg font-semibold mb-2 mt-3 text-foreground/90;
+    @apply text-lg font-medium mb-2 mt-4 text-foreground/90;
   }
 
   .contentMarkdown h5 {
-    @apply text-base font-semibold mb-2 mt-3 text-foreground/90;
+    @apply text-base font-medium mb-2 mt-3 text-foreground/90;
   }
 
   .contentMarkdown h6 {
-    @apply text-sm font-semibold mb-2 mt-3 text-foreground/90;
+    @apply text-sm font-medium mb-2 mt-3 text-foreground/90;
   }
 
   .contentMarkdown p {
-    @apply mb-3 leading-relaxed text-foreground/80;
+    @apply mb-4 text-foreground/80 leading-8;
   }
 
   .contentMarkdown ul {
-    @apply mb-3 space-y-1.5 list-none ml-4;
+    @apply mb-4 list-none ml-2 space-y-2;
   }
 
   .contentMarkdown ol {
-    @apply mb-3 space-y-1.5 list-none ml-4;
+    @apply mb-4 list-none ml-2 space-y-2;
     counter-reset: item;
   }
 
   .contentMarkdown li {
-    @apply relative pl-8 leading-relaxed text-foreground/80;
+    @apply relative pl-6 leading-8 text-foreground/80;
   }
 
   .contentMarkdown ul > li::before {
-    @apply absolute left-0 top-[0.7em] w-2 h-2 rounded-full bg-primary -translate-y-1/2;
+    @apply absolute left-0 top-[0.7em] w-1.5 h-1.5 rounded-full bg-primary/80 -translate-y-1/2;
     content: "";
   }
 
   .contentMarkdown ol > li {
     counter-increment: item;
-    @apply pl-8;
+    @apply pl-7;
   }
 
   .contentMarkdown ol > li::before {
-    @apply absolute left-0 top-0 font-semibold text-[#dc749e] min-w-[1.5rem];
+    @apply absolute left-0 top-0 font-medium text-primary/90 min-w-[1.5rem];
     content: counter(item) ".";
   }
 
   /* Nested lists */
   .contentMarkdown li > ul {
-    @apply mt-2 mb-0 ml-4;
+    @apply mt-2 mb-0 ml-2;
   }
 
   .contentMarkdown li > ol {
-    @apply mt-2 mb-0 ml-4;
+    @apply mt-2 mb-0 ml-2;
   }
 
   /* Nested unordered list items should have smaller bullets */
   .contentMarkdown li > ul > li::before {
-    @apply w-1.5 h-1.5 bg-[#dc749e];
+    @apply w-1.5 h-1.5 bg-primary/60;
   }
 
   .contentMarkdown li > ul > li {
-    @apply pl-6;
+    @apply pl-5;
   }
 
   /* Nested ordered list items */
@@ -308,7 +306,7 @@
   }
 
   .contentMarkdown li > ol > li::before {
-    @apply text-sm;
+    @apply text-sm text-primary/70;
   }
 
   /* Deeply nested lists */
@@ -317,31 +315,31 @@
   }
 
   .contentMarkdown li li > ul > li {
-    @apply pl-5;
+    @apply pl-4;
   }
 
   .contentMarkdown code {
-    @apply px-2 py-0.5 rounded-md bg-secondary/40 text-primary/90 font-mono text-[13px] border border-secondary/50;
+    @apply px-1.5 py-0.5 rounded-md bg-secondary/30 text-primary font-mono text-[13px] border border-secondary/40;
   }
 
   .contentMarkdown strong {
-    @apply font-semibold;
+    @apply font-semibold text-foreground/95;
   }
 
   .contentMarkdown em {
-    @apply italic text-foreground/85;
+    @apply italic text-foreground/90;
   }
 
   .contentMarkdown a {
-    @apply text-primary/90 hover:text-primary hover:underline decoration-primary/30 transition-colors duration-200;
+    @apply text-primary hover:text-primary/80 hover:underline decoration-primary/20 transition-colors duration-200;
   }
 
   .contentMarkdown blockquote {
-    @apply border-l-4 border-primary/40 pl-4 italic my-4 text-foreground/70 bg-secondary/20 py-2 pr-3 rounded-r-lg;
+    @apply border-l-4 border-primary/30 pl-4 italic my-6 text-foreground/80 bg-secondary/20 py-3 pr-4 rounded-r-lg;
   }
 
   .contentMarkdown pre {
-    @apply p-4 rounded-lg bg-secondary/30 overflow-x-auto my-4 border-0 border-secondary/50;
+    @apply p-4 rounded-lg bg-secondary/20 overflow-x-auto my-6 border border-secondary/30;
   }
 
   .contentMarkdown pre code {
@@ -350,19 +348,19 @@
 
   /* Table styles */
   .contentMarkdown table {
-    @apply w-full border-collapse border border-border/50 my-4 rounded-lg overflow-hidden;
+    @apply w-full border-collapse border border-border/40 my-6 rounded-lg overflow-hidden;
   }
 
   .contentMarkdown thead {
-    @apply bg-secondary/30;
+    @apply bg-secondary/20;
   }
 
   .contentMarkdown th {
-    @apply border border-border/50 px-3 py-2 text-left font-semibold text-foreground/90;
+    @apply border border-border/40 px-4 py-2 text-left font-medium text-foreground/90;
   }
 
   .contentMarkdown td {
-    @apply border border-border/50 px-3 py-2 text-foreground/80;
+    @apply border border-border/40 px-4 py-2 text-foreground/80;
   }
 
   .contentMarkdown tbody tr:nth-child(even) {
@@ -371,7 +369,7 @@
 
   /* Horizontal rule */
   .contentMarkdown hr {
-    @apply border-0 border-t border-border/50 my-6;
+    @apply border-0 border-t border-border/40 my-8;
   }
 
   /* Task lists */
@@ -397,8 +395,8 @@
 
   /* Image Styles */
   .contentMarkdown img {
-    @apply max-w-full h-auto rounded-lg my-4 shadow-md;
-    max-height: 500px;
+    @apply max-w-full h-auto rounded-lg my-6 shadow-lg border border-border/20;
+    max-height: 600px;
     object-fit: contain;
   }
 
