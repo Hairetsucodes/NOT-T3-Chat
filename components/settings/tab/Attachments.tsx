@@ -121,8 +121,8 @@ export function AttachmentsTab() {
                       onClick={() => openImageModal(attachment)}
                     >
                       <Image
-                        width={100}
-                        height={100}
+                        width={300  }
+                        height={300}
                         src={`/api/images/${attachment.userId}-${attachment.filename}`}
                         alt={attachment.filename}
                         className="w-full h-full object-cover"
@@ -174,9 +174,11 @@ export function AttachmentsTab() {
               <div className="space-y-4">
                 <div className="flex justify-center">
                   <Image
+                    width={500}
+                    height={500}
                     src={`/api/images/${selectedImage.userId}-${selectedImage.filename}`}
                     alt={selectedImage.filename}
-                    className="max-w-full max-h-[60vh] object-contain rounded border"
+                    className="max-w-full max-h-full object-contain rounded border"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src =

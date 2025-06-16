@@ -16,8 +16,8 @@ model User {
   email             String?             @unique
   emailVerified     DateTime?
   username          String?             @unique
-  password          String?
-  image             String?
+  password          String?             @db.VarChar(255)
+  image             String?             @db.Text
   accounts          Account[]
   sessions          Session[]
   apiKeys           ApiKey[]
@@ -37,13 +37,13 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?
-  access_token      String?
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
   expires_at        Int?
   token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
+  scope             String? @db.Text
+  id_token          String? @db.Text
+  session_state     String? @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -74,7 +74,7 @@ model VerificationToken {
 
 model ApiKey {
   id        String   @id @default(cuid())
-  key       String
+  key       String   @db.Text
   provider  String
   userId    String
   createdAt DateTime @default(now())
@@ -85,14 +85,14 @@ model ApiKey {
 model Conversation {
   id                    String         @id @default(cuid())
   userId                String
-  title                 String
+  title                 String         @db.VarChar(500)
   isPinned              Boolean        @default(false)
   isPublic              Boolean        @default(false)
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
   isRetry               Boolean        @default(false)
   branchedFromConvoId   String?
-  branchedIds           String? // JSON array of all conversation IDs in the branch chain
+  branchedIds           String?        @db.Text // JSON array of all conversation IDs in the branch chain
   user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   branchedFromConvo     Conversation?  @relation("ConversationBranch", fields: [branchedFromConvoId], references: [id])
   branchedConversations Conversation[] @relation("ConversationBranch")
@@ -103,11 +103,11 @@ model Message {
   id               String       @id @default(cuid())
   conversationId   String
   userId           String
-  content          String
+  content          String       @db.LongText
   role             String
   provider         String
   model            String?
-  reasoningContent String?
+  reasoningContent String?      @db.LongText
   promptId         String?
   responseId       String?
   createdAt        DateTime     @default(now())
@@ -139,9 +139,9 @@ model UserCustomization {
   id                    String   @id @default(cuid())
   userId                String
   displayName           String?
-  userRole              String?
-  userTraits            String?
-  additionalContext     String?
+  userRole              String?  @db.Text
+  userTraits            String?  @db.Text
+  additionalContext     String?  @db.Text
   isBoringTheme         Boolean  @default(false)
   hidePersonalInfo      Boolean  @default(false)
   disableThematicBreaks Boolean  @default(false)
@@ -158,7 +158,7 @@ model UserCustomization {
 model Prompt {
   id           String         @id @default(cuid())
   userId       String
-  prompt       String
+  prompt       String         @db.LongText
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   ChatSettings ChatSettings[]
@@ -178,8 +178,8 @@ model PreferredModel {
 model Attachment {
   id        String   @id @default(cuid())
   userId    String
-  filename  String
-  fileUrl   String
+  filename  String   @db.VarChar(255)
+  fileUrl   String   @db.Text
   fileType  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -191,9 +191,9 @@ model OpenRouterModel {
   modelId       String   @unique
   name          String
   provider      String
-  description   String?
+  description   String?  @db.Text
   contextLength Int?
-  pricing       String? // Changed from Json to String for MSSQL compatibility
+  pricing       String?  @db.Text // Changed from Json to String for MSSQL compatibility
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -204,11 +204,11 @@ model AnthropicModel {
   modelId       String   @unique
   name          String
   modelFamily   String
-  description   String?
+  description   String?  @db.Text
   contextLength Int?
   maxOutput     Int?
-  pricing       String? // Changed from Json to String for MSSQL compatibility
-  capabilities  String? // Changed from Json to String for MSSQL compatibility
+  pricing       String?  @db.Text // Changed from Json to String for MSSQL compatibility
+  capabilities  String?  @db.Text // Changed from Json to String for MSSQL compatibility
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -219,11 +219,11 @@ model OpenaiModel {
   modelId       String   @unique
   name          String
   modelFamily   String
-  description   String?
+  description   String?  @db.Text
   contextLength Int?
   maxOutput     Int?
-  pricing       String? // Changed from Json to String for MSSQL compatibility
-  capabilities  String? // Changed from Json to String for MSSQL compatibility
+  pricing       String?  @db.Text // Changed from Json to String for MSSQL compatibility
+  capabilities  String?  @db.Text // Changed from Json to String for MSSQL compatibility
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -234,11 +234,11 @@ model GoogleModel {
   modelId       String   @unique
   name          String
   modelFamily   String
-  description   String?
+  description   String?  @db.Text
   contextLength Int?
   maxOutput     Int?
-  pricing       String? // Changed from Json to String for MSSQL compatibility
-  capabilities  String? // Changed from Json to String for MSSQL compatibility
+  pricing       String?  @db.Text // Changed from Json to String for MSSQL compatibility
+  capabilities  String?  @db.Text // Changed from Json to String for MSSQL compatibility
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -249,11 +249,11 @@ model DeepSeekModel {
   modelId       String   @unique
   name          String
   modelFamily   String
-  description   String?
+  description   String?  @db.Text
   contextLength Int?
   maxOutput     Int?
-  pricing       String? // Changed from Json to String for MSSQL compatibility
-  capabilities  String? // Changed from Json to String for MSSQL compatibility
+  pricing       String?  @db.Text // Changed from Json to String for MSSQL compatibility
+  capabilities  String?  @db.Text // Changed from Json to String for MSSQL compatibility
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -264,11 +264,11 @@ model XaiModel {
   modelId       String   @unique
   name          String
   modelFamily   String
-  description   String?
+  description   String?  @db.Text
   contextLength Int?
   maxOutput     Int?
-  pricing       String? // Changed from Json to String for MSSQL compatibility
-  capabilities  String? // Changed from Json to String for MSSQL compatibility
+  pricing       String?  @db.Text // Changed from Json to String for MSSQL compatibility
+  capabilities  String?  @db.Text // Changed from Json to String for MSSQL compatibility
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -276,8 +276,8 @@ model XaiModel {
 
 model ResponseCache {
   id        String   @id @default(cuid())
-  cacheKey  String   @unique
-  response  String
+  cacheKey  String   @unique @db.VarChar(255)
+  response  String   @db.LongText
   userId    String?
   createdAt DateTime @default(now())
   expiresAt DateTime

@@ -292,8 +292,12 @@ export async function populateOpenAIModels(apiKey: string) {
               description: enhancement?.description || null,
               contextLength: enhancement?.contextLength || null,
               maxOutput: enhancement?.maxOutput || null,
-              pricing: enhancement?.pricing || undefined,
-              capabilities: enhancement?.capabilities || undefined,
+              pricing: enhancement?.pricing
+                ? JSON.stringify(enhancement.pricing)
+                : null,
+              capabilities: enhancement?.capabilities
+                ? JSON.stringify(enhancement.capabilities)
+                : null,
               createdAt:
                 model.created && !isNaN(model.created)
                   ? new Date(model.created * 1000)

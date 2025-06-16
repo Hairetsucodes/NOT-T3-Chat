@@ -203,8 +203,12 @@ export async function populateAnthropicModels(apiKey: string) {
               description: enhancement?.description || null,
               contextLength: enhancement?.contextLength || null,
               maxOutput: enhancement?.maxOutput || null,
-              pricing: enhancement?.pricing || undefined,
-              capabilities: enhancement?.capabilities || undefined,
+              pricing: enhancement?.pricing
+                ? JSON.stringify(enhancement.pricing)
+                : null,
+              capabilities: enhancement?.capabilities
+                ? JSON.stringify(enhancement.capabilities)
+                : null,
               createdAt: new Date(model.created_at),
               isActive: true,
             },

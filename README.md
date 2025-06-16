@@ -140,7 +140,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
    pnpm run setup
    ```
 
-6. **Generate API Key Salt:**
+4. **Generate API Key Salt:**
 
    ```bash
    openssl rand -hex 32
@@ -154,7 +154,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 
    > **Note**: The `API_KEY_SALT` is used to securely encrypt API keys stored in your database. Keep this value secret and consistent across deployments.
 
-7. **Start the development server:**
+5. **Start the development server:**
    ```bash
    pnpm dev
    ```
@@ -170,14 +170,14 @@ Visit [http://localhost:3000](http://localhost:3000) to see the application.
 1. **Set up production environment variables:**
 
    ```bash
-   cp .env.example .env.production
+   cp .env.example .env
    ```
 
 2. **Configure your production `.env` file:**
 
    ```env
    # Database (use PostgreSQL for production if preferred)
-   DATABASE_URL="file:../prod.db"
+   DATABASE_URL="mysql:/
 
    # NextAuth
    AUTH_SECRET="your-secure-production-secret"
@@ -215,11 +215,10 @@ The application will be available at [http://localhost:3000](http://localhost:30
 ### Production Checklist
 
 - ✅ Environment variables configured
-- ✅ Database properly migrated
+- ✅ MSSQL Database properly migrated
 - ✅ AUTH_SECRET is secure and unique
 - ✅ API_KEY_SALT is secure and unique
 - ✅ NEXTAUTH_URL matches your domain
-- ✅ API keys are valid and properly configured
 - ✅ Application built successfully (`pnpm build`)
 
 ### Available Scripts

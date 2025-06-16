@@ -50,3 +50,5 @@ docker-data/.api_key_salt
 
 # local storage
 /local-attachment-store
+
+prisma/migrations

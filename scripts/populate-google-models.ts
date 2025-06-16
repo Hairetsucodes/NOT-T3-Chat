@@ -246,9 +246,12 @@ export async function populateGoogleModels(apiKey: string) {
                 enhancement?.contextLength || model.inputTokenLimit || null,
               maxOutput:
                 enhancement?.maxOutput || model.outputTokenLimit || null,
-              pricing: enhancement?.pricing || undefined,
-              capabilities:
-                enhancement?.capabilities || capabilities || undefined,
+              pricing: enhancement?.pricing
+                ? JSON.stringify(enhancement.pricing)
+                : null,
+              capabilities: enhancement?.capabilities
+                ? JSON.stringify(enhancement.capabilities)
+                : null,
               isActive: true,
             },
           });
