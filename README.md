@@ -15,6 +15,9 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
   "o3",
   )
 - 🔐 Authentication with NextAuth
+- 🔑 JWT token-based authentication
+- 🛡️ API Key Encryption for secure storage
+- 👤 User management and profiles
 - 💾 Persistent chat history with Prisma
 - 📤 History Sync Export/Import functionality
 - 📌 Pin important conversations for quick access
@@ -466,9 +469,10 @@ pnpm db:migrate
 ### TODO in no particular order
 
 - ✅ Image Gen (OpenAI models) / Image Analysis (pending)
+
+- blob storage for attachments/images in prod
 - Attachments
 - Optimize DB querying
-- Production Deployment / postGres
 - Refactor x100
 - Ollama Local
 - Extra Credit: Voice 2 Voice over websockets.
