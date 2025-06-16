@@ -211,7 +211,6 @@ export async function callOpenAINonStreaming(
       stream: false,
     });
 
-    s;
     const content = response.choices?.[0]?.message?.content?.trim() || "";
 
     return content;
