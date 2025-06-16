@@ -127,6 +127,7 @@ export async function callOpenAIStreaming(
                 new TextEncoder().encode(
                   `data: ${JSON.stringify({
                     partial_image: `![${filename}](${`${baseUrl}/api/images/${userId}-${filename}`}) [Download](${`${baseUrl}/api/images/${userId}-${filename}?download=true`})\n\n `,
+                    image_url: `![${filename}](${`${baseUrl}/api/images/${userId}-${filename}`}) [Download](${`${baseUrl}/api/images/${userId}-${filename}?download=true`})\n\n `,
                   })}\n\n`
                 )
               );
