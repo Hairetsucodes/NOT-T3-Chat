@@ -4,6 +4,7 @@ import { checkUser } from "@/lib/auth/check";
 import { prisma } from "@/prisma";
 import { UserCustomization } from "@prisma/client";
 import { generateAndApplyPersonalizedPrompt } from "./prompt";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 export const getUserSettings = async () => {
   const { userId } = await checkUser();
@@ -16,23 +17,35 @@ export const getUserSettings = async () => {
       where: { userId },
     });
 
-    // If no settings exist, create default settings
+    // If no settings exist, try to create default settings
     if (!settings) {
-      settings = await prisma.userCustomization.create({
-        data: {
-          userId: userId,
-          displayName: "",
-          userRole: "",
-          userTraits: "",
-          additionalContext: "",
-          isBoringTheme: false,
-          hidePersonalInfo: false,
-          disableThematicBreaks: false,
-          showStatsForNerds: false,
-          mainTextFont: "Inter",
-          codeFont: "mono",
-        },
-      });
+      try {
+        settings = await prisma.userCustomization.create({
+          data: {
+            userId: userId,
+            displayName: "",
+            userRole: "",
+            userTraits: "",
+            additionalContext: "",
+            isBoringTheme: false,
+            hidePersonalInfo: false,
+            disableThematicBreaks: false,
+            showStatsForNerds: false,
+            mainTextFont: "Inter",
+            codeFont: "mono",
+          },
+        });
+      } catch (createError) {
+        // If creation failed due to race condition or unique constraint, fetch the existing record
+        if (createError instanceof PrismaClientKnownRequestError && 
+            createError.code === 'P2002') {
+          settings = await prisma.userCustomization.findUnique({
+            where: { userId },
+          });
+        } else {
+          throw createError;
+        }
+      }
     }
 
     return settings;
@@ -74,80 +87,79 @@ export const updateUserSettings = async (
       return { error: "Additional context must be 3000 characters or less" };
     }
 
-    // Check if settings exist, create or update accordingly
-    const existingSettings = await prisma.userCustomization.findUnique({
-      where: { userId },
-    });
-    if (!userId) {
-      return { error: "Unauthorized" };
-    }
-    let updatedSettings;
-
-    if (existingSettings) {
-      // Update existing settings
-      updatedSettings = await prisma.userCustomization.update({
+    // Try to update first
+    try {
+      const updatedSettings = await prisma.userCustomization.update({
         where: { userId },
         data: {
           ...settings,
           updatedAt: new Date(),
         },
       });
-    } else {
-      // Create new settings with provided data and defaults
-      updatedSettings = await prisma.userCustomization.create({
-        data: {
-          userId,
-          displayName: settings.displayName || "",
-          userRole: settings.userRole || "",
-          userTraits: settings.userTraits || "",
-          additionalContext: settings.additionalContext || "",
-          isBoringTheme: settings.isBoringTheme || false,
-          hidePersonalInfo: settings.hidePersonalInfo || false,
-          disableThematicBreaks: settings.disableThematicBreaks || false,
-          showStatsForNerds: settings.showStatsForNerds || false,
-          mainTextFont: settings.mainTextFont || "Inter",
-          codeFont: settings.codeFont || "mono",
-        },
-      });
-    }
+      
+      // Handle prompt updates
+      const promptRelevantFields = [
+        "displayName",
+        "userRole",
+        "userTraits",
+        "additionalContext",
+      ];
+      const hasPromptRelevantChanges = promptRelevantFields.some(
+        (field) => settings[field as keyof UserCustomization] !== undefined
+      );
+      
+      if (hasPromptRelevantChanges) {
+        const currentModelProvider = await prisma.chatSettings.findFirst({
+          where: { userId },
+          select: {
+            provider: true,
+            model: true,
+          },
+        });
+        
+        const hasAnyCustomization =
+          updatedSettings.displayName ||
+          updatedSettings.userRole ||
+          updatedSettings.userTraits ||
+          updatedSettings.additionalContext;
 
-    // Check if prompt-relevant fields were updated
-    const promptRelevantFields = [
-      "displayName",
-      "userRole",
-      "userTraits",
-      "additionalContext",
-    ];
-    const hasPromptRelevantChanges = promptRelevantFields.some(
-      (field) => settings[field as keyof UserCustomization] !== undefined
-    );
-    const currentModelProvider = await prisma.chatSettings.findFirst({
-      where: { userId },
-      select: {
-        provider: true,
-        model: true,
-      },
-    });
-    // If prompt-relevant fields were updated and user has any customization data, generate new prompt
-    if (hasPromptRelevantChanges) {
-      const hasAnyCustomization =
-        updatedSettings.displayName ||
-        updatedSettings.userRole ||
-        updatedSettings.userTraits ||
-        updatedSettings.additionalContext;
+        if (hasAnyCustomization) {
+          await generatePersonalizedPromptBackground(
+            userId,
+            currentModelProvider?.provider || "openai",
+            currentModelProvider?.model || "gpt-4o-mini"
+          ).catch((error) => {
+            console.error("Background prompt generation failed:", error);
+          });
+        }
+      }
 
-      if (hasAnyCustomization) {
-        await generatePersonalizedPromptBackground(
+      return updatedSettings;
+    } catch (updateError) {
+      // If update failed because record doesn't exist, create it
+      if (updateError instanceof PrismaClientKnownRequestError && 
+          updateError.code === 'P2025') {
+        const defaultSettings = {
           userId,
-          currentModelProvider?.provider || "openai",
-          currentModelProvider?.model || "gpt-4o-mini"
-        ).catch((error) => {
-          console.error("Background prompt generation failed:", error);
+          displayName: "",
+          userRole: "",
+          userTraits: "",
+          additionalContext: "",
+          isBoringTheme: false,
+          hidePersonalInfo: false,
+          disableThematicBreaks: false,
+          showStatsForNerds: false,
+          mainTextFont: "Inter",
+          codeFont: "mono",
+          ...settings,
+        };
+
+        return await prisma.userCustomization.create({
+          data: defaultSettings,
         });
       }
+      throw updateError;
     }
-
-    return updatedSettings;
   } catch (error) {
     console.error("Error updating user settings:", error);
     if (error instanceof Error) {
