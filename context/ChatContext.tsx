@@ -306,7 +306,8 @@ export const ChatProvider = ({
                           ? {
                               ...msg,
                               partial_image: parsed.partial_image,
-                              image_generation_status: "Generating image...",
+                              // Clear status as soon as we get any partial image to hide skeleton
+                              image_generation_status: "",
                             }
                           : msg
                       )
@@ -320,20 +321,6 @@ export const ChatProvider = ({
                               ...msg,
                               image_generation_status:
                                 parsed.image_generation_status,
-                            }
-                          : msg
-                      )
-                    );
-                  }
-                  if (parsed.image_url) {
-                    setMessages((prev) =>
-                      prev.map((msg) =>
-                        msg.id === assistantMessage.id
-                          ? {
-                              ...msg,
-                              content: msg.content + `\n\n${parsed.image_url} `,
-                              partial_image: "", // Clear partial_image when final image arrives
-                              image_generation_status: "", // Clear status when done
                             }
                           : msg
                       )

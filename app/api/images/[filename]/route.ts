@@ -1,8 +1,108 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "fs/promises";
-import { join } from "path";
+import { join, basename, extname } from "path";
 import { existsSync } from "fs";
 import { auth } from "@/auth";
+
+// Allowed image extensions
+const ALLOWED_EXTENSIONS = new Set([
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".webp",
+  ".svg",
+]);
+const MAX_FILENAME_LENGTH = 255;
+
+function sanitizeFilename(filename: string): string | null {
+  if (!filename || typeof filename !== "string") {
+    return null;
+  }
+
+  // Remove any null bytes (null byte injection attack)
+  if (filename.includes("\0")) {
+    return null;
+  }
+
+  // Limit filename length
+  if (filename.length > MAX_FILENAME_LENGTH) {
+    return null;
+  }
+
+  // Normalize and get basename to prevent path traversal
+  const normalized = basename(filename);
+
+  // Check if normalization changed the filename (indicates path traversal attempt)
+  if (normalized !== filename) {
+    return null;
+  }
+
+  // Whitelist approach: only allow alphanumeric, hyphens, underscores, and dots
+  const allowedPattern = /^[a-zA-Z0-9._-]+$/;
+  if (!allowedPattern.test(normalized)) {
+    return null;
+  }
+
+  // Prevent filenames starting with dots (hidden files)
+  if (normalized.startsWith(".")) {
+    return null;
+  }
+
+  // Prevent reserved names (Windows)
+  const reservedNames = [
+    "CON",
+    "PRN",
+    "AUX",
+    "NUL",
+    "COM1",
+    "COM2",
+    "COM3",
+    "COM4",
+    "COM5",
+    "COM6",
+    "COM7",
+    "COM8",
+    "COM9",
+    "LPT1",
+    "LPT2",
+    "LPT3",
+    "LPT4",
+    "LPT5",
+    "LPT6",
+    "LPT7",
+    "LPT8",
+    "LPT9",
+  ];
+  const nameWithoutExt = normalized.split(".")[0].toUpperCase();
+  if (reservedNames.includes(nameWithoutExt)) {
+    return null;
+  }
+
+  // Validate file extension
+  const extension = extname(normalized).toLowerCase();
+  if (!extension || !ALLOWED_EXTENSIONS.has(extension)) {
+    return null;
+  }
+
+  // Additional check: ensure filename has proper structure
+  // For your use case with "id-timestamp.ext" or "partial-id-number.ext"
+  if (normalized.startsWith("partial-")) {
+    // Validate partial filename format: partial-{id}-{number}.{ext}
+    const partialPattern = /^partial-[a-zA-Z0-9_-]+-\d+\.[a-zA-Z0-9]+$/;
+    if (!partialPattern.test(normalized)) {
+      return null;
+    }
+  } else {
+    // Validate regular filename format: {id}-{timestamp}.{ext}
+    const regularPattern = /^[a-zA-Z0-9_-]+-[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$/;
+    if (!regularPattern.test(normalized)) {
+      return null;
+    }
+  }
+
+  return normalized;
+}
 
 export async function GET(
   request: NextRequest,
@@ -15,26 +115,24 @@ export async function GET(
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
-    // Validate filename to prevent directory traversal TODO: Add more robust validation
-    if (
-      !filename ||
-      filename.includes("..") ||
-      filename.includes("/") ||
-      filename.includes("\\")
-    ) {
+
+    // Sanitize filename with robust validation
+    const sanitizedFilename = sanitizeFilename(filename);
+    if (!sanitizedFilename) {
       return new NextResponse("Invalid filename", { status: 400 });
     }
+
     // Handle both regular images (id-timestamp.ext) and partial images (partial-id-number.ext)
     let fileName: string;
-    if (filename.startsWith("partial-")) {
+    if (sanitizedFilename.startsWith("partial-")) {
       // For partial images, use the entire filename as-is
-      fileName = filename;
+      fileName = sanitizedFilename;
     } else {
       // For regular images, extract the actual filename after the first dash
-      const filenameParts = filename.split("-");
+      const filenameParts = sanitizedFilename.split("-");
       fileName = filenameParts[1];
     }
-    
+
     // Construct the file path
     const filePath = join(
       process.cwd(),
@@ -52,7 +150,7 @@ export async function GET(
     const imageBuffer = await readFile(filePath);
 
     // Determine content type based on file extension
-    const extension = filename.toLowerCase().split(".").pop();
+    const extension = sanitizedFilename.toLowerCase().split(".").pop();
     let contentType = "image/jpeg"; // default
 
     switch (extension) {

@@ -155,7 +155,7 @@ export async function callOpenAIStreaming(
             controller.enqueue(
               new TextEncoder().encode(
                 `data: ${JSON.stringify({
-                  image_url: `![${filename}](${`${baseUrl}/api/images/${userId}-${filename}`}) [Download](${`${baseUrl}/api/images/${userId}-${filename}?download=true`})\n\n `,
+                  partial_image: `![${filename}](${`${baseUrl}/api/images/${userId}-${filename}`}) [Download](${`${baseUrl}/api/images/${userId}-${filename}?download=true`})\n\n `,
                 })}\n\n`
               )
             );

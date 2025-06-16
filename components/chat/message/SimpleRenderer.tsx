@@ -3,7 +3,7 @@
 import { Message } from "@/types/chat";
 import { MessageActions } from "./Actions";
 import { ReasoningDisplay } from "./ReasoningDisplay";
-import { useContext, useMemo, memo } from "react";
+import { useContext, useMemo, memo, useState, useEffect, useRef } from "react";
 import { ChatContext } from "@/context/ChatContext";
 import { MarkdownContent } from "./MarkdownContent";
 import {
@@ -13,6 +13,82 @@ import {
 
 import type { JSX } from "react";
 import { CodeBlock, StreamingCodeBlock } from "./CodeBlock";
+
+// Smooth transition component for partial images
+const SmoothPartialImage = memo(function SmoothPartialImage({
+  partialImage,
+}: {
+  partialImage: string;
+}) {
+  const [currentImage, setCurrentImage] = useState(partialImage);
+  const [previousImage, setPreviousImage] = useState<string | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerHeight, setContainerHeight] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    if (partialImage !== currentImage) {
+      // Start transition
+      setPreviousImage(currentImage);
+      setIsTransitioning(true);
+      
+      // Capture current height to prevent layout shift
+      if (containerRef.current) {
+        setContainerHeight(containerRef.current.offsetHeight);
+      }
+
+      // Delay setting new image to allow for smooth transition
+      const timer = setTimeout(() => {
+        setCurrentImage(partialImage);
+        setIsTransitioning(false);
+        
+        // Reset height after transition
+        setTimeout(() => {
+          setContainerHeight(undefined);
+        }, 300);
+      }, 150);
+
+      return () => clearTimeout(timer);
+    }
+  }, [partialImage, currentImage]);
+
+  // Clean up previous image after transition
+  useEffect(() => {
+    if (!isTransitioning) {
+      setPreviousImage(null);
+    }
+  }, [isTransitioning]);
+
+  return (
+    <div 
+      ref={containerRef}
+      className="relative overflow-hidden"
+      style={{ 
+        height: containerHeight ? `${containerHeight}px` : 'auto',
+        minHeight: containerHeight ? `${containerHeight}px` : undefined
+      }}
+    >
+      {/* Current/New Image */}
+      <div
+        className={`transition-opacity duration-300 ${
+          isTransitioning ? 'opacity-0' : 'opacity-100'
+        }`}
+      >
+        <MarkdownContent content={currentImage} />
+      </div>
+      
+      {/* Previous Image (for transition) */}
+      {previousImage && isTransitioning && (
+        <div
+          className="absolute inset-0 transition-opacity duration-300 opacity-100"
+          style={{ opacity: isTransitioning ? 0 : 1 }}
+        >
+          <MarkdownContent content={previousImage} />
+        </div>
+      )}
+    </div>
+  );
+});
 
 export const SimpleMessageRenderer = memo(function SimpleMessageRenderer({
   message,
@@ -193,10 +269,10 @@ export const SimpleMessageRenderer = memo(function SimpleMessageRenderer({
             </div>
           </div>
         )}
-      {/* Show partial image for assistant messages during generation */}
+      {/* Show partial image for assistant messages during generation with smooth transitions */}
       {message.role === "assistant" && message.partial_image && (
         <div className="mt-4">
-          <MarkdownContent content={message.partial_image} />
+          <SmoothPartialImage partialImage={message.partial_image} />
         </div>
       )}
 
