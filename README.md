@@ -117,6 +117,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 - Node.js 18+
 - pnpm (recommended) or npm
 - Git
+- OpenSSL
 
 ### Installation
 
@@ -133,28 +134,13 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
    pnpm install
    ```
 
-4. **Set up environment variables:**
+3. **Initial Setup (setup local .env, create & push schema, generate salt/secret)**
 
    ```bash
-   cp .env.example .env
+   pnpm run setup
    ```
 
-   **Generate random secret:**
-
-   ```bash
-   npx auth secret
-   ```
-
-   Configure your `.env` file with the required environment variables:
-
-   ```env
-   DATABASE_URL="file:../dev.db"
-   AUTH_SECRET="your-secret-key"
-   API_KEY_SALT="your-api-key-salt"
-   NEXTAUTH_URL="http://localhost:3000"
-   ```
-
-   **Generate API Key Salt:**
+6. **Generate API Key Salt:**
 
    ```bash
    openssl rand -hex 32
@@ -168,20 +154,14 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 
    > **Note**: The `API_KEY_SALT` is used to securely encrypt API keys stored in your database. Keep this value secret and consistent across deployments.
 
-3. **Initialize the database:**
-
-   ```bash
-   pnpm setup
-   ```
-
-5. **Start the development server:**
+7. **Start the development server:**
    ```bash
    pnpm dev
    ```
 
 Visit [http://localhost:3000](http://localhost:3000) to see the application.
 
-> **Note**: Always run `pnpm setup` before `pnpm dev` or `pnpm build` to ensure the database is properly initialized.
+> **Note**: Always run `pnpm run setup` before `pnpm dev` or `pnpm build` to ensure the database is properly initialized.
 
 ## 🏭 Production Build & Start
 
@@ -216,7 +196,7 @@ Visit [http://localhost:3000](http://localhost:3000) to see the application.
 1. **Ensure database is initialized:**
 
    ```bash
-   pnpm setup
+   pnpm run setup
    ```
 
 2. **Build the application:**
@@ -253,7 +233,7 @@ The application will be available at [http://localhost:3000](http://localhost:30
 
 #### Database Management
 
-- `pnpm setup` - **Quick setup** (generate + push schema)
+- `pnpm run setup` - **Quick setup** (creates, generates + push schema to db)
 - `pnpm db:generate` - Generate Prisma client
 - `pnpm db:push` - Push schema to database (development)
 - `pnpm db:migrate` - Create and apply migrations (production)
@@ -268,7 +248,7 @@ This project uses SQLite for local development and Prisma as the ORM.
 #### First-time Setup
 
 ```bash
-pnpm setup
+pnpm run setup
 ```
 
 #### Schema Changes
@@ -452,7 +432,7 @@ pnpm db:migrate
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
 3. Install dependencies: `pnpm install`
-4. Set up the database: `pnpm setup`
+4. Set up the database: `pnpm run setup`
 5. Make your changes
 6. Run tests: `pnpm lint`
 7. Commit your changes: `git commit -m 'Add amazing feature'`
