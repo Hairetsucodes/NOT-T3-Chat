@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { ModeToggle } from "@/components/settings/theme/Toggle";
 import Footer from "@/components/Footer";
+import { SocialLogin } from "@/components/authorization/Social";
 
 export default function Home() {
   const [isSignIn, setIsSignIn] = useState(true);
@@ -49,8 +50,9 @@ export default function Home() {
           {/* Auth Form Container */}
           <div className="bg-chat-background border border-border rounded-xl shadow-lg p-8">
             {isSignIn ? <SignIn /> : <Register />}
+            <SocialLogin />
           </div>
-
+                
           {/* Swap Button */}
           <div className="text-center space-y-4">
             <p className="text-sm text-muted-foreground">

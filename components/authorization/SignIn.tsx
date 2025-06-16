@@ -63,74 +63,72 @@ export default function SignIn() {
   }
 
   return (
-    <div className="w-full">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            name="email"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-medium text-card-foreground">
-                  Email Address
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    className="w-full px-2 h-11 bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
-                    placeholder="Enter your email"
-                    autoComplete="email"
-                    type="email"
-                    disabled={isLoading}
-                  />
-                </FormControl>
-              </FormItem>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          name="email"
+          control={form.control}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm font-medium text-card-foreground">
+                Email Address
+              </FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  className="w-full px-2 h-11 bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
+                  placeholder="Enter your email"
+                  autoComplete="email"
+                  type="email"
+                  disabled={isLoading}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          name="password"
+          control={form.control}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm font-medium text-card-foreground">
+                Password
+              </FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  className="w-full px-2 h-11 bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  type="password"
+                  disabled={isLoading}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        <div className="space-y-4">
+          <FormResults message={error} type="error" />
+          <FormResults message={success} type="success" />
+
+          <Button
+            className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+            type="submit"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              "Sign In"
             )}
-          />
-
-          <FormField
-            name="password"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-medium text-card-foreground">
-                  Password
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    className="w-full px-2 h-11 bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
-                    placeholder="Enter your password"
-                    autoComplete="current-password"
-                    type="password"
-                    disabled={isLoading}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <div className="space-y-4">
-            <FormResults message={error} type="error" />
-            <FormResults message={success} type="success" />
-
-            <Button
-              className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-              type="submit"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                "Sign In"
-              )}
-            </Button>
-          </div>
-        </form>
-      </Form>
-    </div>
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }

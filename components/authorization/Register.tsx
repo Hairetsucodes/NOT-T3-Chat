@@ -53,97 +53,95 @@ export default function Register() {
   }
 
   return (
-    <div className="w-full">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            name="name"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-medium text-card-foreground">
-                  Full Name
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type="text"
-                    className="w-full px-2 h-11 bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
-                    placeholder="Enter your full name"
-                    autoComplete="name"
-                    required
-                    disabled={isLoading}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          name="name"
+          control={form.control}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm font-medium text-card-foreground">
+                Full Name
+              </FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="text"
+                  className="w-full px-2 h-11 bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
+                  placeholder="Enter your full name"
+                  autoComplete="name"
+                  required
+                  disabled={isLoading}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
 
-          <FormField
-            name="email"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-medium text-card-foreground">
-                  Email Address
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type="email"
-                    className="w-full px-2 h-11 bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
-                    placeholder="Enter your email"
-                    autoComplete="email"
-                    required
-                    disabled={isLoading}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+        <FormField
+          name="email"
+          control={form.control}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm font-medium text-card-foreground">
+                Email Address
+              </FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="email"
+                  className="w-full px-2 h-11 bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
+                  placeholder="Enter your email"
+                  autoComplete="email"
+                  required
+                  disabled={isLoading}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
 
-          <FormField
-            name="password"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-medium text-card-foreground">
-                  Password
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type="password"
-                    className="w-full px-2 h-11 bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
-                    placeholder="Create a password"
-                    autoComplete="new-password"
-                    required
-                    disabled={isLoading}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+        <FormField
+          name="password"
+          control={form.control}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm font-medium text-card-foreground">
+                Password
+              </FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="password"
+                  className="w-full px-2 h-11 bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring"
+                  placeholder="Create a password"
+                  autoComplete="new-password"
+                  required
+                  disabled={isLoading}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
 
-          <div className="space-y-4">
-            <FormResults message={error} type="error" />
-            <Button
-              type="submit"
-              className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating Account...
-                </>
-              ) : (
-                "Create Account"
-              )}
-            </Button>
-          </div>
-        </form>
-      </Form>
-    </div>
+        <div className="space-y-4">
+          <FormResults message={error} type="error" />
+          <Button
+            type="submit"
+            className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating Account...
+              </>
+            ) : (
+              "Create Account"
+            )}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }
