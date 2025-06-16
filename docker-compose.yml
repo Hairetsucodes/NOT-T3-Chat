@@ -9,10 +9,6 @@ services:
     # Use .env file from docker-data folder if it exists
     env_file:
       - ./docker-data/.env
-    environment:
-      # Fallback values if not provided in .env file
-      - DATABASE_URL=${DATABASE_URL:-file:/app/data/prod.db}
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/auth/session"]
