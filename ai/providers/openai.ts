@@ -166,7 +166,6 @@ export async function callOpenAIStreaming(
                 })}\n\n`
               )
             );
-            // delete partial images
             const dirpath = `./local-attachment-store/${userId}`;
             if (fs.existsSync(dirpath)) {
               fs.readdirSync(dirpath).forEach((file) => {
@@ -176,15 +175,6 @@ export async function callOpenAIStreaming(
               });
             }
           }
-
-          /*  if (event.type === "")
-            if (event.type === "response.image_generation_call.completed") {
-              controller.enqueue(
-                new TextEncoder().encode(
-                  `data: ${JSON.stringify({ content: "Image generated!" })}\n\n`
-                )
-              );
-            } */
         }
         controller.close();
       } catch (error) {

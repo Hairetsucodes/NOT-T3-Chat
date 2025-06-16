@@ -1,4 +1,4 @@
-# OSS T3 Chat
+# NOT T3 Chat (Clone)
 
 A modern AI chat application built with Next.js, Prisma, NextAuth supporting multiple AI providers including OpenAI, Anthropic, Google, and more.
 
@@ -133,12 +133,6 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
    pnpm install
    ```
 
-3. **Initialize the database:**
-
-   ```bash
-   pnpm setup
-   ```
-
 4. **Set up environment variables:**
 
    ```bash
@@ -173,6 +167,12 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
    ```
 
    > **Note**: The `API_KEY_SALT` is used to securely encrypt API keys stored in your database. Keep this value secret and consistent across deployments.
+
+3. **Initialize the database:**
+
+   ```bash
+   pnpm setup
+   ```
 
 5. **Start the development server:**
    ```bash
