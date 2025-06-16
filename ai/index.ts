@@ -29,7 +29,6 @@ export async function handleLLMRequestStreaming(
   const messagesWithSystem = prompt
     ? ensureCustomSystemMessage(messages, prompt)
     : ensureSystemMessage(messages);
-
   // Handle Google separately due to different SDK
   if (provider.toLowerCase() === "google") {
     return await callGoogleStreaming(

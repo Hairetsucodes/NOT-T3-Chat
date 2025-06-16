@@ -3,7 +3,7 @@
 import { checkUser } from "@/lib/auth/check";
 import { prisma } from "@/prisma";
 import { UserCustomization } from "@prisma/client";
-import { generateAndApplyPersonalizedPrompt } from "@/ai/utils/promptGeneration";
+import { generateAndApplyPersonalizedPrompt } from "./prompt";
 
 export const getUserSettings = async () => {
   const { userId } = await checkUser();
@@ -137,9 +137,7 @@ export const updateUserSettings = async (
         updatedSettings.additionalContext;
 
       if (hasAnyCustomization) {
-        // Generate personalized prompt in the background
-        // Don't await this to avoid blocking the settings update
-        generatePersonalizedPromptBackground(
+        await generatePersonalizedPromptBackground(
           userId,
           currentModelProvider?.provider || "openai",
           currentModelProvider?.model || "gpt-4o-mini"
@@ -197,13 +195,7 @@ async function generatePersonalizedPromptBackground(
       );
       return;
     }
-
-    await generateAndApplyPersonalizedPrompt(
-      userId,
-      provider,
-      model,
-      apiKeyRecord.key
-    );
+    await generateAndApplyPersonalizedPrompt(provider, model, apiKeyRecord.key);
   } catch (error) {
     console.error("Error in background prompt generation:", error);
   }

@@ -1,3 +1,4 @@
+"use server";
 import { Message } from "@/types/chat";
 import {
   getProviderConfig,
@@ -6,6 +7,7 @@ import {
 } from "../providers";
 import { callProviderNonStreaming } from "./nonStream";
 import { prisma } from "@/prisma";
+import { callOpenAINonStreaming } from "../providers/openai";
 
 /**
  * Map complex reasoning models to simpler alternatives for prompt generation
@@ -34,6 +36,10 @@ function mapToPromptModel(modelId: string, provider: string): string {
         if (modelId.includes("o1")) {
           return "gpt-4o-mini";
         }
+        // Map invalid/non-existent models to valid ones
+        if (modelId === "gpt-4.1" || modelId.includes("gpt-4.1")) {
+          return "gpt-4o-mini";
+        }
         break;
       case "anthropic":
         if (modelId.includes("opus")) {
@@ -60,6 +66,16 @@ function mapToPromptModel(modelId: string, provider: string): string {
     }
   }
 
+  // Additional fallback for OpenAI models
+  if (
+    actualProvider.toLowerCase() === "openai" &&
+    !["gpt-3.5-turbo", "gpt-4", "gpt-4o", "gpt-4o-mini", "gpt-4-turbo"].some(
+      (valid) => modelId.startsWith(valid)
+    )
+  ) {
+    return "gpt-4o-mini"; // Safe fallback for any invalid OpenAI model
+  }
+
   return modelId; // Return original if no mapping needed
 }
 
@@ -77,7 +93,6 @@ export async function generatePersonalizedPrompt(
     const userCustomization = await prisma.userCustomization.findUnique({
       where: { userId },
     });
-
     if (!userCustomization) {
       console.warn("No user customization found for user:", userId);
       return null;
@@ -120,7 +135,8 @@ Please create a system prompt that incorporates this information to personalize 
     const promptModelId = mapToPromptModel(modelId, actualProvider);
 
     let generatedPrompt: string;
-
+    const config = getProviderConfig(actualProvider);
+    const providerName = getProviderName(actualProvider).toLowerCase();
     // Handle Google separately due to different SDK
     if (actualProvider.toLowerCase() === "google") {
       generatedPrompt = await callGoogleNonStreaming(
@@ -128,11 +144,13 @@ Please create a system prompt that incorporates this information to personalize 
         promptModelId,
         apiKey
       );
+    } else if (actualProvider.toLowerCase() === "openai") {
+      generatedPrompt = await callOpenAINonStreaming(
+        promptGenerationMessages,
+        promptModelId,
+        apiKey
+      );
     } else {
-      // Use generic provider non-streaming for all other providers
-      const config = getProviderConfig(actualProvider);
-      const providerName = getProviderName(actualProvider);
-
       generatedPrompt = await callProviderNonStreaming(
         promptGenerationMessages,
         promptModelId,
@@ -233,43 +251,5 @@ async function createNewChatSettings(
   } catch (createError) {
     console.error("Error creating new ChatSettings:", createError);
     throw createError;
-  }
-}
-
-/**
- * Generate and apply personalized prompt (combines both functions)
- */
-export async function generateAndApplyPersonalizedPrompt(
-  userId: string,
-  provider: string,
-  modelId: string,
-  apiKey: string
-): Promise<string | null> {
-  try {
-    const promptId = await generatePersonalizedPrompt(
-      userId,
-      provider,
-      modelId,
-      apiKey
-    );
-
-    if (promptId) {
-      const success = await updateChatSettingsWithPrompt(
-        userId,
-        promptId,
-        provider,
-        modelId
-      );
-      if (success) {
-        return promptId;
-      }
-    }
-
-    return null;
-  } catch (error) {
-    console.error("❌ Error in generateAndApplyPersonalizedPrompt:", error);
-    return null;
-  } finally {
-    await prisma.$disconnect();
   }
 }

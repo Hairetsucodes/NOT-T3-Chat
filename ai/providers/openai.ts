@@ -185,3 +185,38 @@ export async function callOpenAIStreaming(
     },
   });
 }
+
+export async function callOpenAINonStreaming(
+  messages: Message[],
+  modelId: string,
+  apiKey: string,
+  maxTokens: number = 50
+): Promise<string> {
+  const openai = new OpenAI({
+    apiKey,
+  });
+
+  // Transform messages to OpenAI format
+  const openAIMessages = messages.map((message) => ({
+    role: message.role as "system" | "user" | "assistant",
+    content: message.content,
+  }));
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: modelId,
+      messages: openAIMessages,
+      max_tokens: maxTokens,
+      temperature: 0.3,
+      stream: false,
+    });
+
+    s;
+    const content = response.choices?.[0]?.message?.content?.trim() || "";
+
+    return content;
+  } catch (error) {
+    console.error("🔴 OpenAI API Error:", error);
+    throw error;
+  }
+}
