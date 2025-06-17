@@ -5,9 +5,8 @@ import { ChatContainer } from "./Container";
 import { ChatContext } from "@/context/ChatContext";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
-import { Message } from "@/types/chat";
 
-export const Chat = ({ initialMessages }: { initialMessages?: Message[] }) => {
+export const Chat = ({ noWelcomeMessage }: { noWelcomeMessage?: boolean }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const {
@@ -75,12 +74,13 @@ export const Chat = ({ initialMessages }: { initialMessages?: Message[] }) => {
       />
       <div className="flex-1 relative z-10">
         <ChatContainer
-          messages={initialMessages || messages}
+          messages={messages}
           input={input}
           isLoading={isLoading}
           handleInputChange={handleInputChange}
           handleSubmit={handleSubmit}
           handleSuggestionSelect={handleSuggestionSelect}
+          noWelcomeMessage={noWelcomeMessage}
         />
       </div>
     </div>

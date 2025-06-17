@@ -1,6 +1,7 @@
 import React from "react";
 import { getMessagesByConversationId } from "@/data/messages";
 import { Chat } from "@/components/chat/Chat";
+import { ChatWrapper } from "@/components/chat/ChatWrapper";
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import {
@@ -13,6 +14,7 @@ export default async function Page(props: {
   searchParams: Promise<{ provider?: string; model?: string }>;
 }) {
   const { id } = await props.params;
+  const { provider, model } = await props.searchParams;
 
   // Validate conversation ID format (basic check)
   if (!id || id.length < 10) {
@@ -56,5 +58,14 @@ export default async function Page(props: {
   // Validate data integrity
   validateMessageData(dbMessages, messages);
 
-  return <Chat initialMessages={messages} />;
+  return (
+    <ChatWrapper
+      initialMessages={messages}
+      initialConversationId={id}
+      initialProvider={provider || "openai"}
+      initialModel={model || "gpt-4o-mini"}
+    >
+      <Chat noWelcomeMessage={true} />
+    </ChatWrapper>
+  );
 }
