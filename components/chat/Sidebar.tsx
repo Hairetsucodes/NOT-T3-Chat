@@ -93,9 +93,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                   variant="callToAction"
                   className="w-full"
                   onClick={() => {
-                    setConversationId(null);
-                    setMessages([]);
-                    router.push("/chat");
+                    window.location.href = "/chat";
                   }}
                 >
                   <span className="w-full select-none text-center text-sm ">

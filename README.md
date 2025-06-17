@@ -32,6 +32,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 - 🌳 Conversation branching support
 - 🔄 Retry responses with same or different models
 - 🐛 Streamlined Bug reporting
+- 💾 Blob/local storage support for prod/local deployments
 
 ## 📸 Screenshots
 

@@ -25,7 +25,7 @@ export async function uploadAttachmentToAzure(
     );
     const blobPath = `${userId}/${blobName}`;
     const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
-    if (!blobPath.startsWith(`${userId}/partial-`)) {
+    if (!blobName.startsWith('partial-')) {
       createAttachmentApi(userId, blobName, contentType, blobPath);
     }
     // Convert File to ArrayBuffer for Azure upload

@@ -163,11 +163,11 @@ export async function GET(
       // Read the file
       imageBuffer = await readFile(filePath);
     } else {
-      // Serve from Azure Blob Storage
+      // Try Azure first, then fallback to local storage
       try {
         const blobResponse = await getAttachmentFromAzure(fileName, userId);
         if (!blobResponse.readableStreamBody) {
-          return new NextResponse("Image not found", { status: 404 });
+          throw new Error("No readable stream from Azure");
         }
 
         // Convert readable stream to buffer
@@ -179,9 +179,52 @@ export async function GET(
         }
 
         imageBuffer = Buffer.concat(chunks);
-      } catch (error) {
-        console.error("Error fetching image from Azure:", error);
-        return new NextResponse("Image not found", { status: 404 });
+      } catch (azureError: unknown) {
+        // Only allow local fallback in development/localhost
+        const isDevelopment = process.env.NODE_ENV === "development" || 
+                            process.env.NEXTAUTH_URL === "http://localhost:3000";
+        
+        if (!isDevelopment) {
+          console.error(`Azure blob not found for user ${userId}: ${fileName}`);
+          return new NextResponse("Image not found", { status: 404 });
+        }
+
+        // Log concise error info for development
+        const error = azureError as { code?: string; statusCode?: number };
+        const errorCode = error?.code || "Unknown";
+        const statusCode = error?.statusCode || "Unknown";
+        console.log(`Azure ${errorCode} (${statusCode}) for ${fileName}, trying local fallback`);
+
+        // Fallback to local storage
+        try {
+          const filePath = join(
+            process.cwd(),
+            "local-attachment-store",
+            userId,
+            `${fileName}`
+          );
+
+          // Check if file exists locally
+          if (!existsSync(filePath)) {
+            return new NextResponse(
+              "Image not found in both Azure and local storage",
+              { status: 404 }
+            );
+          }
+
+          // Read the file from local storage
+          imageBuffer = await readFile(filePath);
+          console.log(
+            "Successfully served image from local fallback:",
+            fileName
+          );
+        } catch {
+          console.error(
+            "Local fallback failed for:",
+            fileName
+          );
+          return new NextResponse("Image not found", { status: 404 });
+        }
       }
     }
 
