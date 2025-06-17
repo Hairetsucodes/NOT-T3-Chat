@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import SettingsModal from "@/components/settings/SettingsModal";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useRouter } from "next/navigation";
 
 type ConversationWithLoading = Conversation & {
   isLoading?: boolean;
@@ -32,6 +33,7 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const [searchValue, setSearchValue] = useState("");
+  const router = useRouter();
   const {
     conversations,
     activeUser,
@@ -40,6 +42,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     deleteConversation,
     conversationId,
     isLoading,
+    setMessages,
   } = useContext(ChatContext);
   const [searchResults, setSearchResults] =
     useState<ConversationWithLoading[]>(conversations);
@@ -90,7 +93,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                   variant="callToAction"
                   className="w-full"
                   onClick={() => {
-                    window.location.href = "/chat";
+                    setConversationId(null);
+                    setMessages([]);
+                    router.push("/chat");
                   }}
                 >
                   <span className="w-full select-none text-center text-sm ">
