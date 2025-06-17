@@ -14,6 +14,7 @@ import {
 
 export async function handleLLMRequestStreaming(
   userId: string,
+  conversationId: string,
   messages: Message[],
   provider: string,
   modelId: string,
@@ -42,6 +43,7 @@ export async function handleLLMRequestStreaming(
 
   if (provider.toLowerCase() === "openai") {
     return await callOpenAIStreaming(
+      conversationId,
       userId,
       messagesWithSystem,
       modelId,

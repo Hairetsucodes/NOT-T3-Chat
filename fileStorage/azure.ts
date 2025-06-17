@@ -10,7 +10,8 @@ export async function uploadAttachmentToAzure(
   attachment: File,
   blobName: string,
   contentType: string,
-  userId: string
+  userId: string,
+  conversationId: string
 ) {
   try {
     if (!attachment) {
@@ -25,8 +26,14 @@ export async function uploadAttachmentToAzure(
     );
     const blobPath = `${userId}/${blobName}`;
     const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
-    if (!blobName.startsWith('partial-')) {
-      createAttachmentApi(userId, blobName, contentType, blobPath);
+    if (!blobName.startsWith("partial-")) {
+      createAttachmentApi(
+        userId,
+        blobName,
+        contentType,
+        blobPath,
+        conversationId
+      );
     }
     // Convert File to ArrayBuffer for Azure upload
     const arrayBuffer = await attachment.arrayBuffer();

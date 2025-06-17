@@ -76,6 +76,7 @@ export async function POST(req: Request) {
 
     const stream = await handleLLMRequestStreaming(
       userId,
+      currentConversationId || "",
       messages,
       selectedModel.provider,
       selectedModel.model,

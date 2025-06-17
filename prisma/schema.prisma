@@ -94,6 +94,7 @@ model Conversation {
   branchedFromConvo     Conversation?  @relation("ConversationBranch", fields: [branchedFromConvoId], references: [id])
   branchedConversations Conversation[] @relation("ConversationBranch")
   Message               Message[]
+  Attachment            Attachment[]
 }
 
 model Message {
@@ -173,14 +174,17 @@ model PreferredModel {
 }
 
 model Attachment {
-  id        String   @id @default(cuid())
-  userId    String
-  filename  String
-  fileUrl   String
-  fileType  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String        @id @default(cuid())
+  userId         String
+  conversationId String?
+  filename       String
+  fileUrl        String
+  fileType       String
+  isShared       Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
 }
 
 model OpenRouterModel {

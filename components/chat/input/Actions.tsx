@@ -129,29 +129,6 @@ export function InputActions() {
         <TooltipTrigger asChild>
           <Button
             variant="ghost"
-            disabled
-            className="text-xs h-auto gap-2 rounded-full border border-solid border-secondary-foreground/10 px-2 py-1.5 pr-2.5 text-muted-foreground max-sm:p-2"
-            aria-label="Attaching files is a subscriber-only feature"
-            type="button"
-          >
-            <Paperclip className="size-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Attach files</p>
-        </TooltipContent>
-      </Tooltip>
-      <ShareDialog
-        isPublic={isPublic || false}
-        shareUrl={shareUrl}
-        handleCopyLink={handleCopyLink}
-        copied={copied}
-        togglePublic={togglePublic}
-      />
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
             disabled={!imageCapableModels.includes(chatSettings?.model || "")}
             className={`text-xs h-auto gap-2 rounded-full border border-solid border-secondary-foreground/10 px-2 py-1.5 pr-2.5 text-muted-foreground max-sm:p-2 ${
               isImageGeneration
@@ -175,6 +152,29 @@ export function InputActions() {
           <p>{isImageGeneration ? "Disable" : "Enable"} image generation</p>
         </TooltipContent>
       </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            disabled
+            className="text-xs h-auto gap-2 rounded-full border border-solid border-secondary-foreground/10 px-2 py-1.5 pr-2.5 text-muted-foreground max-sm:p-2"
+            aria-label="Attaching files is a subscriber-only feature"
+            type="button"
+          >
+            <Paperclip className="size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Attach files</p>
+        </TooltipContent>
+      </Tooltip>
+      <ShareDialog
+        isPublic={isPublic || false}
+        shareUrl={shareUrl}
+        handleCopyLink={handleCopyLink}
+        copied={copied}
+        togglePublic={togglePublic}
+      />
     </>
   );
 }

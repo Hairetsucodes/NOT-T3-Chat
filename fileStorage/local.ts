@@ -4,7 +4,8 @@ import fs from "fs";
 export async function uploadAttachmentToLocal(
   attachment: File,
   filename: string,
-  userId: string
+  userId: string,
+  conversationId: string
 ) {
   const dirpath = `./local-attachment-store/${userId}`;
   if (!fs.existsSync(dirpath)) {
@@ -12,7 +13,7 @@ export async function uploadAttachmentToLocal(
   }
   const filepath = `./local-attachment-store/${userId}/${filename}`;
   fs.writeFileSync(filepath, Buffer.from(await attachment.arrayBuffer()));
-  createAttachmentApi(userId, filename, "image/png", filepath);
+  createAttachmentApi(userId, filename, "image/png", filepath, conversationId);
 }
 
 export async function getAttachmentFromLocal(blobName: string, userId: string) {

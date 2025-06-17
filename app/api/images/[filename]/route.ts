@@ -4,6 +4,7 @@ import { join, basename, extname } from "path";
 import { existsSync } from "fs";
 import { auth } from "@/auth";
 import { getAttachmentFromAzure } from "@/fileStorage/azure";
+import { isShared } from "@/lib/apiServerActions/sharing";
 
 const isLocal = process.env.AZURE_STORAGE_CONNECTION_STRING === undefined;
 
@@ -113,17 +114,69 @@ export async function GET(
 ) {
   try {
     const { filename } = await params;
+    console.log("filename", filename);
 
-    // Sanitize filename with robust validation
+    // Sanitize filename with robust validation first
     const sanitizedFilename = sanitizeFilename(filename);
     if (!sanitizedFilename) {
       return new NextResponse("Invalid filename", { status: 400 });
     }
 
-    const session = await auth();
-    const userId = session?.user?.id;
-    if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    // Extract the database filename to check if image is shared
+    // For regular images: {userId}-{timestamp}.{ext} -> {timestamp}.{ext}
+    // For partial images: partial-{id}-{number}.{ext} -> partial-{id}-{number}.{ext}
+    let dbFilename: string;
+    if (sanitizedFilename.startsWith("partial-")) {
+      // For partial images, use the entire filename as-is
+      dbFilename = sanitizedFilename;
+    } else {
+      // For regular images, extract everything after the first dash
+      const dashIndex = sanitizedFilename.indexOf("-");
+      if (dashIndex > 0) {
+        dbFilename = sanitizedFilename.substring(dashIndex + 1);
+      } else {
+        dbFilename = sanitizedFilename;
+      }
+    }
+
+    const imgIsShared = await isShared(dbFilename);
+    console.log("imgIsShared", imgIsShared, "dbFilename", dbFilename);
+
+    let userId: string;
+
+    if (imgIsShared) {
+      // For shared images, extract userId from filename since auth is bypassed
+      // Regular images have format: {userId}-{timestamp}.{ext}
+      // Partial images have format: partial-{id}-{number}.{ext}
+      if (sanitizedFilename.startsWith("partial-")) {
+        // Extract ID from partial filename: partial-{id}-{number}.{ext}
+        const parts = sanitizedFilename.split("-");
+        if (parts.length >= 3) {
+          userId = parts[1]; // The ID is the second part after splitting on "-"
+        } else {
+          return new NextResponse("Invalid shared partial filename format", {
+            status: 400,
+          });
+        }
+      } else {
+        // Extract userId from regular filename: {userId}-{timestamp}.{ext}
+        const dashIndex = sanitizedFilename.indexOf("-");
+        if (dashIndex > 0) {
+          userId = sanitizedFilename.substring(0, dashIndex);
+        } else {
+          return new NextResponse("Invalid shared filename format", {
+            status: 400,
+          });
+        }
+      }
+    } else {
+      // For non-shared images, require authentication
+      const session = await auth();
+      const sessionUserId = session?.user?.id;
+      if (!sessionUserId) {
+        return new NextResponse("Unauthorized", { status: 401 });
+      }
+      userId = sessionUserId;
     }
     // Handle both regular images (id-timestamp.ext) and partial images (partial-id-number.ext)
     let fileName: string;

@@ -7,15 +7,18 @@ export default auth((req) => {
 
   // Check if the route is an API auth route
   const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
+  console.log("isApiAuthRoute", isApiAuthRoute);
 
   // Check if the route is a public route
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
+  console.log("isPublicRoute", isPublicRoute);
 
   // Check if the route is an auth route
   const isAuthRoute = authRoutes.includes(nextUrl.pathname);
-
+  console.log("isAuthRoute", isAuthRoute);
   // Check if the route is a shared route
   const isSharedRoute = nextUrl.pathname.startsWith("/shared/");
+  console.log("isSharedRoute", isSharedRoute);
 
   // Check if the route is a chat route (exact match or dynamic route)
   const isChatRoute =
@@ -44,7 +47,7 @@ export default auth((req) => {
   }
 
   // If user is not logged in and trying to access protected routes, redirect to login
-  if (!isLoggedIn && !isPublicRoute && !isAuthRoute) {
+  if (!isLoggedIn && !isPublicRoute && !isAuthRoute && !isSharedRoute) {
     return Response.redirect(new URL("/", nextUrl.origin));
   }
 

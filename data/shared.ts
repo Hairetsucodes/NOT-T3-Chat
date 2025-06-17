@@ -23,8 +23,12 @@ export async function getSharedChat(id: string) {
 
 export async function updateIsPublic(id: string, isPublic: boolean) {
   const { userId } = await checkUser();
-  await prisma.conversation.update({
+  const conversation = await prisma.conversation.update({
     where: { id, userId },
     data: { isPublic },
+  });
+  await prisma.attachment.updateMany({
+    where: { conversationId: conversation.id },
+    data: { isShared: isPublic },
   });
 }

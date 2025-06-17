@@ -20,6 +20,7 @@ const isLocal = process.env.AZURE_STORAGE_CONNECTION_STRING === undefined;
 const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
 export async function callOpenAIStreaming(
+  conversationId: string,
   userId: string,
   messages: Message[],
   modelId: string,
@@ -96,17 +97,21 @@ export async function callOpenAIStreaming(
               // save to temp file
               const iteration = event.partial_image_index;
               const filename = `partial-${userId}-${iteration}${Date.now()}.png`;
-              
+
               // Convert base64 to binary data
-              const binaryData = Uint8Array.from(atob(event.partial_image_b64), c => c.charCodeAt(0));
-              
+              const binaryData = Uint8Array.from(
+                atob(event.partial_image_b64),
+                (c) => c.charCodeAt(0)
+              );
+
               if (isLocal) {
                 uploadAttachmentToLocal(
                   new File([binaryData], filename, {
                     type: "image/png",
                   }),
                   filename,
-                  userId
+                  userId,
+                  conversationId
                 );
               } else {
                 uploadAttachmentToAzure(
@@ -115,7 +120,8 @@ export async function callOpenAIStreaming(
                   }),
                   filename,
                   "image/png",
-                  userId
+                  userId,
+                  conversationId
                 );
               }
               controller.enqueue(
@@ -134,17 +140,20 @@ export async function callOpenAIStreaming(
               const imageBase64 = event.item.result as string;
               const timestamp = Date.now();
               const filename = `${timestamp}.png`;
-              
+
               // Convert base64 to binary data
-              const binaryData = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
-              
+              const binaryData = Uint8Array.from(atob(imageBase64), (c) =>
+                c.charCodeAt(0)
+              );
+
               if (isLocal) {
                 uploadAttachmentToLocal(
                   new File([binaryData], filename, {
                     type: "image/png",
                   }),
                   filename,
-                  userId
+                  userId,
+                  conversationId
                 );
               } else {
                 uploadAttachmentToAzure(
@@ -153,7 +162,8 @@ export async function callOpenAIStreaming(
                   }),
                   filename,
                   "image/png",
-                  userId
+                  userId,
+                  conversationId
                 );
               }
               controller.enqueue(
