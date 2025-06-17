@@ -114,7 +114,6 @@ export async function GET(
 ) {
   try {
     const { filename } = await params;
-    console.log("filename", filename);
 
     // Sanitize filename with robust validation first
     const sanitizedFilename = sanitizeFilename(filename);
@@ -140,7 +139,6 @@ export async function GET(
     }
 
     const imgIsShared = await isShared(dbFilename);
-    console.log("imgIsShared", imgIsShared, "dbFilename", dbFilename);
 
     let userId: string;
 

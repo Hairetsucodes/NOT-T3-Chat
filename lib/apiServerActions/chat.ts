@@ -107,7 +107,6 @@ export const createAttachmentApi = async (
   tileLocation: string,
   conversationId: string
 ) => {
-  console.log("Creating attachment", userId, filename, fileType, tileLocation, conversationId);
   await prisma.attachment.create({
     data: {
       userId,

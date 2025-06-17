@@ -19,6 +19,9 @@ const isLocal = process.env.AZURE_STORAGE_CONNECTION_STRING === undefined;
 
 const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
+// Helper function to create a delay
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function callOpenAIStreaming(
   conversationId: string,
   userId: string,
@@ -124,6 +127,10 @@ export async function callOpenAIStreaming(
                   conversationId
                 );
               }
+
+              // Wait 0.5 seconds for upload to complete
+              await delay(500);
+
               controller.enqueue(
                 new TextEncoder().encode(
                   `data: ${JSON.stringify({
@@ -166,11 +173,16 @@ export async function callOpenAIStreaming(
                   conversationId
                 );
               }
+
+              // Wait 0.5 seconds for upload to complete
+              await delay(500);
+
               controller.enqueue(
+                // sleep for 1 second
                 new TextEncoder().encode(
                   `data: ${JSON.stringify({
-                    partial_image: `![${filename}](${`${baseUrl}/api/images/${userId}-${filename}`}) [Download](${`${baseUrl}/api/images/${userId}-${filename}?download=true`})\n\n `,
-                    image_url: `![${filename}](${`${baseUrl}/api/images/${userId}-${filename}`}) [Download](${`${baseUrl}/api/images/${userId}-${filename}?download=true`})\n\n `,
+                    partial_image: `![${filename}](${`${baseUrl}/api/images/${userId}-${filename}`}) [Download](${`${baseUrl}/api/images/${userId}-${filename}`})\n\n `,
+                    image_url: `![${filename}](${`${baseUrl}/api/images/${userId}-${filename}`}) [Download](${`${baseUrl}/api/images/${userId}-${filename}`})\n\n `,
                   })}\n\n`
                 )
               );
@@ -183,6 +195,7 @@ export async function callOpenAIStreaming(
                   })}\n\n`
                 )
               );
+              await delay(1000);
               if (isLocal) {
                 deletePartialImagesFromLocal(userId);
               } else {
