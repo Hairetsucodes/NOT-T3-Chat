@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import SettingsModal from "@/components/settings/SettingsModal";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useRouter } from "next/navigation";
 
 type ConversationWithLoading = Conversation & {
   isLoading?: boolean;
@@ -33,12 +32,10 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const [searchValue, setSearchValue] = useState("");
-  const router = useRouter();
   const {
     conversations,
     activeUser,
     setConversationId,
-    setMessages,
     togglePinConversation,
     deleteConversation,
     conversationId,
