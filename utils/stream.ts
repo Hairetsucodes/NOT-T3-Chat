@@ -8,12 +8,12 @@ import { streamingCache, StreamingSession } from "@/lib/cache/streamingCache";
 
 const isLocal = process.env.IS_LOCAL === "true";
 
-export function createStreamTransformer(
+export async function createStreamTransformer(
   stream: ReadableStream,
   userId: string,
   selectedModel: APISelectedModel,
   currentConversationId: string | undefined
-): { transformedStream: ReadableStream; conversationId: string | undefined } {
+): Promise<{ transformedStream: ReadableStream; conversationId: string | undefined }> {
   let fullContent = "";
   let fullReasoning = "";
   let responseId: string | undefined;
@@ -22,7 +22,7 @@ export function createStreamTransformer(
   let cacheSession: StreamingSession | null = null;
   
   if (isLocal && currentConversationId) {
-    cacheSession = streamingCache.createSession(userId, currentConversationId);
+    cacheSession = await streamingCache.createSession(userId, currentConversationId);
   }
   
   const transformedStream = new ReadableStream({
@@ -52,10 +52,10 @@ export function createStreamTransformer(
               // Mark cache session as complete
               if (cacheSession && currentConversationId) {
                 console.log("✅ Marking cache session as complete for:", currentConversationId);
-                streamingCache.completeSession(currentConversationId);
+                await streamingCache.completeSession(currentConversationId);
                 
                 // Debug: Check final cache state
-                const finalSession = streamingCache.getSession(currentConversationId);
+                const finalSession = await streamingCache.getSession(currentConversationId);
                 console.log("📈 Final cache session state:", {
                   conversationId: currentConversationId,
                   status: finalSession?.status,
@@ -100,7 +100,7 @@ export function createStreamTransformer(
                       // Cache the chunk if running locally - combine content and reasoning in one chunk
                       if (cacheSession && currentConversationId && (hasContent || hasReasoning)) {
                         
-                        streamingCache.addChunk(currentConversationId, chunkContent, chunkReasoning || undefined);
+                        await streamingCache.addChunk(currentConversationId, chunkContent, chunkReasoning || undefined);
                       }
                       if (parsed.previous_response_id) {
                         responseId = parsed.previous_response_id;
@@ -118,7 +118,7 @@ export function createStreamTransformer(
         } catch (error) {
           // Mark cache session as error
           if (cacheSession && currentConversationId) {
-            streamingCache.errorSession(currentConversationId);
+            await streamingCache.errorSession(currentConversationId);
           }
           controller.error(error);
         }

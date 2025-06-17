@@ -36,10 +36,10 @@ async function handleReconnectRequest(req: NextRequest, headOnly: boolean = fals
     console.log("🔍 Reconnect API called for conversation:", conversationId, "by user:", userId);
     
     // Debug: Check what's in the cache
-    const cacheStats = streamingCache.getStats();
+    const cacheStats = await streamingCache.getStats();
     console.log("📊 Current cache stats:", cacheStats);
     
-    const reconnectData = streamingCache.getReconnectData(conversationId);
+    const reconnectData = await streamingCache.getReconnectData(conversationId);
     
     if (!reconnectData) {
       console.log("❌ Streaming session not found for conversation:", conversationId);
@@ -54,7 +54,7 @@ async function handleReconnectRequest(req: NextRequest, headOnly: boolean = fals
     });
 
     // Verify the session belongs to the user
-    const sessionData = streamingCache.getSession(conversationId);
+    const sessionData = await streamingCache.getSession(conversationId);
     if (sessionData && sessionData.userId !== userId) {
       console.log("🚫 Unauthorized access attempt by user:", userId, "for session owned by:", sessionData.userId);
       return new Response("Unauthorized access to streaming session", { status: 403 });
@@ -244,7 +244,7 @@ export async function POST(req: NextRequest) {
       return new Response("conversationId is required", { status: 400 });
     }
 
-    const reconnectData = streamingCache.getReconnectData(conversationId);
+    const reconnectData = await streamingCache.getReconnectData(conversationId);
     
     if (!reconnectData) {
       return new Response("Streaming session not found", { status: 404 });

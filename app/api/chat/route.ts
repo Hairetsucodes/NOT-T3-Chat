@@ -93,7 +93,7 @@ export async function POST(req: Request) {
     );
 
     // Create transformed stream
-    const { transformedStream } = createStreamTransformer(
+    const { transformedStream } = await createStreamTransformer(
       stream,
       userId,
       selectedModel,
