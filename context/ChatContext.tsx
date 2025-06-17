@@ -135,11 +135,15 @@ export const ChatProvider = ({
     (conversation: ConversationWithLoading) => {
       setConversations((prev) => {
         // Check if conversation with same ID already exists
-        const existingIndex = prev.findIndex((conv) => conv.id === conversation.id);
+        const existingIndex = prev.findIndex(
+          (conv) => conv.id === conversation.id
+        );
         if (existingIndex !== -1) {
           // Update existing conversation instead of adding duplicate
-          return prev.map((conv, index) => 
-            index === existingIndex ? { ...conv, ...conversation, updatedAt: new Date() } : conv
+          return prev.map((conv, index) =>
+            index === existingIndex
+              ? { ...conv, ...conversation, updatedAt: new Date() }
+              : conv
           );
         }
         // Add new conversation if it doesn't exist
@@ -270,7 +274,11 @@ export const ChatProvider = ({
           if (anId) {
             updateConversation(anId, { title: generatedTitle });
             if (!conversationId && responseConversationId) {
-              window.history.pushState(null, "", `/chat/${responseConversationId}`);
+              window.history.pushState(
+                null,
+                "",
+                `/chat/${responseConversationId}`
+              );
             }
           }
         }
@@ -285,7 +293,9 @@ export const ChatProvider = ({
 
         // Create assistant message placeholder with unique ID
         const assistantMessage: Message = {
-          id: `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: `assistant-${Date.now()}-${Math.random()
+            .toString(36)
+            .substr(2, 9)}`,
           role: "assistant",
           content: "",
           reasoning_content: "",
@@ -346,7 +356,6 @@ export const ChatProvider = ({
                     );
                   }
                   if (parsed.partial_image) {
-                    console.log(`Updating partial image for message ${messageId}:`, parsed.partial_image);
                     setMessages((prev) => {
                       const updated = prev.map((msg) =>
                         msg.id === messageId
@@ -358,12 +367,11 @@ export const ChatProvider = ({
                             }
                           : msg
                       );
-                      console.log(`Updated messages:`, updated.find(m => m.id === messageId));
+
                       return updated;
                     });
                   }
                   if (parsed.image_generation_status) {
-                    console.log(`Updating image status for message ${messageId}:`, parsed.image_generation_status);
                     setMessages((prev) =>
                       prev.map((msg) =>
                         msg.id === messageId

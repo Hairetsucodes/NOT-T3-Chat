@@ -36,7 +36,7 @@ export function ChatContainer({
   // Check for retry query parameter
   const searchParams = useSearchParams();
   const hasRetryParam = searchParams.get("retry") === "true";
-  console.log("noWelcomeMessage", noWelcomeMessage);
+
   return (
     <main className="relative flex w-full h-full flex-col overflow-hidden transition-[width,height]">
       {/* Background with borders */}

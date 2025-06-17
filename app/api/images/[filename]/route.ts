@@ -128,8 +128,6 @@ export async function GET(
     // Handle both regular images (id-timestamp.ext) and partial images (partial-id-number.ext)
     let fileName: string;
     if (sanitizedFilename.startsWith("partial-")) {
-      console.log("partial-", sanitizedFilename);
-      console.log("userId", userId);
       // For partial images, use the entire filename as-is
       fileName = sanitizedFilename;
     } else {
@@ -179,21 +177,16 @@ export async function GET(
         }
 
         imageBuffer = Buffer.concat(chunks);
-      } catch (azureError: unknown) {
+      } catch {
         // Only allow local fallback in development/localhost
-        const isDevelopment = process.env.NODE_ENV === "development" || 
-                            process.env.NEXTAUTH_URL === "http://localhost:3000";
-        
+        const isDevelopment =
+          process.env.NODE_ENV === "development" ||
+          process.env.NEXTAUTH_URL === "http://localhost:3000";
+
         if (!isDevelopment) {
           console.error(`Azure blob not found for user ${userId}: ${fileName}`);
           return new NextResponse("Image not found", { status: 404 });
         }
-
-        // Log concise error info for development
-        const error = azureError as { code?: string; statusCode?: number };
-        const errorCode = error?.code || "Unknown";
-        const statusCode = error?.statusCode || "Unknown";
-        console.log(`Azure ${errorCode} (${statusCode}) for ${fileName}, trying local fallback`);
 
         // Fallback to local storage
         try {
@@ -214,15 +207,8 @@ export async function GET(
 
           // Read the file from local storage
           imageBuffer = await readFile(filePath);
-          console.log(
-            "Successfully served image from local fallback:",
-            fileName
-          );
         } catch {
-          console.error(
-            "Local fallback failed for:",
-            fileName
-          );
+          console.error("Local fallback failed for:", fileName);
           return new NextResponse("Image not found", { status: 404 });
         }
       }
