@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import SettingsModal from "@/components/settings/SettingsModal";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useRouter } from "next/navigation";
 
 type ConversationWithLoading = Conversation & {
   isLoading?: boolean;
@@ -32,6 +33,7 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const [searchValue, setSearchValue] = useState("");
+  const router = useRouter();
   const {
     conversations,
     activeUser,
@@ -93,7 +95,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                   onClick={() => {
                     setConversationId(null);
                     setMessages([]);
-                    window.history.replaceState(null, "", "/chat");
+                    router.push("/chat");
                   }}
                 >
                   <span className="w-full select-none text-center text-sm ">
@@ -187,7 +189,10 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                                 <Link
                                   className="group/link relative flex h-9 w-full items-center overflow-hidden rounded-lg px-2 py-1 text-sm outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring hover:focus-visible:bg-sidebar-accent"
                                   href={`/chat/${thread.id}`}
-                                  onClick={() => onClose?.()}
+                                  onClick={() => {
+                                    setConversationId(thread.id);
+                                    onClose?.();
+                                  }}
                                 >
                                   <div className="relative flex w-full items-center">
                                     <div className="relative w-full flex items-center gap-2">

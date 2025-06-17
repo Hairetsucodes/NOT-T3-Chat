@@ -5,8 +5,9 @@ import { ChatContainer } from "./Container";
 import { ChatContext } from "@/context/ChatContext";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
+import { Message } from "@/types/chat";
 
-export const Chat = () => {
+export const Chat = ({ initialMessages }: { initialMessages?: Message[] }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const {
@@ -74,7 +75,7 @@ export const Chat = () => {
       />
       <div className="flex-1 relative z-10">
         <ChatContainer
-          messages={messages}
+          messages={initialMessages || messages}
           input={input}
           isLoading={isLoading}
           handleInputChange={handleInputChange}

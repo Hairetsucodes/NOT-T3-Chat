@@ -369,7 +369,7 @@
 
   /* Horizontal rule */
   .contentMarkdown hr {
-    @apply border-0 border-t border-border/40 my-8;
+    @apply border-0 border-t border-border/40 ;
   }
 
   /* Task lists */

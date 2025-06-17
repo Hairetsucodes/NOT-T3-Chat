@@ -1,7 +1,6 @@
 import React from "react";
 import { getMessagesByConversationId } from "@/data/messages";
 import { Chat } from "@/components/chat/Chat";
-import { ChatWrapper } from "@/components/chat/ChatWrapper";
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import {
@@ -25,8 +24,6 @@ export default async function Page(props: {
   if (!session?.user?.id) {
     redirect("/");
   }
-
-  const { provider, model } = await props.searchParams;
 
   let dbMessages;
   try {
@@ -59,14 +56,5 @@ export default async function Page(props: {
   // Validate data integrity
   validateMessageData(dbMessages, messages);
 
-  return (
-    <ChatWrapper
-      initialMessages={messages}
-      initialConversationId={id}
-      initialProvider={provider || ""}
-      initialModel={model || ""}
-    >
-      <Chat />
-    </ChatWrapper>
-  );
+  return <Chat initialMessages={messages} />;
 }
