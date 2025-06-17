@@ -296,10 +296,7 @@ const ModelSelector = memo(function ModelSelector() {
     activeUser,
     activeProviders,
   } = useContext(ChatContext);
-  console.log(
-    "activeProviders",
-    activeProviders.map((p) => p.provider)
-  );
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [showAllModels, setShowAllModels] = useState(false);

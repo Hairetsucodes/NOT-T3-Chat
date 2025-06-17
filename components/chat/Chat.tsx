@@ -6,7 +6,7 @@ import { ChatContext } from "@/context/ChatContext";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 
-export const Chat = () => {
+export const Chat = ({ noWelcomeMessage }: { noWelcomeMessage?: boolean }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const {
@@ -80,6 +80,7 @@ export const Chat = () => {
           handleInputChange={handleInputChange}
           handleSubmit={handleSubmit}
           handleSuggestionSelect={handleSuggestionSelect}
+          noWelcomeMessage={noWelcomeMessage}
         />
       </div>
     </div>

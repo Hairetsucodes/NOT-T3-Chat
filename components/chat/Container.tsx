@@ -21,6 +21,7 @@ interface ChatContainerProps {
     event?: { preventDefault?: () => void; currentInput?: string } | undefined
   ) => void;
   handleSuggestionSelect: (suggestion: string) => void;
+  noWelcomeMessage?: boolean;
 }
 
 export function ChatContainer({
@@ -30,11 +31,12 @@ export function ChatContainer({
   handleInputChange,
   handleSubmit,
   handleSuggestionSelect,
+  noWelcomeMessage,
 }: ChatContainerProps) {
   // Check for retry query parameter
   const searchParams = useSearchParams();
   const hasRetryParam = searchParams.get("retry") === "true";
-
+  console.log("noWelcomeMessage", noWelcomeMessage);
   return (
     <main className="relative flex w-full h-full flex-col overflow-hidden transition-[width,height]">
       {/* Background with borders */}
@@ -61,9 +63,9 @@ export function ChatContainer({
         className="absolute inset-0 overflow-y-auto mt-4 md:mt-4"
         style={{ paddingBottom: "144px", scrollbarGutter: "stable both-edges" }}
       >
-        {messages.length === 0 && !hasRetryParam ? (
+        {messages.length === 0 && !hasRetryParam && !noWelcomeMessage ? (
           <WelcomeScreen onSelectSuggestion={handleSuggestionSelect} />
-        ) : hasRetryParam && messages.length === 0 ? (
+        ) : noWelcomeMessage && messages.length === 0 ? (
           <ChatSkeleton />
         ) : (
           <Suspense fallback={<ChatSkeleton />}>

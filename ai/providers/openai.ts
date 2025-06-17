@@ -1,13 +1,21 @@
 import { Message } from "@/types/chat";
 import OpenAI from "openai";
 import { imageCapableModels } from "@/constants/imageModels";
-import fs from "fs";
-import { createAttachmentApi } from "@/lib/apiServerActions/chat";
 import {
   parseOpenAIError,
   createModelAccessErrorMessage,
   createRateLimitErrorMessage,
 } from "../utils/errors";
+import {
+  deletePartialImagesFromLocal,
+  uploadAttachmentToLocal,
+} from "@/fileStorage/local";
+import {
+  deletePartialImagesFromAzure,
+  uploadAttachmentToAzure,
+} from "@/fileStorage/azure";
+
+const isLocal = process.env.AZURE_STORAGE_CONNECTION_STRING === undefined;
 
 const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
@@ -88,15 +96,28 @@ export async function callOpenAIStreaming(
               // save to temp file
               const iteration = event.partial_image_index;
               const filename = `partial-${userId}-${iteration}${Date.now()}.png`;
-              const dirpath = `./local-attachment-store/${userId}`;
-              if (!fs.existsSync(dirpath)) {
-                fs.mkdirSync(dirpath, { recursive: true });
+              
+              // Convert base64 to binary data
+              const binaryData = Uint8Array.from(atob(event.partial_image_b64), c => c.charCodeAt(0));
+              
+              if (isLocal) {
+                uploadAttachmentToLocal(
+                  new File([binaryData], filename, {
+                    type: "image/png",
+                  }),
+                  filename,
+                  userId
+                );
+              } else {
+                uploadAttachmentToAzure(
+                  new File([binaryData], filename, {
+                    type: "image/png",
+                  }),
+                  filename,
+                  "image/png",
+                  userId
+                );
               }
-              const filepath = `./local-attachment-store/${userId}/${filename}`;
-              fs.writeFileSync(
-                filepath,
-                Buffer.from(event.partial_image_b64, "base64")
-              );
               controller.enqueue(
                 new TextEncoder().encode(
                   `data: ${JSON.stringify({
@@ -113,16 +134,28 @@ export async function callOpenAIStreaming(
               const imageBase64 = event.item.result as string;
               const timestamp = Date.now();
               const filename = `${timestamp}.png`;
-              const dirpath = `./local-attachment-store/${userId}`;
-              if (!fs.existsSync(dirpath)) {
-                fs.mkdirSync(dirpath, { recursive: true });
+              
+              // Convert base64 to binary data
+              const binaryData = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
+              
+              if (isLocal) {
+                uploadAttachmentToLocal(
+                  new File([binaryData], filename, {
+                    type: "image/png",
+                  }),
+                  filename,
+                  userId
+                );
+              } else {
+                uploadAttachmentToAzure(
+                  new File([binaryData], filename, {
+                    type: "image/png",
+                  }),
+                  filename,
+                  "image/png",
+                  userId
+                );
               }
-
-              const filepath = `./local-attachment-store/${userId}/${filename}`;
-
-              fs.writeFileSync(filepath, Buffer.from(imageBase64, "base64"));
-              createAttachmentApi(userId, filename, "image/png", filepath);
-
               controller.enqueue(
                 new TextEncoder().encode(
                   `data: ${JSON.stringify({
@@ -140,13 +173,10 @@ export async function callOpenAIStreaming(
                   })}\n\n`
                 )
               );
-              const dirpath = `./local-attachment-store/${userId}`;
-              if (fs.existsSync(dirpath)) {
-                fs.readdirSync(dirpath).forEach((file) => {
-                  if (file.startsWith("partial-")) {
-                    fs.unlinkSync(`${dirpath}/${file}`);
-                  }
-                });
+              if (isLocal) {
+                deletePartialImagesFromLocal(userId);
+              } else {
+                deletePartialImagesFromAzure(userId);
               }
             }
           }

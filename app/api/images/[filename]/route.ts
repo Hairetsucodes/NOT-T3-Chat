@@ -3,6 +3,9 @@ import { readFile } from "fs/promises";
 import { join, basename, extname } from "path";
 import { existsSync } from "fs";
 import { auth } from "@/auth";
+import { getAttachmentFromAzure } from "@/fileStorage/azure";
+
+const isLocal = process.env.AZURE_STORAGE_CONNECTION_STRING === undefined;
 
 // Allowed image extensions
 const ALLOWED_EXTENSIONS = new Set([
@@ -110,11 +113,6 @@ export async function GET(
 ) {
   try {
     const { filename } = await params;
-    const session = await auth();
-    const userId = session?.user?.id;
-    if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
 
     // Sanitize filename with robust validation
     const sanitizedFilename = sanitizeFilename(filename);
@@ -122,32 +120,113 @@ export async function GET(
       return new NextResponse("Invalid filename", { status: 400 });
     }
 
+    const session = await auth();
+    const userId = session?.user?.id;
+    if (!userId) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
     // Handle both regular images (id-timestamp.ext) and partial images (partial-id-number.ext)
     let fileName: string;
     if (sanitizedFilename.startsWith("partial-")) {
+      console.log("partial-", sanitizedFilename);
+      console.log("userId", userId);
       // For partial images, use the entire filename as-is
       fileName = sanitizedFilename;
     } else {
-      // For regular images, extract the actual filename after the first dash
+      // For regular images, the filename format is: {userId}-{timestamp}.{ext}
+      // But in Azure, it's stored as just {timestamp}.{ext} under the userId folder
+      // So we need to extract just the timestamp part
       const filenameParts = sanitizedFilename.split("-");
-      fileName = filenameParts[1];
+      if (filenameParts.length >= 2) {
+        fileName = filenameParts.slice(1).join("-"); // Get everything after the first dash
+      } else {
+        fileName = sanitizedFilename;
+      }
     }
 
-    // Construct the file path
-    const filePath = join(
-      process.cwd(),
-      "local-attachment-store",
-      userId,
-      `${fileName}`
-    );
+    let imageBuffer: Buffer;
 
-    // Check if file exists
-    if (!existsSync(filePath)) {
-      return new NextResponse("Image not found", { status: 404 });
+    if (isLocal) {
+      // Serve from local storage
+      const filePath = join(
+        process.cwd(),
+        "local-attachment-store",
+        userId,
+        `${fileName}`
+      );
+
+      // Check if file exists
+      if (!existsSync(filePath)) {
+        return new NextResponse("Image not found", { status: 404 });
+      }
+
+      // Read the file
+      imageBuffer = await readFile(filePath);
+    } else {
+      // Try Azure first, then fallback to local storage
+      try {
+        const blobResponse = await getAttachmentFromAzure(fileName, userId);
+        if (!blobResponse.readableStreamBody) {
+          throw new Error("No readable stream from Azure");
+        }
+
+        // Convert readable stream to buffer
+        const chunks: Buffer[] = [];
+        const stream = blobResponse.readableStreamBody;
+
+        for await (const chunk of stream) {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+
+        imageBuffer = Buffer.concat(chunks);
+      } catch (azureError: unknown) {
+        // Only allow local fallback in development/localhost
+        const isDevelopment = process.env.NODE_ENV === "development" || 
+                            process.env.NEXTAUTH_URL === "http://localhost:3000";
+        
+        if (!isDevelopment) {
+          console.error(`Azure blob not found for user ${userId}: ${fileName}`);
+          return new NextResponse("Image not found", { status: 404 });
+        }
+
+        // Log concise error info for development
+        const error = azureError as { code?: string; statusCode?: number };
+        const errorCode = error?.code || "Unknown";
+        const statusCode = error?.statusCode || "Unknown";
+        console.log(`Azure ${errorCode} (${statusCode}) for ${fileName}, trying local fallback`);
+
+        // Fallback to local storage
+        try {
+          const filePath = join(
+            process.cwd(),
+            "local-attachment-store",
+            userId,
+            `${fileName}`
+          );
+
+          // Check if file exists locally
+          if (!existsSync(filePath)) {
+            return new NextResponse(
+              "Image not found in both Azure and local storage",
+              { status: 404 }
+            );
+          }
+
+          // Read the file from local storage
+          imageBuffer = await readFile(filePath);
+          console.log(
+            "Successfully served image from local fallback:",
+            fileName
+          );
+        } catch {
+          console.error(
+            "Local fallback failed for:",
+            fileName
+          );
+          return new NextResponse("Image not found", { status: 404 });
+        }
+      }
     }
-
-    // Read the file
-    const imageBuffer = await readFile(filePath);
 
     // Determine content type based on file extension
     const extension = sanitizedFilename.toLowerCase().split(".").pop();

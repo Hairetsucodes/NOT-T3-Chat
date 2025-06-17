@@ -133,7 +133,18 @@ export const ChatProvider = ({
 
   const addConversation = useCallback(
     (conversation: ConversationWithLoading) => {
-      setConversations((prev) => [conversation, ...prev]);
+      setConversations((prev) => {
+        // Check if conversation with same ID already exists
+        const existingIndex = prev.findIndex((conv) => conv.id === conversation.id);
+        if (existingIndex !== -1) {
+          // Update existing conversation instead of adding duplicate
+          return prev.map((conv, index) => 
+            index === existingIndex ? { ...conv, ...conversation, updatedAt: new Date() } : conv
+          );
+        }
+        // Add new conversation if it doesn't exist
+        return [conversation, ...prev];
+      });
     },
     []
   );
@@ -254,10 +265,13 @@ export const ChatProvider = ({
 
         if (generatedTitle && !conversationTitle) {
           setConversationTitle(generatedTitle);
-
-          // Update existing conversation title if we have the ID
-          if (conversationId) {
-            updateConversation(conversationId, { title: generatedTitle });
+          // Use the new ID directly, as state update is async
+          const anId = responseConversationId || conversationId;
+          if (anId) {
+            updateConversation(anId, { title: generatedTitle });
+            if (!conversationId && responseConversationId) {
+              window.history.pushState(null, "", `/chat/${responseConversationId}`);
+            }
           }
         }
 
@@ -269,9 +283,9 @@ export const ChatProvider = ({
           throw new Error("No response body reader available");
         }
 
-        // Create assistant message placeholder
+        // Create assistant message placeholder with unique ID
         const assistantMessage: Message = {
-          id: Date.now().toString(),
+          id: `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           role: "assistant",
           content: "",
           reasoning_content: "",
@@ -283,6 +297,8 @@ export const ChatProvider = ({
 
         setMessages([...newMessages, assistantMessage]);
 
+        // Store the message ID for reliable updates during streaming
+        const messageId = assistantMessage.id;
         let done = false;
         let hasReceivedFirstToken = false;
 
@@ -309,7 +325,7 @@ export const ChatProvider = ({
 
                     setMessages((prev) =>
                       prev.map((msg) =>
-                        msg.id === assistantMessage.id
+                        msg.id === messageId
                           ? { ...msg, content: msg.content + parsed.content }
                           : msg
                       )
@@ -318,7 +334,7 @@ export const ChatProvider = ({
                   if (parsed.reasoning) {
                     setMessages((prev) =>
                       prev.map((msg) =>
-                        msg.id === assistantMessage.id
+                        msg.id === messageId
                           ? {
                               ...msg,
                               reasoning_content:
@@ -330,9 +346,10 @@ export const ChatProvider = ({
                     );
                   }
                   if (parsed.partial_image) {
-                    setMessages((prev) =>
-                      prev.map((msg) =>
-                        msg.id === assistantMessage.id
+                    console.log(`Updating partial image for message ${messageId}:`, parsed.partial_image);
+                    setMessages((prev) => {
+                      const updated = prev.map((msg) =>
+                        msg.id === messageId
                           ? {
                               ...msg,
                               partial_image: parsed.partial_image,
@@ -340,13 +357,16 @@ export const ChatProvider = ({
                               image_generation_status: "",
                             }
                           : msg
-                      )
-                    );
+                      );
+                      console.log(`Updated messages:`, updated.find(m => m.id === messageId));
+                      return updated;
+                    });
                   }
                   if (parsed.image_generation_status) {
+                    console.log(`Updating image status for message ${messageId}:`, parsed.image_generation_status);
                     setMessages((prev) =>
                       prev.map((msg) =>
-                        msg.id === assistantMessage.id
+                        msg.id === messageId
                           ? {
                               ...msg,
                               image_generation_status:
@@ -420,9 +440,11 @@ export const ChatProvider = ({
       if (inputToUse.trim() && !isLoading) {
         // Add loading conversation for new chats
         if (!conversationId && activeUser?.id) {
-          const loadingId = `loading-${Date.now()}-${Math.random()
-            .toString(36)
-            .substr(2, 9)}`;
+          const loadingId = window.location.pathname.startsWith("/chat/")
+            ? window.location.pathname.substring(6)
+            : `loading-${Date.now()}-${Math.random()
+                .toString(36)
+                .substr(2, 9)}`;
           loadingConversationIdRef.current = loadingId;
 
           const loadingConversation = {
@@ -471,9 +493,9 @@ export const ChatProvider = ({
     (suggestion: string) => {
       // Add loading conversation for new chats
       if (!conversationId && activeUser?.id) {
-        const loadingId = `loading-${Date.now()}-${Math.random()
-          .toString(36)
-          .substr(2, 9)}`;
+        const loadingId = window.location.pathname.startsWith("/chat/")
+          ? window.location.pathname.substring(6)
+          : `loading-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         loadingConversationIdRef.current = loadingId;
 
         const loadingConversation = {

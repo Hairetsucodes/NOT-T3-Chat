@@ -14,6 +14,7 @@ export default async function Page(props: {
   searchParams: Promise<{ provider?: string; model?: string }>;
 }) {
   const { id } = await props.params;
+  const { provider, model } = await props.searchParams;
 
   // Validate conversation ID format (basic check)
   if (!id || id.length < 10) {
@@ -25,8 +26,6 @@ export default async function Page(props: {
   if (!session?.user?.id) {
     redirect("/");
   }
-
-  const { provider, model } = await props.searchParams;
 
   let dbMessages;
   try {
@@ -63,10 +62,10 @@ export default async function Page(props: {
     <ChatWrapper
       initialMessages={messages}
       initialConversationId={id}
-      initialProvider={provider || ""}
-      initialModel={model || ""}
+      initialProvider={provider || "openai"}
+      initialModel={model || "gpt-4o-mini"}
     >
-      <Chat />
+      <Chat noWelcomeMessage={true} />
     </ChatWrapper>
   );
 }
