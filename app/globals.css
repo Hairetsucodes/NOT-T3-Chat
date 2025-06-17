@@ -223,7 +223,7 @@
 
   /* Markdown Styles */
   .contentMarkdown {
-    @apply text-foreground/90 space-y-4 leading-8 text-[15px];
+    @apply text-foreground/90 space-y-4 text-[15px];
   }
 
   .contentMarkdown h1 {
@@ -251,7 +251,7 @@
   }
 
   .contentMarkdown p {
-    @apply mb-4 text-foreground/80 leading-8;
+    @apply mb-4 text-foreground/80 ;
   }
 
   .contentMarkdown ul {
@@ -264,7 +264,7 @@
   }
 
   .contentMarkdown li {
-    @apply relative pl-6 leading-8 text-foreground/80;
+    @apply relative pl-6  text-foreground/80;
   }
 
   .contentMarkdown ul > li::before {

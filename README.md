@@ -469,9 +469,8 @@ pnpm db:migrate
 
 ### TODO in no particular order
 
-- ✅ Image Gen (OpenAI models) / Image Analysis (pending)
-
-- blob storage for attachments/images in prod
+- Resume streams
+- Image Analysis (pending)
 - Attachments
 - Optimize DB querying
 - Refactor x100
