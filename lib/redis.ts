@@ -20,10 +20,6 @@ export async function getRedisClient() {
         password: accessToken.token,
         url: `redis://${process.env.AZURE_MANAGED_REDIS_HOST_NAME}:10000`,
         pingInterval: 100000,
-        socket: { 
-          tls: true,
-          keepAlive: 0 
-        },
       });
 
       redisClient.on("error", (err) => {
@@ -40,7 +36,6 @@ export async function getRedisClient() {
 
       await redisClient.connect();
       console.log("Redis client connected successfully");
-
     } catch (error) {
       console.error("Failed to create Redis client:", error);
       throw error;
@@ -79,4 +74,4 @@ export async function redisDel(key: string) {
 export async function redisExists(key: string) {
   const client = await getRedisClient();
   return await client.exists(key);
-} 
+}
