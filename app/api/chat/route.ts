@@ -12,6 +12,9 @@ import {
 import { createStreamTransformer } from "@/utils/stream";
 import { auth } from "@/auth";
 
+
+
+
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -50,6 +53,7 @@ export async function POST(req: Request) {
     if (conversationId && selectedModel.provider.toLowerCase() === "openai") {
       lastResponseId = await getLastResponseId(conversationId);
     }
+    // Update conversation to indicate it's generating
     if (lastUserMessage?.role === "user") {
       const savedMessage = await createMessageApi(
         userId,
@@ -67,7 +71,6 @@ export async function POST(req: Request) {
         currentConversationId = savedMessage.conversationId;
       }
     }
-
     // Get model information and create stream
     const modelInfo = await getModelById(selectedModel.model);
     const maxTokens = modelInfo?.maxOutput || undefined;
@@ -90,7 +93,7 @@ export async function POST(req: Request) {
     );
 
     // Create transformed stream
-    const transformedStream = createStreamTransformer(
+    const { transformedStream } = await createStreamTransformer(
       stream,
       userId,
       selectedModel,

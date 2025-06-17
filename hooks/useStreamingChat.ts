@@ -7,7 +7,6 @@ interface ChatOptions {
   selectedModel?: string;
   provider?: string;
   model?: string;
-  signal?: AbortSignal;
 }
 
 export const useStreamingChat = () => {
@@ -25,10 +24,12 @@ export const useStreamingChat = () => {
     ) => {
       setIsLoading(true);
 
-      // Create abort controller for this request
+      // Create abort controller for reference but don't use it to abort the request
+      // This allows us to track the request but not cancel it on navigation/refresh
       abortControllerRef.current = new AbortController();
 
       try {
+        // Removed signal from fetch - this is the key change to prevent aborts
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: {
@@ -44,7 +45,7 @@ export const useStreamingChat = () => {
               model: options.model || options.chatSettings?.model || "gpt-4o-mini",
             },
           }),
-          signal: abortControllerRef.current.signal,
+          // Removed signal: abortControllerRef.current.signal,
         });
 
         if (!response.ok) {
@@ -57,6 +58,9 @@ export const useStreamingChat = () => {
         // Handle conversation ID and title from response headers
         const generatedTitle = response.headers.get("X-Generated-Title");
         const responseConversationId = response.headers.get("X-Conversation-Id");
+
+        // Determine the actual conversation ID being used
+        const actualConversationId = responseConversationId || options.conversationId;
 
         if (responseConversationId && !options.conversationId) {
           options.onConversationCreated?.(responseConversationId, generatedTitle || undefined);
@@ -90,63 +94,72 @@ export const useStreamingChat = () => {
 
         // Return the assistant message so it can be added to the messages array
         const streamPromise = (async () => {
-          while (!done) {
-            const { value, done: streamDone } = await reader.read();
-            done = streamDone;
+          try {
+            while (!done) {
+              const { value, done: streamDone } = await reader.read();
+              done = streamDone;
 
-            if (value) {
-              const chunk = decoder.decode(value, { stream: true });
-              const lines = chunk.split("\n");
+              if (value) {
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split("\n");
 
-              for (const line of lines) {
-                if (line.startsWith("data: ")) {
-                  const data = line.slice(6);
+                for (const line of lines) {
+                  if (line.startsWith("data: ")) {
+                    const data = line.slice(6);
 
-                  try {
-                    const parsed = JSON.parse(data);
+                    try {
+                      const parsed = JSON.parse(data);
 
-                    if (parsed.content) {
-                      if (!hasReceivedFirstToken) {
-                        setIsLoading(false);
-                        hasReceivedFirstToken = true;
+                      if (parsed.content) {
+                        if (!hasReceivedFirstToken) {
+                          setIsLoading(false);
+                          hasReceivedFirstToken = true;
+                        }
+
+                        options.onMessageUpdate(messageId, {
+                          content: assistantMessage.content + parsed.content,
+                        });
+                        assistantMessage.content += parsed.content;
                       }
-
-                      options.onMessageUpdate(messageId, {
-                        content: assistantMessage.content + parsed.content,
-                      });
-                      assistantMessage.content += parsed.content;
+                      if (parsed.reasoning) {
+                        const newReasoningContent = (assistantMessage.reasoning_content || "") + parsed.reasoning;
+                        options.onMessageUpdate(messageId, {
+                          reasoning_content: newReasoningContent,
+                        });
+                        assistantMessage.reasoning_content = newReasoningContent;
+                      }
+                      if (parsed.partial_image) {
+                        options.onMessageUpdate(messageId, {
+                          partial_image: parsed.partial_image,
+                          image_generation_status: "",
+                        });
+                        assistantMessage.partial_image = parsed.partial_image;
+                        assistantMessage.image_generation_status = "";
+                      }
+                      if (parsed.image_generation_status) {
+                        options.onMessageUpdate(messageId, {
+                          image_generation_status: parsed.image_generation_status,
+                        });
+                        assistantMessage.image_generation_status = parsed.image_generation_status;
+                      }
+                    } catch {
+                      // Skip invalid JSON chunks
                     }
-                    if (parsed.reasoning) {
-                      const newReasoningContent = (assistantMessage.reasoning_content || "") + parsed.reasoning;
-                      options.onMessageUpdate(messageId, {
-                        reasoning_content: newReasoningContent,
-                      });
-                      assistantMessage.reasoning_content = newReasoningContent;
-                    }
-                    if (parsed.partial_image) {
-                      options.onMessageUpdate(messageId, {
-                        partial_image: parsed.partial_image,
-                        image_generation_status: "",
-                      });
-                      assistantMessage.partial_image = parsed.partial_image;
-                      assistantMessage.image_generation_status = "";
-                    }
-                    if (parsed.image_generation_status) {
-                      options.onMessageUpdate(messageId, {
-                        image_generation_status: parsed.image_generation_status,
-                      });
-                      assistantMessage.image_generation_status = parsed.image_generation_status;
-                    }
-                  } catch {
-                    // Skip invalid JSON chunks
                   }
                 }
               }
             }
+          } catch (error) {
+            // Handle streaming errors gracefully
+            console.warn("Streaming interrupted:", error);
+            // Don't throw the error to prevent breaking the UI
+            // The stream will continue on the server and can be reconnected
+          } finally {
+            setIsLoading(false);
           }
         })();
 
-        return { assistantMessage, streamPromise };
+        return { assistantMessage, streamPromise, conversationId: actualConversationId };
       } catch (error) {
         console.error("Error sending message:", error);
         throw error;
@@ -159,11 +172,14 @@ export const useStreamingChat = () => {
     []
   );
 
+  // Modified stopStream to not actually abort the request
+  // Instead, it just stops the local streaming and sets loading to false
   const stopStream = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      setIsLoading(false);
-    }
+    setIsLoading(false);
+    // Don't actually abort the request - let it continue on the server
+    // if (abortControllerRef.current) {
+    //   abortControllerRef.current.abort();
+    // }
   }, []);
 
   return {

@@ -1,4 +1,4 @@
-import { JSX, useState } from "react";
+import { JSX, useState, useRef } from "react";
 import { useTheme } from "next-themes";
 import { getLanguageDisplayName } from "@/lib/code-utils";
 import { highlight } from "@/lib/shiki-shared";
@@ -25,6 +25,7 @@ export function StreamingCodeBlock({
   const [smoothTransition, setSmoothTransition] = useState<JSX.Element | null>(
     null
   );
+  const currentHighlightRef = useRef<JSX.Element | null>(null);
 
   const displayLanguage = getLanguageDisplayName(language);
 
@@ -32,6 +33,9 @@ export function StreamingCodeBlock({
   const actualTheme = theme === "system" ? systemTheme : theme;
   const isDark = actualTheme === "dark";
   const shikiTheme = isDark ? "github-dark" : "github-light";
+
+  // Keep ref in sync with currentHighlight
+  currentHighlightRef.current = currentHighlight;
 
   useLayoutEffect(() => {
     const highlightCode = () => {
@@ -44,7 +48,7 @@ export function StreamingCodeBlock({
       }
 
       // Keep current highlight visible while processing new content (prevents flashing)
-      setSmoothTransition(currentHighlight);
+      setSmoothTransition(currentHighlightRef.current);
 
       // Try to highlight the incomplete code, but be more forgiving of errors
       const normalizedLang = normalizeLanguage(language);
