@@ -43,6 +43,13 @@ export const useConversations = (
 
   const updateConversation = useCallback(
     (id: string, updates: Partial<ConversationWithLoading>) => {
+      if (updates.hasOwnProperty('isGenerating')) {
+        console.log("🔄 updateConversation - isGenerating changed:", {
+          conversationId: id,
+          newValue: updates.isGenerating,
+          updateSource: new Error().stack?.split('\n')[2]?.trim()
+        });
+      }
       setConversations((prev) =>
         prev.map((conv) =>
           conv.id === id ? { ...conv, ...updates, updatedAt: new Date() } : conv

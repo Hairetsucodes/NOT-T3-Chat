@@ -13,7 +13,7 @@ export const createMessageApi = async (
   reasoningContent: string,
   conversationId?: string,
   title?: string,
-  responseId?: string
+  responseId?: string,
 ) => {
   // Create conversation if it doesn't exist
   if (!conversationId) {
@@ -33,6 +33,13 @@ export const createMessageApi = async (
   if (!role) {
     throw new Error("Role is required");
   }
+  await prisma.conversation.update({
+    where: { id: conversationId },
+    data: {
+      isGenerating: role === "user",
+    },
+  });
+
   // Create and return the message
   const message = await prisma.message.create({
     data: {

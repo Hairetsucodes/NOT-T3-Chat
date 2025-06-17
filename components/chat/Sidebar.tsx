@@ -40,8 +40,6 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     setConversationId,
     togglePinConversation,
     deleteConversation,
-    conversationId,
-    isLoading,
     setMessages,
   } = useContext(ChatContext);
   const [searchResults, setSearchResults] =
@@ -214,10 +212,11 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                                         type="text"
                                         value={thread.title}
                                       />
-                                      {conversationId === thread.id &&
-                                        isLoading && (
-                                          <Loader2 className="h-3 w-3 animate-spin ml-2 flex-shrink-0" />
-                                        )}
+                                      {thread.isGenerating && (
+                                        <span className="text-xs text-muted-foreground">
+                                          <Loader2 className="size-4 animate-spin" />
+                                        </span>
+                                      )}
                                     </div>
                                     <div className="pointer-events-auto absolute -right-1 bottom-0 top-0 z-50 flex translate-x-full items-center justify-end text-muted-foreground transition-transform group-hover/link:translate-x-0 group-hover/link:bg-sidebar-accent">
                                       <div className="pointer-events-none absolute bottom-0 right-[100%] top-0 h-12 w-8 bg-gradient-to-l from-sidebar-accent to-transparent opacity-0 group-hover/link:opacity-100" />

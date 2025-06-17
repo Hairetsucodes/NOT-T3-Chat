@@ -14,6 +14,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
   "gpt-4.1-nano",
   "o3",
   )
+- 🔄 Multi-concurrent conversations support
 - 🔐 Authentication with NextAuth
 - 🔑 JWT token-based authentication
 - 🛡️ API Key Encryption for secure storage
@@ -31,6 +32,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 - 🎯 Syntax highlighting for code blocks
 - 🌳 Conversation branching support
 - 🔄 Retry responses with same or different models
+- 🌊 Stream resuming with backend caching (SQLite locally, Redis in production)
 - 🐛 Streamlined Bug reporting
 - 💾 Blob/local storage support for prod/local deployments
 
@@ -469,7 +471,6 @@ pnpm db:migrate
 
 ### TODO in no particular order
 
-- Resume streams
 - Image Analysis (pending)
 - Attachments
 - Optimize DB querying
