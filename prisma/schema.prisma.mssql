@@ -96,6 +96,7 @@ model Conversation {
   user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   branchedFromConvo     Conversation?  @relation("ConversationBranch", fields: [branchedFromConvoId], references: [id])
   branchedConversations Conversation[] @relation("ConversationBranch")
+  Attachment            Attachment[]
   Message               Message[]
 }
 
