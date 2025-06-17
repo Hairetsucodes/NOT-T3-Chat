@@ -9,6 +9,7 @@ import { Message } from "@/types/chat";
 import { ChangeEvent, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { MessageList } from "./message/MessageList";
+import { Spinner } from "@/components/ui/spinner";
 
 interface ChatContainerProps {
   messages: Message[];
@@ -66,7 +67,9 @@ export function ChatContainer({
         {messages.length === 0 && !hasRetryParam && !noWelcomeMessage ? (
           <WelcomeScreen onSelectSuggestion={handleSuggestionSelect} />
         ) : noWelcomeMessage && messages.length === 0 ? (
-          <ChatSkeleton />
+          <div className="flex justify-center items-center h-full">
+            <Spinner size="xl" type="spin" />
+          </div>
         ) : (
           <Suspense fallback={<ChatSkeleton />}>
             <MessageList messages={messages} isLoading={isLoading} />

@@ -78,7 +78,6 @@ export const ChatProvider = ({
   initialChatSettings: ChatSettings | null;
   children: React.ReactNode;
 }) => {
-  // Use the centralized chat hook
   const chatHook = useChat({
     activeUser,
     initialConversations,
