@@ -90,6 +90,7 @@ model Conversation {
   isPublic              Boolean        @default(false)
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
+  isGenerating          Boolean        @default(false)
   isRetry               Boolean        @default(false)
   branchedFromConvoId   String?
   branchedIds           String?        @db.Text // JSON array of all conversation IDs in the branch chain
