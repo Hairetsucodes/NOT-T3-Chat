@@ -4,7 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { ChatContainer } from "./Container";
 import { ChatContext } from "@/context/ChatContext";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { List, Menu, SidebarIcon, X } from "lucide-react";
 
 export const Chat = ({ welcomeMessage }: { welcomeMessage?: boolean }) => {
   // Separate states for mobile and desktop sidebars
@@ -52,31 +52,31 @@ export const Chat = ({ welcomeMessage }: { welcomeMessage?: boolean }) => {
 
       {/* Mobile sidebar toggle button - only visible on mobile */}
       <Button
-        variant={isMobileSidebarOpen ? "secondary" : "ghost"}
+        variant={"ghost"}
         size="icon"
         onClick={toggleMobileSidebar}
         className="fixed top-4 left-4 z-[60] md:hidden bg-chat-background/80 backdrop-blur-sm border border-chat-border/50 hover:bg-chat-background"
         aria-label={isMobileSidebarOpen ? "Hide sidebar" : "Show sidebar"}
       >
         {isMobileSidebarOpen ? (
-          <X className="h-5 w-5" />
+          <SidebarIcon className="h-5 w-5" />
         ) : (
-          <Menu className="h-5 w-5" />
+          <SidebarIcon className="h-5 w-5" />
         )}
       </Button>
 
       {/* Desktop sidebar toggle button - only visible on desktop */}
       <Button
-        variant={isDesktopSidebarOpen ? "secondary" : "ghost"}
+        variant={"ghost"}
         size="icon"
         onClick={toggleDesktopSidebar}
         className="fixed top-4 left-4 p-1 z-[60] hidden md:block bg-chat-background/80 backdrop-blur-sm border border-chat-border/50 hover:bg-chat-background"
         aria-label={isDesktopSidebarOpen ? "Hide sidebar" : "Show sidebar"}
       >
         {isDesktopSidebarOpen ? (
-          <X className="h-5 w-5" />
+          <SidebarIcon className="h-5 w-5" />
         ) : (
-          <Menu className="h-5 w-5" />
+          <SidebarIcon className="h-5 w-5" />
         )}
       </Button>
 

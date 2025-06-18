@@ -88,7 +88,9 @@ export function ChatInput({
                   type="submit"
                   aria-label="Send message"
                 >
-                  <ArrowUp className="size-5" />
+                  <span className="hidden sm:block">
+                    <ArrowUp className="size-4" />
+                  </span>
                 </Button>
               </div>
 
