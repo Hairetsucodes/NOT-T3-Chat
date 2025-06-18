@@ -66,11 +66,11 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Sidebar - Hidden on desktop md+, toggleable on mobile */}
+      {/* Sidebar - Toggleable on all screen sizes */}
       <div
         className={`${
           isOpen ? "flex" : "hidden"
-        } md:flex md:w-[16rem] flex-col h-screen fixed md:relative inset-y-0 left-0 w-[16rem] z-50 md:z-auto bg-sidebar md:bg-transparent`}
+        } w-[16rem] flex-col h-screen fixed md:relative inset-y-0 left-0 z-50 md:z-auto bg-sidebar md:bg-transparent`}
       >
         <div className="inset-y-0 transition-[transform,opacity] ease-snappy flex left-0 group-data-[collapsible=offcanvas]:-translate-x-[var(--sidebar-width)] p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)] group border-none flex-1">
           <div className="flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow">

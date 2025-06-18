@@ -49,7 +49,7 @@ export const Chat = ({ welcomeMessage }: { welcomeMessage?: boolean }) => {
         variant="ghost"
         size="icon"
         onClick={toggleSidebar}
-        className="fixed top-4 left-4 z-50 md:hidden bg-chat-background/80 backdrop-blur-sm border border-chat-border/50 hover:bg-chat-background"
+        className="fixed top-4 left-4 z-[60]  bg-chat-background/80 backdrop-blur-sm border border-chat-border/50 hover:bg-chat-background"
         aria-label={isSidebarOpen ? "Hide sidebar" : "Show sidebar"}
       >
         {isSidebarOpen ? (
