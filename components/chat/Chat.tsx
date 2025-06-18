@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 
 export const Chat = ({ welcomeMessage }: { welcomeMessage?: boolean }) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Separate states for mobile and desktop sidebars
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
 
   const {
     conversations,
@@ -19,8 +21,12 @@ export const Chat = ({ welcomeMessage }: { welcomeMessage?: boolean }) => {
     handleSuggestionSelect,
   } = useContext(ChatContext);
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
+  const toggleMobileSidebar = () => {
+    setIsMobileSidebarOpen(!isMobileSidebarOpen);
+  };
+
+  const toggleDesktopSidebar = () => {
+    setIsDesktopSidebarOpen(!isDesktopSidebarOpen);
   };
 
   return (
@@ -44,34 +50,62 @@ export const Chat = ({ welcomeMessage }: { welcomeMessage?: boolean }) => {
         <div className="absolute inset-0 bg-black/40 dark:block hidden"></div>
       </div>
 
-      {/* Mobile sidebar toggle button */}
+      {/* Mobile sidebar toggle button - only visible on mobile */}
       <Button
         variant="ghost"
         size="icon"
-        onClick={toggleSidebar}
-        className="fixed top-4 left-4 z-[60]  bg-chat-background/80 backdrop-blur-sm border border-chat-border/50 hover:bg-chat-background"
-        aria-label={isSidebarOpen ? "Hide sidebar" : "Show sidebar"}
+        onClick={toggleMobileSidebar}
+        className="fixed top-4 left-4 z-[60] md:hidden bg-chat-background/80 backdrop-blur-sm border border-chat-border/50 hover:bg-chat-background"
+        aria-label={isMobileSidebarOpen ? "Hide sidebar" : "Show sidebar"}
       >
-        {isSidebarOpen ? (
+        {isMobileSidebarOpen ? (
           <X className="h-5 w-5" />
         ) : (
           <Menu className="h-5 w-5" />
         )}
       </Button>
 
-      {/* Sidebar with overlay for mobile */}
-      {isSidebarOpen && (
+      {/* Desktop sidebar toggle button - only visible on desktop */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleDesktopSidebar}
+        className="fixed top-4 left-4 z-[60] hidden md:block bg-chat-background/80 backdrop-blur-sm border border-chat-border/50 hover:bg-chat-background"
+        aria-label={isDesktopSidebarOpen ? "Hide sidebar" : "Show sidebar"}
+      >
+        {isDesktopSidebarOpen ? (
+          <X className="h-5 w-5" />
+        ) : (
+          <Menu className="h-5 w-5" />
+        )}
+      </Button>
+
+      {/* Mobile sidebar with overlay */}
+      {isMobileSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setIsSidebarOpen(false)}
+          onClick={() => setIsMobileSidebarOpen(false)}
         />
       )}
+    
+      {/* Mobile Sidebar - only visible on mobile */}
+      <div className="md:hidden">
+        <Sidebar
+          conversations={conversations}
+          isOpen={isMobileSidebarOpen}
+          onClose={() => setIsMobileSidebarOpen(false)}
+        />
+      </div>
 
-      <Sidebar
-        conversations={conversations}
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
+      {/* Desktop Sidebar - only visible on desktop */}
+      <div className="hidden md:block">
+        <Sidebar
+          conversations={conversations}
+          isOpen={isDesktopSidebarOpen}
+          onClose={() => setIsDesktopSidebarOpen(false)}
+        />
+      </div>
+
       <div className="flex-1 relative z-10">
         <ChatContainer
           messages={messages}
