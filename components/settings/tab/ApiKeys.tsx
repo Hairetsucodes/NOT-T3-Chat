@@ -48,12 +48,12 @@ export function ApiKeysTab() {
     }
 
     setIsLoading(true);
-    
+
     // Optimistically update UI immediately
     const newProvider = { id: apiKey.trim(), provider: finalProvider };
     const originalProviders = [...activeProviders];
     setActiveProviders([...activeProviders, newProvider]);
-    
+
     try {
       await createAPIKey(apiKey.trim(), finalProvider);
       toast.success("API key saved successfully");
@@ -185,26 +185,9 @@ export function ApiKeysTab() {
                 <SelectItem value="deepseek">DeepSeek</SelectItem>
                 <SelectItem value="xai">xAI</SelectItem>
                 <SelectItem value="openrouter">OpenRouter</SelectItem>
-                <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
           </div>
-
-          {/* Custom Provider Name Input - only show when custom is selected */}
-          {selectedProvider === "custom" && (
-            <div className="grid gap-3">
-              <Label htmlFor="custom-provider-input">
-                Custom Provider Name
-              </Label>
-              <Input
-                id="custom-provider-input"
-                type="text"
-                placeholder="e.g., my-custom-api, local-llm, etc."
-                value={customProviderName}
-                onChange={(e) => setCustomProviderName(e.target.value)}
-              />
-            </div>
-          )}
 
           <div className="grid gap-3">
             <Label htmlFor="api-key-input">API Key</Label>
@@ -239,25 +222,6 @@ export function ApiKeysTab() {
             )}
           </Button>
         </form>
-
-        <div className="space-y-2">
-          <Label>API Usage</Label>
-          <div className="p-4 border rounded-lg space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm">OpenAI Usage:</span>
-              <span className="text-sm font-mono">$12.45 / $100.00</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm">Anthropic Usage:</span>
-              <span className="text-sm font-mono">$8.32 / $50.00</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Switch id="usage-alerts" />
-          <Label htmlFor="usage-alerts">Enable usage alerts</Label>
-        </div>
 
         <ActiveProviders
           apiKeys={activeProviders}
