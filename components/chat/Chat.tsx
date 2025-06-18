@@ -4,7 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { ChatContainer } from "./Container";
 import { ChatContext } from "@/context/ChatContext";
 import { Button } from "@/components/ui/button";
-import { List, Menu, SidebarIcon, X } from "lucide-react";
+import { SidebarIcon } from "lucide-react";
 
 export const Chat = ({ welcomeMessage }: { welcomeMessage?: boolean }) => {
   // Separate states for mobile and desktop sidebars
