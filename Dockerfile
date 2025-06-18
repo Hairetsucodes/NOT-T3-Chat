@@ -58,49 +58,8 @@ COPY --from=base /app/prisma ./prisma
 # Copy .env file if it exists (optional)
 COPY .env* ./
 
-# Create startup script
-RUN echo '#!/bin/sh' > /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# Check if .env file exists in the data volume' >> /app/start.sh && \
-    echo 'if [ -f "/app/data/.env" ]; then' >> /app/start.sh && \
-    echo '    echo "Found .env file - using custom configuration, skipping SQLite setup"' >> /app/start.sh && \
-    echo 'else' >> /app/start.sh && \
-    echo '    echo "No .env file found - setting up production SQLite mode"' >> /app/start.sh && \
-    echo '    # Generate and persist AUTH_SECRET if not provided' >> /app/start.sh && \
-    echo '    if [ -z "$AUTH_SECRET" ]; then' >> /app/start.sh && \
-    echo '        if [ -f "/app/data/.auth_secret" ]; then' >> /app/start.sh && \
-    echo '            echo "Loading existing AUTH_SECRET..."' >> /app/start.sh && \
-    echo '            export AUTH_SECRET=$(cat /app/data/.auth_secret)' >> /app/start.sh && \
-    echo '        else' >> /app/start.sh && \
-    echo '            echo "Generating new AUTH_SECRET..."' >> /app/start.sh && \
-    echo '            export AUTH_SECRET=$(node -e "console.log(require('\''crypto'\'').randomBytes(32).toString('\''hex'\''))")' >> /app/start.sh && \
-    echo '            echo "$AUTH_SECRET" > /app/data/.auth_secret' >> /app/start.sh && \
-    echo '            chmod 600 /app/data/.auth_secret' >> /app/start.sh && \
-    echo '        fi' >> /app/start.sh && \
-    echo '    fi' >> /app/start.sh && \
-    echo '    # Generate and persist API_KEY_SALT if not provided' >> /app/start.sh && \
-    echo '    if [ -z "$API_KEY_SALT" ]; then' >> /app/start.sh && \
-    echo '        if [ -f "/app/data/.api_key_salt" ]; then' >> /app/start.sh && \
-    echo '            echo "Loading existing API_KEY_SALT..."' >> /app/start.sh && \
-    echo '            export API_KEY_SALT=$(cat /app/data/.api_key_salt)' >> /app/start.sh && \
-    echo '        else' >> /app/start.sh && \
-    echo '            echo "Generating new API_KEY_SALT..."' >> /app/start.sh && \
-    echo '            export API_KEY_SALT=$(node -e "console.log(require('\''crypto'\'').randomBytes(32).toString('\''hex'\''))")' >> /app/start.sh && \
-    echo '            echo "$API_KEY_SALT" > /app/data/.api_key_salt' >> /app/start.sh && \
-    echo '            chmod 600 /app/data/.api_key_salt' >> /app/start.sh && \
-    echo '        fi' >> /app/start.sh && \
-    echo '    fi' >> /app/start.sh && \
-    echo '    # Initialize SQLite database if it does not exist' >> /app/start.sh && \
-    echo '    if [ ! -f "/app/data/prod.db" ]; then' >> /app/start.sh && \
-    echo '        echo "Initializing production SQLite database..."' >> /app/start.sh && \
-    echo '        pnpx prisma db push --skip-generate' >> /app/start.sh && \
-    echo '    fi' >> /app/start.sh && \
-    echo 'fi' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# Start the application' >> /app/start.sh && \
-    echo 'exec pnpm start' >> /app/start.sh
-
-# Make the startup script executable
+# Copy and setup the startup script
+COPY scripts/container-start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
 # Create a volume for the database
