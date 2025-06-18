@@ -29,6 +29,7 @@ export async function callOpenAIStreaming(
   modelId: string,
   apiKey: string,
   isImageGeneration?: boolean,
+  isWebSearch?: boolean,
   lastResponseId?: string
 ): Promise<ReadableStream> {
   const openai = new OpenAI({
@@ -56,6 +57,8 @@ export async function callOpenAIStreaming(
         partial_images: 3,
       },
     ];
+  } else if (isWebSearch) {
+    tools = [{ type: "web_search_preview" }];
   }
 
   try {

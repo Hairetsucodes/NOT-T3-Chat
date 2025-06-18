@@ -96,7 +96,7 @@ export function InputActions() {
         <TooltipTrigger asChild>
           <Button
             variant={isWebSearch ? "default" : "ghost"}
-            disabled={provider !== "google"}
+            disabled={provider !== "google" && !imageCapableModels.includes(chatSettings?.model || "")}
             className={`text-xs h-auto gap-2 rounded-full border border-solid py-1.5 pl-2 pr-2.5 max-sm:p-2 ${
               isWebSearch
                 ? "border-primary bg-primary text-primary-foreground"

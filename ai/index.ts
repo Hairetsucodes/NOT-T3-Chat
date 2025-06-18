@@ -49,6 +49,7 @@ export async function handleLLMRequestStreaming(
       modelId,
       apiKey,
       isImageGeneration,
+      isWebSearch,
       lastResponseId
     );
   }

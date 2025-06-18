@@ -90,7 +90,7 @@ export interface ChatContextType {
   setInput: (input: string) => void;
   isLoading: boolean;
   conversationId: string | null;
-  setConversationId: (id: string | null) => void;
+  setConversationId: (id: string | null, options?: { skipMessageLoading?: boolean }) => void;
   conversationTitle: string | null;
   setConversationTitle: (title: string | null) => void;
   sendMessage: (

@@ -16,6 +16,7 @@ import {
   DatabaseMessage,
 } from "@/lib/utils/message-transform";
 import { reconnectToStream } from "@/lib/utils/reconnect";
+
 interface UseChatOptions {
   activeUser: ChatUser;
   initialConversations?: ConversationWithLoading[];
@@ -36,6 +37,7 @@ const loadConversationMessages = async (
   conversationId: string
 ): Promise<Message[]> => {
   try {
+    
     const response = await fetch(`/api/messages/${conversationId}`);
     if (!response.ok) {
       throw new Error(`Failed to load messages: ${response.status}`);
@@ -113,7 +115,7 @@ export const useChat = ({
 
   // Enhanced setConversationId with reconnection support and duplicate prevention
   const setConversationId = useCallback(
-    async (newConversationId: string | null) => {
+    async (newConversationId: string | null, options?: { skipMessageLoading?: boolean }) => {
       // If no ID provided, just clear everything
       if (!newConversationId) {
         setConversationIdState(null);
@@ -135,6 +137,12 @@ export const useChat = ({
       // Set conversation state first
       setConversationIdState(newConversationId);
       setConversationTitle(conversation?.title || null);
+
+      // Skip loading messages if explicitly requested (e.g., for retries)
+      if (options?.skipMessageLoading) {
+        setMessages([]);
+        return;
+      }
 
       if (conversation?.isGenerating) {
         // Mark this conversation as having an active reconnection
@@ -167,7 +175,7 @@ export const useChat = ({
             }
             return;
           }
-
+          
           // Load existing messages first
           const existingMessages = await loadConversationMessages(
             newConversationId

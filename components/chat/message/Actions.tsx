@@ -67,6 +67,7 @@ export function MessageActions({
     chatSettings,
     setChatSettings,
     sendMessage,
+    setConversationTitle,
   } = useContext(ChatContext);
 
   // Group models by provider
@@ -157,8 +158,9 @@ export function MessageActions({
         } as ChatSettings);
       }
 
-      // Set the new conversation as active - this should trigger proper state switching
-      await setConversationId(newConversation.id);
+      // Set up the new conversation state without loading messages (since it's empty)
+      setConversationId(newConversation.id, { skipMessageLoading: true });
+      setConversationTitle(newConversation.title);
 
       router.push(`/chat/${newConversation.id}`, { scroll: true });
 
