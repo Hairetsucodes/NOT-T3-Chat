@@ -582,6 +582,7 @@ class StreamingCacheAdapter {
     chunks: StreamingChunk[];
     status: string;
     isComplete: boolean;
+    batches?: ChunkBatch[];
   } | null> {
     const result = this.cache.getReconnectData(conversationId);
     return result instanceof Promise ? await result : result;

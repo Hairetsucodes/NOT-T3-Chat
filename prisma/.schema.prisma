@@ -1,0 +1,340 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                String              @id @default(cuid())
+  name              String?
+  email             String?             @unique
+  emailVerified     DateTime?
+  username          String?             @unique
+  password          String?
+  image             String?
+  accounts          Account[]
+  sessions          Session[]
+  apiKeys           ApiKey[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  Conversation      Conversation[]
+  Message           Message[]
+  ChatSettings      ChatSettings[]
+  UserCustomization UserCustomization[]
+  PreferredModel    PreferredModel[]
+  Attachment        Attachment[]
+  StreamingSession  StreamingSession[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  key       String
+  provider  String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Conversation {
+  id                    String         @id @default(cuid())
+  userId                String
+  title                 String
+  isPinned              Boolean        @default(false)
+  isPublic              Boolean        @default(false)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  isRetry               Boolean        @default(false)
+  isGenerating          Boolean        @default(false)
+  branchedFromConvoId   String?
+  branchedIds           String? // JSON array of all conversation IDs in the branch chain
+  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branchedFromConvo     Conversation?  @relation("ConversationBranch", fields: [branchedFromConvoId], references: [id])
+  branchedConversations Conversation[] @relation("ConversationBranch")
+  Message               Message[]
+  Attachment            Attachment[]
+  StreamingSession      StreamingSession?
+}
+
+model Message {
+  id               String       @id @default(cuid())
+  conversationId   String
+  userId           String
+  content          String
+  role             String
+  provider         String
+  model            String?
+  reasoningContent String?
+  promptId         String?
+  responseId       String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  conversation     Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt           Prompt?      @relation(fields: [promptId], references: [id])
+}
+
+model ChatSettings {
+  id                String   @id @default(cuid())
+  userId            String
+  provider          String
+  model             String
+  promptId          String?
+  reasoningEffort   String?
+  temperature       Float?   @default(0.5)
+  maxTokens         Int?     @default(1000)
+  topP              Float?   @default(1)
+  isWebSearch       Boolean  @default(false)
+  isImageGeneration Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt            Prompt?  @relation(fields: [promptId], references: [id])
+}
+
+model UserCustomization {
+  id                    String   @id @default(cuid())
+  userId                String
+  displayName           String?
+  userRole              String?
+  userTraits            String?
+  additionalContext     String?
+  isBoringTheme         Boolean  @default(false)
+  hidePersonalInfo      Boolean  @default(false)
+  disableThematicBreaks Boolean  @default(false)
+  showStatsForNerds     Boolean  @default(false)
+  mainTextFont          String?  @default("Inter")
+  codeFont              String?  @default("JetBrains Mono")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+}
+
+model Prompt {
+  id           String         @id @default(cuid())
+  userId       String
+  prompt       String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  ChatSettings ChatSettings[]
+  Message      Message[]
+}
+
+model PreferredModel {
+  id        String   @id @default(cuid())
+  userId    String
+  model     String
+  provider  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Attachment {
+  id             String        @id @default(cuid())
+  userId         String
+  conversationId String?
+  filename       String
+  fileUrl        String
+  fileType       String
+  isShared       Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+}
+
+model OpenRouterModel {
+  id            String   @id @default(cuid())
+  modelId       String   @unique
+  name          String
+  provider      String
+  description   String?
+  contextLength Int?
+  pricing       Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AnthropicModel {
+  id            String   @id @default(cuid())
+  modelId       String   @unique
+  name          String
+  modelFamily   String
+  description   String?
+  contextLength Int?
+  maxOutput     Int?
+  pricing       Json?
+  capabilities  Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model OpenaiModel {
+  id            String   @id @default(cuid())
+  modelId       String   @unique
+  name          String
+  modelFamily   String
+  description   String?
+  contextLength Int?
+  maxOutput     Int?
+  pricing       Json?
+  capabilities  Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model GoogleModel {
+  id            String   @id @default(cuid())
+  modelId       String   @unique
+  name          String
+  modelFamily   String
+  description   String?
+  contextLength Int?
+  maxOutput     Int?
+  pricing       Json?
+  capabilities  Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model DeepSeekModel {
+  id            String   @id @default(cuid())
+  modelId       String   @unique
+  name          String
+  modelFamily   String
+  description   String?
+  contextLength Int?
+  maxOutput     Int?
+  pricing       Json?
+  capabilities  Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model XaiModel {
+  id            String   @id @default(cuid())
+  modelId       String   @unique
+  name          String
+  modelFamily   String
+  description   String?
+  contextLength Int?
+  maxOutput     Int?
+  pricing       Json?
+  capabilities  Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ResponseCache {
+  id        String   @id @default(cuid())
+  cacheKey  String   @unique
+  response  String
+  userId    String?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([expiresAt])
+  @@index([userId])
+}
+
+// Optimized Streaming Cache Tables
+model StreamingSession {
+  conversationId String           @id // Use conversation ID as primary key
+  userId         String
+  status         String           @default("streaming")
+  startTime      BigInt
+  lastActivity   BigInt
+  chunkCount     Int              @default(0)
+  totalSize      Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  chunks         StreamingChunk[]
+  batches        StreamingBatch[]
+
+  @@index([lastActivity])
+  @@index([userId])
+}
+
+model StreamingChunk {
+  id             Int              @id @default(autoincrement())
+  conversationId String
+  index          Int
+  content        String
+  reasoning      String?
+  timestamp      BigInt
+  createdAt      DateTime         @default(now())
+  session        StreamingSession @relation(fields: [conversationId], references: [conversationId], onDelete: Cascade)
+
+  @@index([conversationId, index])
+  @@unique([conversationId, index])
+}
+
+model StreamingBatch {
+  id             Int              @id @default(autoincrement())
+  conversationId String
+  startIndex     Int
+  endIndex       Int
+  chunks         String           // JSON string of compressed chunks
+  compressed     Boolean          @default(false)
+  size           Int
+  timestamp      BigInt
+  createdAt      DateTime         @default(now())
+  session        StreamingSession @relation(fields: [conversationId], references: [conversationId], onDelete: Cascade)
+
+  @@index([conversationId, startIndex, endIndex])
+}

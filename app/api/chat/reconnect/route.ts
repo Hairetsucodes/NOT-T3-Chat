@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { streamingCache } from "@/lib/cache/streamingCache";
+import { streamingCache, StreamingChunk, ChunkBatch } from "@/lib/cache/streamingCache";
 import { NextRequest } from "next/server";
 
 // Support HEAD method to check if session exists without streaming
@@ -31,12 +31,20 @@ async function handleReconnectRequest(
   }
 
   try {
-    console.log("🔍 Optimized reconnect API called for:", conversationId, "by user:", userId);
+    console.log(
+      "🔍 Optimized reconnect API called for:",
+      conversationId,
+      "by user:",
+      userId
+    );
 
     const reconnectData = await streamingCache.getReconnectData(conversationId);
 
     if (!reconnectData) {
-      console.log("❌ Streaming session not found for conversation:", conversationId);
+      console.log(
+        "❌ Streaming session not found for conversation:",
+        conversationId
+      );
       return new Response("Streaming session not found or expired", {
         status: 404,
       });
@@ -46,7 +54,7 @@ async function handleReconnectRequest(
       status: reconnectData.status,
       isComplete: reconnectData.isComplete,
       chunkCount: reconnectData.chunks.length,
-      batchCount: (reconnectData as any).batches?.length || 0,
+      batchCount: reconnectData.batches?.length || 0,
     });
 
     // Verify the session belongs to the user
@@ -66,7 +74,9 @@ async function handleReconnectRequest(
           "X-Stream-Status": reconnectData.status,
           "X-Stream-Complete": reconnectData.isComplete.toString(),
           "X-Chunk-Count": reconnectData.chunks.length.toString(),
-          "X-Batch-Count": ((reconnectData as any).batches?.length || 0).toString(),
+          "X-Batch-Count": (
+            reconnectData.batches?.length || 0
+          ).toString(),
         },
       });
     }
@@ -74,7 +84,7 @@ async function handleReconnectRequest(
     // If streaming is complete, return optimized response
     if (reconnectData.isComplete) {
       console.log("✅ Stream complete, using optimized delivery");
-      
+
       // Use batches for faster transfer if available
       const batchData = reconnectData as any;
       if (batchData.batches && batchData.batches.length > 0) {
@@ -83,9 +93,15 @@ async function handleReconnectRequest(
 
         // Process batches efficiently
         for (const batch of batchData.batches) {
-          const batchChunks = batch.chunks.length > 0 ? batch.chunks : 
-            await streamingCache.getChunkRange(conversationId, batch.startIndex, batch.endIndex);
-          
+          const batchChunks =
+            batch.chunks.length > 0
+              ? batch.chunks
+              : await streamingCache.getChunkRange(
+                  conversationId,
+                  batch.startIndex,
+                  batch.endIndex
+                );
+
           batchChunks.forEach((chunk: any) => {
             if (chunk.content) fullContent += chunk.content;
             if (chunk.reasoning) fullReasoning += chunk.reasoning;
@@ -98,17 +114,20 @@ async function handleReconnectRequest(
           batchCount: batchData.batches.length,
         });
 
-        return new Response(JSON.stringify({
-          status: reconnectData.status,
-          isComplete: true,
-          content: fullContent,
-          reasoning: fullReasoning,
-          chunkCount: reconnectData.chunks.length,
-          batchCount: batchData.batches.length,
-          optimized: true,
-        }), {
-          headers: { "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            status: reconnectData.status,
+            isComplete: true,
+            content: fullContent,
+            reasoning: fullReasoning,
+            chunkCount: reconnectData.chunks.length,
+            batchCount: batchData.batches.length,
+            optimized: true,
+          }),
+          {
+            headers: { "Content-Type": "application/json" },
+          }
+        );
       }
 
       // Fallback to original method
@@ -120,15 +139,18 @@ async function handleReconnectRequest(
         if (chunk.reasoning) fullReasoning += chunk.reasoning;
       });
 
-      return new Response(JSON.stringify({
-        status: reconnectData.status,
-        isComplete: true,
-        content: fullContent,
-        reasoning: fullReasoning,
-        chunkCount: reconnectData.chunks.length,
-      }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          status: reconnectData.status,
+          isComplete: true,
+          content: fullContent,
+          reasoning: fullReasoning,
+          chunkCount: reconnectData.chunks.length,
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     // If still streaming, create optimized batch stream
@@ -143,8 +165,10 @@ async function handleReconnectRequest(
 
           // Send cached batches first (much faster than individual chunks)
           if (reconnectData.batches && reconnectData.batches.length > 0) {
-            console.log(`📦 Sending ${reconnectData.batches.length} cached batches`);
-            
+            console.log(
+              `📦 Sending ${reconnectData.batches.length} cached batches`
+            );
+
             for (const batch of reconnectData.batches) {
               const batchData = JSON.stringify({
                 type: "batch",
@@ -180,7 +204,9 @@ async function handleReconnectRequest(
             }
           } else {
             // Fallback: Send individual cached chunks
-            console.log(`📦 Sending ${reconnectData.chunks.length} cached chunks`);
+            console.log(
+              `📦 Sending ${reconnectData.chunks.length} cached chunks`
+            );
             reconnectData.chunks.forEach((chunk) => {
               if (chunk.content) {
                 const data = JSON.stringify({
@@ -220,8 +246,6 @@ async function handleReconnectRequest(
               conversationId,
               // onBatch callback
               (batch) => {
-                console.log(`📦 New batch received: ${batch.startIndex}-${batch.endIndex}`);
-                
                 const batchData = JSON.stringify({
                   type: "batch",
                   startIndex: batch.startIndex,
@@ -260,7 +284,9 @@ async function handleReconnectRequest(
                   cached: false,
                   optimized: true,
                 });
-                controller.enqueue(encoder.encode(`data: ${completionData}\n\n`));
+                controller.enqueue(
+                  encoder.encode(`data: ${completionData}\n\n`)
+                );
                 controller.close();
               }
             );
@@ -321,16 +347,19 @@ export async function POST(req: NextRequest) {
     const sessionData = await streamingCache.getSession(conversationId);
     const reconnectData = await streamingCache.getReconnectData(conversationId);
 
-    return new Response(JSON.stringify({
-      status: sessionData?.status || "unknown",
-      isComplete: reconnectData?.isComplete || false,
-      chunks,
-      batchCount: reconnectData?.batches?.length || 0,
-      totalChunks: chunks.length,
-      optimized: true,
-    }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        status: sessionData?.status || "unknown",
+        isComplete: reconnectData?.isComplete || false,
+        chunks,
+        batchCount: reconnectData?.batches?.length || 0,
+        totalChunks: chunks.length,
+        optimized: true,
+      }),
+      {
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   } catch (error) {
     console.error("Optimized reconnect POST API error:", error);
     return new Response("Internal server error", { status: 500 });
