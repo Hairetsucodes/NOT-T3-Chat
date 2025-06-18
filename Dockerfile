@@ -1,0 +1,113 @@
+# Base stage for building
+FROM node:20-alpine AS base
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Set the working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install all dependencies (skip postinstall scripts)
+RUN pnpm install --force --ignore-scripts
+
+
+# Copy source code
+COPY . .
+
+# Generate Prisma client manually
+RUN pnpx prisma generate
+
+# Build the application
+RUN pnpm run build
+
+# Production stage
+FROM node:20-alpine AS runner
+
+# Install pnpm globally and curl for healthcheck
+RUN npm install -g pnpm && \
+    apk add --no-cache curl
+
+# Set the working directory
+WORKDIR /app
+
+# Create a directory for the database
+RUN mkdir -p /app/data
+
+# Set environment to production
+ENV NODE_ENV=production
+
+# Default environment variables (will be overridden by .env if present)
+ENV DATABASE_URL="file:/app/data/prod.db"
+ENV NEXTAUTH_URL="http://localhost:3000"
+
+# Copy built application from base stage
+COPY --from=base /app/.next ./.next
+COPY --from=base /app/public ./public
+COPY --from=base /app/next.config.ts ./
+
+# Copy production node_modules from base stage (includes generated Prisma client)
+COPY --from=base /app/node_modules ./node_modules
+
+# Copy package files and prisma schema
+COPY --from=base /app/package.json ./package.json
+COPY --from=base /app/prisma ./prisma
+
+# Copy .env file if it exists (optional)
+COPY .env* ./
+
+# Create startup script
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Check if .env file exists in the data volume' >> /app/start.sh && \
+    echo 'if [ -f "/app/data/.env" ]; then' >> /app/start.sh && \
+    echo '    echo "Found .env file - using custom configuration, skipping SQLite setup"' >> /app/start.sh && \
+    echo 'else' >> /app/start.sh && \
+    echo '    echo "No .env file found - setting up production SQLite mode"' >> /app/start.sh && \
+    echo '    # Generate and persist AUTH_SECRET if not provided' >> /app/start.sh && \
+    echo '    if [ -z "$AUTH_SECRET" ]; then' >> /app/start.sh && \
+    echo '        if [ -f "/app/data/.auth_secret" ]; then' >> /app/start.sh && \
+    echo '            echo "Loading existing AUTH_SECRET..."' >> /app/start.sh && \
+    echo '            export AUTH_SECRET=$(cat /app/data/.auth_secret)' >> /app/start.sh && \
+    echo '        else' >> /app/start.sh && \
+    echo '            echo "Generating new AUTH_SECRET..."' >> /app/start.sh && \
+    echo '            export AUTH_SECRET=$(node -e "console.log(require('\''crypto'\'').randomBytes(32).toString('\''hex'\''))")' >> /app/start.sh && \
+    echo '            echo "$AUTH_SECRET" > /app/data/.auth_secret' >> /app/start.sh && \
+    echo '            chmod 600 /app/data/.auth_secret' >> /app/start.sh && \
+    echo '        fi' >> /app/start.sh && \
+    echo '    fi' >> /app/start.sh && \
+    echo '    # Generate and persist API_KEY_SALT if not provided' >> /app/start.sh && \
+    echo '    if [ -z "$API_KEY_SALT" ]; then' >> /app/start.sh && \
+    echo '        if [ -f "/app/data/.api_key_salt" ]; then' >> /app/start.sh && \
+    echo '            echo "Loading existing API_KEY_SALT..."' >> /app/start.sh && \
+    echo '            export API_KEY_SALT=$(cat /app/data/.api_key_salt)' >> /app/start.sh && \
+    echo '        else' >> /app/start.sh && \
+    echo '            echo "Generating new API_KEY_SALT..."' >> /app/start.sh && \
+    echo '            export API_KEY_SALT=$(node -e "console.log(require('\''crypto'\'').randomBytes(32).toString('\''hex'\''))")' >> /app/start.sh && \
+    echo '            echo "$API_KEY_SALT" > /app/data/.api_key_salt' >> /app/start.sh && \
+    echo '            chmod 600 /app/data/.api_key_salt' >> /app/start.sh && \
+    echo '        fi' >> /app/start.sh && \
+    echo '    fi' >> /app/start.sh && \
+    echo '    # Initialize SQLite database if it does not exist' >> /app/start.sh && \
+    echo '    if [ ! -f "/app/data/prod.db" ]; then' >> /app/start.sh && \
+    echo '        echo "Initializing production SQLite database..."' >> /app/start.sh && \
+    echo '        pnpx prisma db push --skip-generate' >> /app/start.sh && \
+    echo '    fi' >> /app/start.sh && \
+    echo 'fi' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Start the application' >> /app/start.sh && \
+    echo 'exec pnpm start' >> /app/start.sh
+
+# Make the startup script executable
+RUN chmod +x /app/start.sh
+
+# Create a volume for the database
+VOLUME ["/app/data"]
+
+# Expose the port
+EXPOSE 3000
+
+# Use the startup script as the command
+CMD ["/app/start.sh"]
