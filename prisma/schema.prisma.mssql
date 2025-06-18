@@ -1,10 +1,13 @@
-datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+generator client {
+  provider                = "prisma-client-js"
+  connectionTimeoutMillis = 30000
+  connectionLimit         = 75
+  fulltextIndex           = true
 }
 
-generator client {
-  provider = "prisma-client-js"
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -13,8 +16,8 @@ model User {
   email             String?             @unique
   emailVerified     DateTime?
   username          String?             @unique
-  password          String?
-  image             String?
+  password          String?             @db.VarChar(255)
+  image             String?             @db.Text
   accounts          Account[]
   sessions          Session[]
   apiKeys           ApiKey[]
@@ -26,7 +29,6 @@ model User {
   UserCustomization UserCustomization[]
   PreferredModel    PreferredModel[]
   Attachment        Attachment[]
-  StreamingSession  StreamingSession[]
 }
 
 model Account {
@@ -35,13 +37,13 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?
-  access_token      String?
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
   expires_at        Int?
   token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
+  scope             String? @db.Text
+  id_token          String? @db.Text
+  session_state     String? @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -72,7 +74,7 @@ model VerificationToken {
 
 model ApiKey {
   id        String   @id @default(cuid())
-  key       String
+  key       String   @db.Text
   provider  String
   userId    String
   createdAt DateTime @default(now())
@@ -83,32 +85,31 @@ model ApiKey {
 model Conversation {
   id                    String         @id @default(cuid())
   userId                String
-  title                 String
+  title                 String         @db.VarChar(500)
   isPinned              Boolean        @default(false)
   isPublic              Boolean        @default(false)
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
-  isRetry               Boolean        @default(false)
   isGenerating          Boolean        @default(false)
+  isRetry               Boolean        @default(false)
   branchedFromConvoId   String?
-  branchedIds           String? // JSON array of all conversation IDs in the branch chain
+  branchedIds           String?        @db.Text // JSON array of all conversation IDs in the branch chain
   user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   branchedFromConvo     Conversation?  @relation("ConversationBranch", fields: [branchedFromConvoId], references: [id])
   branchedConversations Conversation[] @relation("ConversationBranch")
-  Message               Message[]
   Attachment            Attachment[]
-  StreamingSession      StreamingSession?
+  Message               Message[]
 }
 
 model Message {
   id               String       @id @default(cuid())
   conversationId   String
   userId           String
-  content          String
+  content          String       @db.LongText
   role             String
   provider         String
   model            String?
-  reasoningContent String?
+  reasoningContent String?      @db.LongText
   promptId         String?
   responseId       String?
   createdAt        DateTime     @default(now())
@@ -140,9 +141,9 @@ model UserCustomization {
   id                    String   @id @default(cuid())
   userId                String
   displayName           String?
-  userRole              String?
-  userTraits            String?
-  additionalContext     String?
+  userRole              String?  @db.Text
+  userTraits            String?  @db.Text
+  additionalContext     String?  @db.Text
   isBoringTheme         Boolean  @default(false)
   hidePersonalInfo      Boolean  @default(false)
   disableThematicBreaks Boolean  @default(false)
@@ -159,7 +160,7 @@ model UserCustomization {
 model Prompt {
   id           String         @id @default(cuid())
   userId       String
-  prompt       String
+  prompt       String         @db.LongText
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   ChatSettings ChatSettings[]
@@ -180,8 +181,8 @@ model Attachment {
   id             String        @id @default(cuid())
   userId         String
   conversationId String?
-  filename       String
-  fileUrl        String
+  filename       String        @db.VarChar(255)
+  fileUrl        String        @db.Text
   fileType       String
   isShared       Boolean       @default(false)
   createdAt      DateTime      @default(now())
@@ -195,9 +196,9 @@ model OpenRouterModel {
   modelId       String   @unique
   name          String
   provider      String
-  description   String?
+  description   String?  @db.Text
   contextLength Int?
-  pricing       Json?
+  pricing       String?  @db.Text // Changed from Json to String for MSSQL compatibility
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -208,11 +209,11 @@ model AnthropicModel {
   modelId       String   @unique
   name          String
   modelFamily   String
-  description   String?
+  description   String?  @db.Text
   contextLength Int?
   maxOutput     Int?
-  pricing       Json?
-  capabilities  Json?
+  pricing       String?  @db.Text // Changed from Json to String for MSSQL compatibility
+  capabilities  String?  @db.Text // Changed from Json to String for MSSQL compatibility
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -223,11 +224,11 @@ model OpenaiModel {
   modelId       String   @unique
   name          String
   modelFamily   String
-  description   String?
+  description   String?  @db.Text
   contextLength Int?
   maxOutput     Int?
-  pricing       Json?
-  capabilities  Json?
+  pricing       String?  @db.Text // Changed from Json to String for MSSQL compatibility
+  capabilities  String?  @db.Text // Changed from Json to String for MSSQL compatibility
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -238,11 +239,11 @@ model GoogleModel {
   modelId       String   @unique
   name          String
   modelFamily   String
-  description   String?
+  description   String?  @db.Text
   contextLength Int?
   maxOutput     Int?
-  pricing       Json?
-  capabilities  Json?
+  pricing       String?  @db.Text // Changed from Json to String for MSSQL compatibility
+  capabilities  String?  @db.Text // Changed from Json to String for MSSQL compatibility
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -253,11 +254,11 @@ model DeepSeekModel {
   modelId       String   @unique
   name          String
   modelFamily   String
-  description   String?
+  description   String?  @db.Text
   contextLength Int?
   maxOutput     Int?
-  pricing       Json?
-  capabilities  Json?
+  pricing       String?  @db.Text // Changed from Json to String for MSSQL compatibility
+  capabilities  String?  @db.Text // Changed from Json to String for MSSQL compatibility
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -268,11 +269,11 @@ model XaiModel {
   modelId       String   @unique
   name          String
   modelFamily   String
-  description   String?
+  description   String?  @db.Text
   contextLength Int?
   maxOutput     Int?
-  pricing       Json?
-  capabilities  Json?
+  pricing       String?  @db.Text // Changed from Json to String for MSSQL compatibility
+  capabilities  String?  @db.Text // Changed from Json to String for MSSQL compatibility
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -280,61 +281,12 @@ model XaiModel {
 
 model ResponseCache {
   id        String   @id @default(cuid())
-  cacheKey  String   @unique
-  response  String
+  cacheKey  String   @unique @db.VarChar(255)
+  response  String   @db.LongText
   userId    String?
   createdAt DateTime @default(now())
   expiresAt DateTime
 
   @@index([expiresAt])
   @@index([userId])
-}
-
-// Optimized Streaming Cache Tables
-model StreamingSession {
-  conversationId String           @id // Use conversation ID as primary key
-  userId         String
-  status         String           @default("streaming")
-  startTime      BigInt
-  lastActivity   BigInt
-  chunkCount     Int              @default(0)
-  totalSize      Int              @default(0)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  chunks         StreamingChunk[]
-  batches        StreamingBatch[]
-
-  @@index([lastActivity])
-  @@index([userId])
-}
-
-model StreamingChunk {
-  id             Int              @id @default(autoincrement())
-  conversationId String
-  index          Int
-  content        String
-  reasoning      String?
-  timestamp      BigInt
-  createdAt      DateTime         @default(now())
-  session        StreamingSession @relation(fields: [conversationId], references: [conversationId], onDelete: Cascade)
-
-  @@index([conversationId, index])
-  @@unique([conversationId, index])
-}
-
-model StreamingBatch {
-  id             Int              @id @default(autoincrement())
-  conversationId String
-  startIndex     Int
-  endIndex       Int
-  chunks         String           // JSON string of compressed chunks
-  compressed     Boolean          @default(false)
-  size           Int
-  timestamp      BigInt
-  createdAt      DateTime         @default(now())
-  session        StreamingSession @relation(fields: [conversationId], references: [conversationId], onDelete: Cascade)
-
-  @@index([conversationId, startIndex, endIndex])
 }
