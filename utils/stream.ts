@@ -6,8 +6,6 @@ import { APISelectedModel } from "@/types/chat";
 import { createMessageApi } from "@/lib/apiServerActions/chat";
 import { streamingCache, StreamingSession } from "@/lib/cache/streamingCache";
 
-const isLocal = process.env.IS_LOCAL === "true";
-
 export async function createStreamTransformer(
   stream: ReadableStream,
   userId: string,
@@ -18,10 +16,10 @@ export async function createStreamTransformer(
   let fullReasoning = "";
   let responseId: string | undefined;
   
-  // Create cache session if running locally
+  // Create cache session for streaming reconnection support
   let cacheSession: StreamingSession | null = null;
   
-  if (isLocal && currentConversationId) {
+  if (currentConversationId) {
     cacheSession = await streamingCache.createSession(userId, currentConversationId);
   }
   
@@ -97,7 +95,7 @@ export async function createStreamTransformer(
                         hasReasoning = true;
                       }
                       
-                      // Cache the chunk if running locally - combine content and reasoning in one chunk
+                      // Cache the chunk for streaming reconnection - combine content and reasoning in one chunk
                       if (cacheSession && currentConversationId && (hasContent || hasReasoning)) {
                         
                         await streamingCache.addChunk(currentConversationId, chunkContent, chunkReasoning || undefined);

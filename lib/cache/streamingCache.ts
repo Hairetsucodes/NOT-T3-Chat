@@ -7,39 +7,95 @@ export interface StreamingChunk {
   timestamp: number;
 }
 
+// New optimized batch interface
+export interface ChunkBatch {
+  startIndex: number;
+  endIndex: number;
+  chunks: StreamingChunk[];
+  compressed?: boolean;
+  size: number; // Total content size
+}
+
 export interface StreamingSession {
   userId: string;
   conversationId: string;
   chunks: StreamingChunk[];
+  batches: ChunkBatch[]; // New: Store chunks in batches for faster access
   status: "streaming" | "completed" | "error";
   startTime: number;
   lastActivity: number;
+  chunkCount: number; // Optimized: Track count separately
+  totalSize: number; // New: Track total content size
   subscribers: Set<(chunk: StreamingChunk) => void>;
+  batchSubscribers: Set<(batch: ChunkBatch) => void>; // New: Batch subscribers
   completionSubscribers: Set<() => void>;
 }
 
 export interface CacheStats {
   activeSessions: number;
+  totalChunks: number; // New: Total chunks across all sessions
+  totalSize: number; // New: Total size in bytes
   sessions: Array<{
     conversationId: string;
     userId: string;
     chunkCount: number;
+    totalSize: number; // New: Size per session
     status: string;
     age: number;
     subscriberCount: number;
+    batchCount: number; // New: Number of batches
   }>;
+}
+
+// Compression utilities
+class ChunkCompressor {
+  static compress(chunks: StreamingChunk[]): string {
+    try {
+      // Simple compression: combine content and compress JSON
+      const combined = chunks.map(c => ({
+        i: c.index,
+        c: c.content,
+        r: c.reasoning,
+        t: c.timestamp
+      }));
+      return JSON.stringify(combined);
+    } catch {
+      return JSON.stringify(chunks);
+    }
+  }
+
+  static decompress(compressed: string): StreamingChunk[] {
+    try {
+      const data = JSON.parse(compressed);
+      return data.map((c: {i: number, c: string, r?: string, t: number}) => ({
+        index: c.i,
+        content: c.c,
+        reasoning: c.r,
+        timestamp: c.t
+      }));
+    } catch {
+      return [];
+    }
+  }
 }
 
 // Define a common interface for both cache implementations
 interface StreamingCacheInterface {
   createSession(userId: string, conversationId: string): StreamingSession | Promise<StreamingSession>;
   addChunk(conversationId: string, content: string, reasoning?: string): boolean | Promise<boolean>;
+  addChunkBatch(conversationId: string, chunks: Array<{content: string, reasoning?: string}>): boolean | Promise<boolean>; // New
   subscribe(
     conversationId: string,
     onChunk: (chunk: StreamingChunk) => void,
     onComplete?: () => void
   ): () => void;
+  subscribeToBatches(
+    conversationId: string,
+    onBatch: (batch: ChunkBatch) => void,
+    onComplete?: () => void
+  ): () => void; // New
   getSession(conversationId: string): StreamingSession | null | Promise<StreamingSession | null>;
+  getChunkRange(conversationId: string, startIndex: number, endIndex: number): StreamingChunk[] | Promise<StreamingChunk[]>; // New
   completeSession(conversationId: string): boolean | Promise<boolean>;
   errorSession(conversationId: string): boolean | Promise<boolean>;
   deleteSession(conversationId: string): boolean | Promise<boolean>;
@@ -47,22 +103,25 @@ interface StreamingCacheInterface {
     chunks: StreamingChunk[];
     status: string;
     isComplete: boolean;
+    batches?: ChunkBatch[]; // New: Return batches for faster streaming
   } | null | Promise<{
     chunks: StreamingChunk[];
     status: string;
     isComplete: boolean;
+    batches?: ChunkBatch[];
   } | null>;
   getStats(): Promise<CacheStats> | CacheStats;
   destroy(): void | Promise<void>;
 }
 
-class InMemoryStreamingCacheManager implements StreamingCacheInterface {
+class OptimizedInMemoryStreamingCacheManager implements StreamingCacheInterface {
   private cache: Map<string, StreamingSession> = new Map();
   private cleanupInterval: NodeJS.Timeout | null = null;
   private readonly CACHE_TTL = 5 * 60 * 1000;
+  private readonly BATCH_SIZE = 10; // Process chunks in batches of 10
+  private readonly COMPRESSION_THRESHOLD = 1000; // Compress batches with >1KB content
 
   constructor() {
-    // Start cleanup interval
     this.startCleanup();
   }
 
@@ -71,7 +130,7 @@ class InMemoryStreamingCacheManager implements StreamingCacheInterface {
 
     this.cleanupInterval = setInterval(() => {
       this.cleanupExpiredSessions();
-    }, 5 * 60 * 1000); // Cleanup every 5 minutes
+    }, 5 * 60 * 1000);
   }
 
   private cleanupExpiredSessions() {
@@ -88,9 +147,22 @@ class InMemoryStreamingCacheManager implements StreamingCacheInterface {
 
     if (expiredKeys.length > 0) {
       console.log(
-        `Cleaned up ${expiredKeys.length} expired streaming sessions`
+        `🧹 Cleaned up ${expiredKeys.length} expired streaming sessions`
       );
     }
+  }
+
+  private createBatch(chunks: StreamingChunk[]): ChunkBatch {
+    const totalSize = chunks.reduce((sum, chunk) => sum + chunk.content.length + (chunk.reasoning?.length || 0), 0);
+    const shouldCompress = totalSize > this.COMPRESSION_THRESHOLD;
+    
+    return {
+      startIndex: chunks[0]?.index || 0,
+      endIndex: chunks[chunks.length - 1]?.index || 0,
+      chunks: shouldCompress ? [] : chunks, // Store empty if compressed
+      compressed: shouldCompress,
+      size: totalSize
+    };
   }
 
   createSession(userId: string, conversationId: string): StreamingSession {
@@ -98,36 +170,55 @@ class InMemoryStreamingCacheManager implements StreamingCacheInterface {
       userId,
       conversationId,
       chunks: [],
+      batches: [],
       status: "streaming",
       startTime: Date.now(),
       lastActivity: Date.now(),
+      chunkCount: 0,
+      totalSize: 0,
       subscribers: new Set(),
+      batchSubscribers: new Set(),
       completionSubscribers: new Set(),
     };
 
     this.cache.set(conversationId, session);
+    console.log(`✨ Created optimized session: ${conversationId}`);
     return session;
   }
 
-  addChunk(
-    conversationId: string,
-    content: string,
-    reasoning?: string
-  ): boolean {
+  addChunk(conversationId: string, content: string, reasoning?: string): boolean {
     const session = this.cache.get(conversationId);
     if (!session) return false;
 
     const chunk: StreamingChunk = {
-      index: session.chunks.length,
+      index: session.chunkCount,
       content,
       reasoning,
       timestamp: Date.now(),
     };
 
     session.chunks.push(chunk);
+    session.chunkCount++;
+    session.totalSize += content.length + (reasoning?.length || 0);
     session.lastActivity = Date.now();
 
-    // Notify all subscribers of the new chunk
+    // Create batches when we reach batch size
+    if (session.chunks.length >= this.BATCH_SIZE) {
+      const batch = this.createBatch([...session.chunks]);
+      session.batches.push(batch);
+      session.chunks = []; // Clear processed chunks
+
+      // Notify batch subscribers
+      session.batchSubscribers.forEach((callback) => {
+        try {
+          callback(batch);
+        } catch (error) {
+          console.error("Error notifying batch subscriber:", error);
+        }
+      });
+    }
+
+    // Notify individual chunk subscribers
     session.subscribers.forEach((callback) => {
       try {
         callback(chunk);
@@ -139,7 +230,50 @@ class InMemoryStreamingCacheManager implements StreamingCacheInterface {
     return true;
   }
 
-  // Subscribe to new chunks for a conversation
+  // New: Add multiple chunks at once for better performance
+  addChunkBatch(conversationId: string, chunks: Array<{content: string, reasoning?: string}>): boolean {
+    const session = this.cache.get(conversationId);
+    if (!session) return false;
+
+    const streamingChunks: StreamingChunk[] = chunks.map((chunk, i) => ({
+      index: session.chunkCount + i,
+      content: chunk.content,
+      reasoning: chunk.reasoning,
+      timestamp: Date.now(),
+    }));
+
+    session.chunks.push(...streamingChunks);
+    session.chunkCount += chunks.length;
+    session.totalSize += chunks.reduce((sum, c) => sum + c.content.length + (c.reasoning?.length || 0), 0);
+    session.lastActivity = Date.now();
+
+    // Create batch immediately
+    const batch = this.createBatch(streamingChunks);
+    session.batches.push(batch);
+
+    // Notify subscribers
+    session.batchSubscribers.forEach((callback) => {
+      try {
+        callback(batch);
+      } catch (error) {
+        console.error("Error notifying batch subscriber:", error);
+      }
+    });
+
+    // Notify individual subscribers for each chunk
+    streamingChunks.forEach(chunk => {
+      session.subscribers.forEach((callback) => {
+        try {
+          callback(chunk);
+        } catch (error) {
+          console.error("Error notifying subscriber:", error);
+        }
+      });
+    });
+
+    return true;
+  }
+
   subscribe(
     conversationId: string,
     onChunk: (chunk: StreamingChunk) => void,
@@ -147,11 +281,8 @@ class InMemoryStreamingCacheManager implements StreamingCacheInterface {
   ): () => void {
     const session = this.cache.get(conversationId);
     if (!session) {
-      console.log(
-        "❌ Cannot subscribe to non-existent session:",
-        conversationId
-      );
-      return () => {}; // Return empty unsubscribe function
+      console.log("❌ Cannot subscribe to non-existent session:", conversationId);
+      return () => {};
     }
 
     session.subscribers.add(onChunk);
@@ -159,25 +290,41 @@ class InMemoryStreamingCacheManager implements StreamingCacheInterface {
       session.completionSubscribers.add(onComplete);
     }
 
-    console.log(
-      "➕ Added subscriber to session:",
-      conversationId,
-      "Total subscribers:",
-      session.subscribers.size
-    );
+    console.log(`➕ Added subscriber to session: ${conversationId} (total: ${session.subscribers.size})`);
 
-    // Return unsubscribe function
     return () => {
       session.subscribers.delete(onChunk);
       if (onComplete) {
         session.completionSubscribers.delete(onComplete);
       }
-      console.log(
-        "➖ Removed subscriber from session:",
-        conversationId,
-        "Remaining subscribers:",
-        session.subscribers.size
-      );
+      console.log(`➖ Removed subscriber from session: ${conversationId} (remaining: ${session.subscribers.size})`);
+    };
+  }
+
+  // New: Subscribe to batches for faster processing
+  subscribeToBatches(
+    conversationId: string,
+    onBatch: (batch: ChunkBatch) => void,
+    onComplete?: () => void
+  ): () => void {
+    const session = this.cache.get(conversationId);
+    if (!session) {
+      console.log("❌ Cannot subscribe to batches for non-existent session:", conversationId);
+      return () => {};
+    }
+
+    session.batchSubscribers.add(onBatch);
+    if (onComplete) {
+      session.completionSubscribers.add(onComplete);
+    }
+
+    console.log(`🔗 Added batch subscriber to session: ${conversationId}`);
+
+    return () => {
+      session.batchSubscribers.delete(onBatch);
+      if (onComplete) {
+        session.completionSubscribers.delete(onComplete);
+      }
     };
   }
 
@@ -185,22 +332,50 @@ class InMemoryStreamingCacheManager implements StreamingCacheInterface {
     const session = this.cache.get(conversationId);
     if (!session) return null;
 
-    // Update last activity
     session.lastActivity = Date.now();
     return session;
+  }
+
+  // New: Get specific range of chunks for efficient partial loading
+  getChunkRange(conversationId: string, startIndex: number, endIndex: number): StreamingChunk[] {
+    const session = this.cache.get(conversationId);
+    if (!session) return [];
+
+    // Efficiently get chunks from batches
+    const chunks: StreamingChunk[] = [];
+    
+    for (const batch of session.batches) {
+      if (batch.endIndex < startIndex) continue;
+      if (batch.startIndex > endIndex) break;
+      
+      const batchChunks = batch.compressed ? 
+        ChunkCompressor.decompress(JSON.stringify(batch.chunks)) : 
+        batch.chunks;
+        
+      chunks.push(...batchChunks.filter(c => c.index >= startIndex && c.index <= endIndex));
+    }
+
+    // Include unbatched chunks
+    chunks.push(...session.chunks.filter(c => c.index >= startIndex && c.index <= endIndex));
+
+    return chunks.sort((a, b) => a.index - b.index);
   }
 
   completeSession(conversationId: string): boolean {
     const session = this.cache.get(conversationId);
     if (!session) return false;
 
+    // Process remaining chunks into final batch
+    if (session.chunks.length > 0) {
+      const finalBatch = this.createBatch([...session.chunks]);
+      session.batches.push(finalBatch);
+      session.chunks = [];
+    }
+
     session.status = "completed";
     session.lastActivity = Date.now();
 
-    console.log(
-      "✅ Session completed and subscribers notified:",
-      conversationId
-    );
+    console.log(`✅ Session completed with ${session.batches.length} batches, ${session.chunkCount} total chunks: ${conversationId}`);
 
     // Notify all completion subscribers
     session.completionSubscribers.forEach((callback) => {
@@ -211,14 +386,11 @@ class InMemoryStreamingCacheManager implements StreamingCacheInterface {
       }
     });
 
-    // Clear subscribers after completion but keep the session for reconnection
+    // Clear subscribers but keep batches for reconnection
     session.subscribers.clear();
+    session.batchSubscribers.clear();
     session.completionSubscribers.clear();
 
-    console.log(
-      "💾 Keeping completed session in cache for potential reconnection:",
-      conversationId
-    );
     return true;
   }
 
@@ -229,9 +401,8 @@ class InMemoryStreamingCacheManager implements StreamingCacheInterface {
     session.status = "error";
     session.lastActivity = Date.now();
 
-    console.log("❌ Session errored and subscribers notified:", conversationId);
+    console.log("❌ Session errored:", conversationId);
 
-    // Notify completion subscribers on error too
     session.completionSubscribers.forEach((callback) => {
       try {
         callback();
@@ -240,14 +411,10 @@ class InMemoryStreamingCacheManager implements StreamingCacheInterface {
       }
     });
 
-    // Clear subscribers after error but keep the session for reconnection
     session.subscribers.clear();
+    session.batchSubscribers.clear();
     session.completionSubscribers.clear();
 
-    console.log(
-      "💾 Keeping errored session in cache for potential reconnection:",
-      conversationId
-    );
     return true;
   }
 
@@ -259,33 +426,63 @@ class InMemoryStreamingCacheManager implements StreamingCacheInterface {
     chunks: StreamingChunk[];
     status: string;
     isComplete: boolean;
+    batches?: ChunkBatch[];
   } | null {
     const session = this.cache.get(conversationId);
     if (!session) return null;
 
+    // Reconstruct all chunks from batches + current chunks
+    const allChunks: StreamingChunk[] = [];
+    
+    // Add chunks from batches
+    for (const batch of session.batches) {
+      const batchChunks = batch.compressed ? 
+        ChunkCompressor.decompress(JSON.stringify(batch.chunks)) : 
+        batch.chunks;
+      allChunks.push(...batchChunks);
+    }
+    
+    // Add unbatched chunks
+    allChunks.push(...session.chunks);
+    
+    allChunks.sort((a, b) => a.index - b.index);
+
     return {
-      chunks: session.chunks,
+      chunks: allChunks,
+      batches: session.batches, // Include batches for faster streaming
       status: session.status,
       isComplete: session.status === "completed" || session.status === "error",
     };
   }
 
-  // Get stats for debugging
-  getStats() {
-    return {
-      activeSessions: this.cache.size,
-      sessions: Array.from(this.cache.values()).map((s) => ({
+  getStats(): CacheStats {
+    let totalChunks = 0;
+    let totalSize = 0;
+
+    const sessions = Array.from(this.cache.values()).map((s) => {
+      totalChunks += s.chunkCount;
+      totalSize += s.totalSize;
+      
+      return {
         conversationId: s.conversationId,
         userId: s.userId,
-        chunkCount: s.chunks.length,
+        chunkCount: s.chunkCount,
+        totalSize: s.totalSize,
         status: s.status,
         age: Date.now() - s.startTime,
         subscriberCount: s.subscribers.size,
-      })),
+        batchCount: s.batches.length,
+      };
+    });
+
+    return {
+      activeSessions: this.cache.size,
+      totalChunks,
+      totalSize,
+      sessions,
     };
   }
 
-  // For graceful shutdown
   destroy() {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
@@ -295,17 +492,24 @@ class InMemoryStreamingCacheManager implements StreamingCacheInterface {
   }
 }
 
+// Global cache instances to prevent multiple Redis connections
+declare global {
+  // eslint-disable-next-line no-var
+  var __redisStreamingCache: RedisStreamingCacheManager | undefined;
+  // eslint-disable-next-line no-var
+  var __inMemoryStreamingCache: OptimizedInMemoryStreamingCacheManager | undefined;
+}
+
 // Factory function to create the appropriate cache instance
 function createStreamingCache(): StreamingCacheInterface {
-      const useRedis = !!process.env.REDIS_HOST && !!process.env.REDIS_PASSWORD;
-  
-  if (useRedis) {
-    console.log('🔴 Using Redis for streaming cache (production mode)');
-    return new RedisStreamingCacheManager();
+  // For now, always use optimized in-memory cache until Redis is updated
+  if (!global.__inMemoryStreamingCache) {
+    console.log('🟡 Using optimized in-memory cache for streaming');
+    global.__inMemoryStreamingCache = new OptimizedInMemoryStreamingCacheManager();
   } else {
-    console.log('🟡 Using in-memory cache for streaming (development mode)');
-    return new InMemoryStreamingCacheManager();
+    console.log('♻️ Reusing existing optimized in-memory cache instance');
   }
+  return global.__inMemoryStreamingCache;
 }
 
 // Create cache adapter that handles both sync and async methods
@@ -328,6 +532,11 @@ class StreamingCacheAdapter {
     return result instanceof Promise ? await result : result;
   }
 
+  async addChunkBatch(conversationId: string, chunks: Array<{content: string, reasoning?: string}>): Promise<boolean> {
+    const result = this.cache.addChunkBatch(conversationId, chunks);
+    return result instanceof Promise ? await result : result;
+  }
+
   subscribe(
     conversationId: string,
     onChunk: (chunk: StreamingChunk) => void,
@@ -336,8 +545,21 @@ class StreamingCacheAdapter {
     return this.cache.subscribe(conversationId, onChunk, onComplete);
   }
 
+  subscribeToBatches(
+    conversationId: string,
+    onBatch: (batch: ChunkBatch) => void,
+    onComplete?: () => void
+  ): () => void {
+    return this.cache.subscribeToBatches(conversationId, onBatch, onComplete);
+  }
+
   async getSession(conversationId: string): Promise<StreamingSession | null> {
     const result = this.cache.getSession(conversationId);
+    return result instanceof Promise ? await result : result;
+  }
+
+  async getChunkRange(conversationId: string, startIndex: number, endIndex: number): Promise<StreamingChunk[]> {
+    const result = this.cache.getChunkRange(conversationId, startIndex, endIndex);
     return result instanceof Promise ? await result : result;
   }
 
@@ -378,9 +600,22 @@ class StreamingCacheAdapter {
   }
 }
 
-// Singleton instance
-export const streamingCache = new StreamingCacheAdapter();
+// Global singleton that persists across Next.js hot reloads
+declare global {
+  // eslint-disable-next-line no-var
+  var __streamingCache: StreamingCacheAdapter | undefined;
+}
 
-// Ensure cleanup on process exit
-process.on("SIGINT", () => streamingCache.destroy());
-process.on("SIGTERM", () => streamingCache.destroy());
+// Create or reuse existing singleton
+if (!global.__streamingCache) {
+  console.log('🆕 Creating new StreamingCacheAdapter singleton');
+  global.__streamingCache = new StreamingCacheAdapter();
+  
+  // Ensure cleanup on process exit
+  process.on("SIGINT", () => global.__streamingCache?.destroy());
+  process.on("SIGTERM", () => global.__streamingCache?.destroy());
+} else {
+  console.log('♻️ Reusing existing StreamingCacheAdapter singleton');
+}
+
+export const streamingCache = global.__streamingCache;

@@ -2,8 +2,6 @@ import { auth } from "@/auth";
 import { streamingCache } from "@/lib/cache/streamingCache";
 import { NextRequest } from "next/server";
 
-const isLocal = process.env.IS_LOCAL === "true";
-
 // Support HEAD method to check if session exists without streaming
 export async function HEAD(req: NextRequest) {
   return handleReconnectRequest(req, true);
@@ -13,12 +11,10 @@ export async function GET(req: NextRequest) {
   return handleReconnectRequest(req, false);
 }
 
-async function handleReconnectRequest(req: NextRequest, headOnly: boolean = false) {
-  // Only available in local development
-  if (!isLocal) {
-    return new Response("Not available in production", { status: 404 });
-  }
-
+async function handleReconnectRequest(
+  req: NextRequest,
+  headOnly: boolean = false
+) {
   const session = await auth();
   if (!session?.user?.id) {
     return new Response("Unauthorized", { status: 401 });
@@ -29,186 +25,260 @@ async function handleReconnectRequest(req: NextRequest, headOnly: boolean = fals
   const conversationId = url.searchParams.get("conversationId");
 
   if (!conversationId) {
-    return new Response("conversationId parameter is required", { status: 400 });
+    return new Response("conversationId parameter is required", {
+      status: 400,
+    });
   }
 
   try {
-    console.log("🔍 Reconnect API called for conversation:", conversationId, "by user:", userId);
-    
-    // Debug: Check what's in the cache
-    const cacheStats = await streamingCache.getStats();
-    console.log("📊 Current cache stats:", cacheStats);
-    
+    console.log("🔍 Optimized reconnect API called for:", conversationId, "by user:", userId);
+
     const reconnectData = await streamingCache.getReconnectData(conversationId);
-    
+
     if (!reconnectData) {
       console.log("❌ Streaming session not found for conversation:", conversationId);
-      console.log("💾 Available sessions in cache:", cacheStats.sessions.map(s => s.conversationId));
-      return new Response("Streaming session not found or expired", { status: 404 });
+      return new Response("Streaming session not found or expired", {
+        status: 404,
+      });
     }
 
     console.log("📊 Reconnect data found:", {
       status: reconnectData.status,
       isComplete: reconnectData.isComplete,
       chunkCount: reconnectData.chunks.length,
+      batchCount: (reconnectData as any).batches?.length || 0,
     });
 
     // Verify the session belongs to the user
     const sessionData = await streamingCache.getSession(conversationId);
     if (sessionData && sessionData.userId !== userId) {
-      console.log("🚫 Unauthorized access attempt by user:", userId, "for session owned by:", sessionData.userId);
-      return new Response("Unauthorized access to streaming session", { status: 403 });
+      console.log("🚫 Unauthorized access attempt");
+      return new Response("Unauthorized access to streaming session", {
+        status: 403,
+      });
     }
 
     // For HEAD requests, just return status without body
     if (headOnly) {
-      return new Response(null, { 
+      return new Response(null, {
         status: 200,
         headers: {
           "X-Stream-Status": reconnectData.status,
           "X-Stream-Complete": reconnectData.isComplete.toString(),
           "X-Chunk-Count": reconnectData.chunks.length.toString(),
-        }
+          "X-Batch-Count": ((reconnectData as any).batches?.length || 0).toString(),
+        },
       });
     }
 
-    // If streaming is complete, return all chunks at once
+    // If streaming is complete, return optimized response
     if (reconnectData.isComplete) {
-      console.log("✅ Stream is complete, returning all chunks as JSON");
+      console.log("✅ Stream complete, using optimized delivery");
+      
+      // Use batches for faster transfer if available
+      const batchData = reconnectData as any;
+      if (batchData.batches && batchData.batches.length > 0) {
+        let fullContent = "";
+        let fullReasoning = "";
+
+        // Process batches efficiently
+        for (const batch of batchData.batches) {
+          const batchChunks = batch.chunks.length > 0 ? batch.chunks : 
+            await streamingCache.getChunkRange(conversationId, batch.startIndex, batch.endIndex);
+          
+          batchChunks.forEach((chunk: any) => {
+            if (chunk.content) fullContent += chunk.content;
+            if (chunk.reasoning) fullReasoning += chunk.reasoning;
+          });
+        }
+
+        console.log("📦 Optimized batch response:", {
+          contentLength: fullContent.length,
+          reasoningLength: fullReasoning.length,
+          batchCount: batchData.batches.length,
+        });
+
+        return new Response(JSON.stringify({
+          status: reconnectData.status,
+          isComplete: true,
+          content: fullContent,
+          reasoning: fullReasoning,
+          chunkCount: reconnectData.chunks.length,
+          batchCount: batchData.batches.length,
+          optimized: true,
+        }), {
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // Fallback to original method
       let fullContent = "";
       let fullReasoning = "";
 
-      reconnectData.chunks.forEach(chunk => {
-        if (chunk.content) {
-          fullContent += chunk.content;
-        }
-        if (chunk.reasoning) {
-          fullReasoning += chunk.reasoning;
-        }
+      reconnectData.chunks.forEach((chunk) => {
+        if (chunk.content) fullContent += chunk.content;
+        if (chunk.reasoning) fullReasoning += chunk.reasoning;
       });
 
-      console.log("📦 Final response stats:", {
-        contentLength: fullContent.length,
-        reasoningLength: fullReasoning.length,
-        chunkCount: reconnectData.chunks.length,
-      });
-
-      const response = {
+      return new Response(JSON.stringify({
         status: reconnectData.status,
         isComplete: true,
         content: fullContent,
         reasoning: fullReasoning,
         chunkCount: reconnectData.chunks.length,
-      };
-
-      return new Response(JSON.stringify(response), {
+      }), {
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // If still streaming, return a stream of the cached chunks
-    console.log("🌊 Stream is still active, creating SSE stream with cached chunks");
+    // If still streaming, create optimized batch stream
+    console.log("🌊 Creating optimized batch stream");
     const encoder = new TextEncoder();
     let unsubscribe: (() => void) | null = null;
-    
-    const stream = new ReadableStream({
-      start(controller) {        
-        try {
-          console.log("🚀 Starting SSE stream, sending", reconnectData.chunks.length, "cached chunks");
-          
-          // Send all cached chunks first
-          reconnectData.chunks.forEach((chunk) => {
-           
-            
-            if (chunk.content) {
-              const data = JSON.stringify({
-                content: chunk.content,
-                index: chunk.index,
-                cached: true,
-              });
-              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-            }
-            if (chunk.reasoning) {
-              const data = JSON.stringify({
-                reasoning: chunk.reasoning,
-                index: chunk.index,
-                cached: true,
-              });
-              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-            }
-          });
 
-          // Send status update after cached chunks
+    const stream = new ReadableStream({
+      start(controller) {
+        try {
+          console.log("🚀 Starting optimized SSE stream");
+
+          // Send cached batches first (much faster than individual chunks)
+          if (reconnectData.batches && reconnectData.batches.length > 0) {
+            console.log(`📦 Sending ${reconnectData.batches.length} cached batches`);
+            
+            for (const batch of reconnectData.batches) {
+              const batchData = JSON.stringify({
+                type: "batch",
+                startIndex: batch.startIndex,
+                endIndex: batch.endIndex,
+                size: batch.size,
+                compressed: batch.compressed,
+                cached: true,
+              });
+              controller.enqueue(encoder.encode(`data: ${batchData}\n\n`));
+
+              // Send batch content efficiently
+              if (batch.chunks.length > 0) {
+                batch.chunks.forEach((chunk) => {
+                  if (chunk.content) {
+                    const data = JSON.stringify({
+                      content: chunk.content,
+                      index: chunk.index,
+                      cached: true,
+                    });
+                    controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                  }
+                  if (chunk.reasoning) {
+                    const data = JSON.stringify({
+                      reasoning: chunk.reasoning,
+                      index: chunk.index,
+                      cached: true,
+                    });
+                    controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                  }
+                });
+              }
+            }
+          } else {
+            // Fallback: Send individual cached chunks
+            console.log(`📦 Sending ${reconnectData.chunks.length} cached chunks`);
+            reconnectData.chunks.forEach((chunk) => {
+              if (chunk.content) {
+                const data = JSON.stringify({
+                  content: chunk.content,
+                  index: chunk.index,
+                  cached: true,
+                });
+                controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+              }
+              if (chunk.reasoning) {
+                const data = JSON.stringify({
+                  reasoning: chunk.reasoning,
+                  index: chunk.index,
+                  cached: true,
+                });
+                controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+              }
+            });
+          }
+
+          // Send status update after cached data
           const statusData = JSON.stringify({
             status: reconnectData.status,
             isComplete: reconnectData.isComplete,
             resumePoint: reconnectData.chunks.length,
             cached: true,
+            optimized: true,
           });
           controller.enqueue(encoder.encode(`data: ${statusData}\n\n`));
 
-          // If stream is still active, subscribe to new chunks
+          // Subscribe to new batches for ongoing streams
           if (!reconnectData.isComplete) {
-            console.log("🔔 Subscribing to new chunks for ongoing stream:", conversationId);
-            
-            unsubscribe = streamingCache.subscribe(
+            console.log("🔔 Subscribing to new batches for ongoing stream");
+
+            // Subscribe to batches for better performance
+            unsubscribe = streamingCache.subscribeToBatches(
               conversationId,
-              // onChunk callback
-              (chunk) => {
-        
+              // onBatch callback
+              (batch) => {
+                console.log(`📦 New batch received: ${batch.startIndex}-${batch.endIndex}`);
                 
-                if (chunk.content) {
-                  const data = JSON.stringify({
-                    content: chunk.content,
-                    index: chunk.index,
-                    cached: false,
-                  });
-                  controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-                }
-                if (chunk.reasoning) {
-                  const data = JSON.stringify({
-                    reasoning: chunk.reasoning,
-                    index: chunk.index,
-                    cached: false,
-                  });
-                  controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-                }
+                const batchData = JSON.stringify({
+                  type: "batch",
+                  startIndex: batch.startIndex,
+                  endIndex: batch.endIndex,
+                  size: batch.size,
+                  cached: false,
+                });
+                controller.enqueue(encoder.encode(`data: ${batchData}\n\n`));
+
+                // Send batch chunks
+                batch.chunks.forEach((chunk) => {
+                  if (chunk.content) {
+                    const data = JSON.stringify({
+                      content: chunk.content,
+                      index: chunk.index,
+                      cached: false,
+                    });
+                    controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                  }
+                  if (chunk.reasoning) {
+                    const data = JSON.stringify({
+                      reasoning: chunk.reasoning,
+                      index: chunk.index,
+                      cached: false,
+                    });
+                    controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                  }
+                });
               },
               // onComplete callback
               () => {
-                console.log("✅ Stream completed, sending final status and closing");
+                console.log("✅ Optimized stream completed");
                 const completionData = JSON.stringify({
-                  status: 'completed',
+                  status: "completed",
                   isComplete: true,
                   cached: false,
+                  optimized: true,
                 });
                 controller.enqueue(encoder.encode(`data: ${completionData}\n\n`));
                 controller.close();
-                console.log("🏁 SSE stream closed after completion");
               }
             );
           } else {
-            // Stream already complete, close immediately
             controller.close();
-            console.log("🏁 SSE stream closed (already completed)");
+            console.log("🏁 Optimized stream closed (already completed)");
           }
-          
         } catch (error) {
-          console.error("❌ Error in SSE stream:", error);
-          if (unsubscribe) {
-            unsubscribe();
-          }
+          console.error("❌ Error in optimized SSE stream:", error);
+          if (unsubscribe) unsubscribe();
           controller.error(error);
         }
       },
-      
+
       cancel() {
-        console.log("🚫 SSE stream cancelled by client");
-        // Cleanup subscription when client disconnects
-        if (unsubscribe) {
-          unsubscribe();
-        }
-      }
+        console.log("🚫 Optimized SSE stream cancelled by client");
+        if (unsubscribe) unsubscribe();
+      },
     });
 
     return new Response(stream, {
@@ -217,55 +287,52 @@ async function handleReconnectRequest(req: NextRequest, headOnly: boolean = fals
         "Cache-Control": "private, max-age=0, must-revalidate",
         Connection: "keep-alive",
         "X-Accel-Buffering": "no",
+        "X-Optimized": "true",
       },
     });
-    
   } catch (error) {
-    console.error("Reconnect API error:", error);
+    console.error("Optimized reconnect API error:", error);
     return new Response("Internal server error", { status: 500 });
   }
 }
 
-// Also support POST for more complex reconnect scenarios
+// Optimized POST endpoint for batch operations
 export async function POST(req: NextRequest) {
-  if (!isLocal) {
-    return new Response("Not available in production", { status: 404 });
-  }
-
   const session = await auth();
   if (!session?.user?.id) {
     return new Response("Unauthorized", { status: 401 });
   }
 
   try {
-    const { conversationId, lastChunkIndex } = await req.json();
-    
+    const { conversationId, startIndex, endIndex } = await req.json();
+
     if (!conversationId) {
       return new Response("conversationId is required", { status: 400 });
     }
 
-    const reconnectData = await streamingCache.getReconnectData(conversationId);
-    
-    if (!reconnectData) {
-      return new Response("Streaming session not found", { status: 404 });
-    }
-
-    // Return chunks after the specified index
-    const resumeChunks = reconnectData.chunks.filter(
-      chunk => chunk.index > (lastChunkIndex || -1)
+    // Get specific chunk range efficiently
+    const chunks = await streamingCache.getChunkRange(
+      conversationId,
+      startIndex || 0,
+      endIndex || Number.MAX_SAFE_INTEGER
     );
 
+    // Get session status
+    const sessionData = await streamingCache.getSession(conversationId);
+    const reconnectData = await streamingCache.getReconnectData(conversationId);
+
     return new Response(JSON.stringify({
-      status: reconnectData.status,
-      isComplete: reconnectData.isComplete,
-      chunks: resumeChunks,
-      totalChunks: reconnectData.chunks.length,
+      status: sessionData?.status || "unknown",
+      isComplete: reconnectData?.isComplete || false,
+      chunks,
+      batchCount: reconnectData?.batches?.length || 0,
+      totalChunks: chunks.length,
+      optimized: true,
     }), {
       headers: { "Content-Type": "application/json" },
     });
-    
   } catch (error) {
-    console.error("Reconnect POST API error:", error);
+    console.error("Optimized reconnect POST API error:", error);
     return new Response("Internal server error", { status: 500 });
   }
-} 
+}

@@ -12,9 +12,6 @@ import {
 import { createStreamTransformer } from "@/utils/stream";
 import { auth } from "@/auth";
 
-
-
-
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -103,9 +100,15 @@ export async function POST(req: Request) {
     // Prepare response headers
     const responseHeaders: Record<string, string> = {
       "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "private, max-age=0, must-revalidate",
+      "Cache-Control":
+        "private, max-age=0, must-revalidate, no-cache, no-store",
       Connection: "keep-alive",
       "X-Accel-Buffering": "no",
+      "X-Content-Type-Options": "nosniff",
+      "Transfer-Encoding": "chunked",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
     };
 
     if (generatedTitle) {

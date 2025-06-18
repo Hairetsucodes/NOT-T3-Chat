@@ -31,8 +31,10 @@ class RedisStreamingCacheManager {
   private isConnected = false;
   private reconnectAttempts = 0;
   private readonly MAX_RECONNECT_ATTEMPTS = 5;
+  private readonly instanceId = Math.random().toString(36).substr(2, 9);
 
   constructor() {
+    console.log(`🚀 Creating Redis cache instance: ${this.instanceId}`);
     this.initializeRedis();
   }
 
@@ -107,7 +109,7 @@ class RedisStreamingCacheManager {
 
       this.isConnected = true;
       this.reconnectAttempts = 0;
-      console.log("✅ All Redis clients connected successfully");
+      console.log(`✅ All Redis clients connected successfully [${this.instanceId}]`);
 
       // Set up pub/sub listener
       await this.setupPubSubListener();
@@ -149,16 +151,22 @@ class RedisStreamingCacheManager {
   private async setupPubSubListener() {
     if (!this.subClient) return;
 
-    // Listen for chunk updates
-    await this.subClient.subscribe(
+    console.log("🔊 Setting up Redis pub/sub listeners...");
+
+    // Listen for chunk updates using pattern subscription
+    console.log(`🎧 Subscribing to Redis pattern: streaming:chunk:* [${this.instanceId}]`);
+    await this.subClient.pSubscribe(
       "streaming:chunk:*",
       (message: string, channel: string) => {
         try {
           const conversationId = channel.split(":")[2];
           const chunk: StreamingChunk = JSON.parse(message);
 
+          console.log(`📨 Received Redis chunk ${chunk.index} from channel: ${channel} [${this.instanceId}]`);
+
           const subscribers = this.localSubscribers.get(conversationId);
-          if (subscribers) {
+          if (subscribers && subscribers.size > 0) {
+            console.log(`📡 Forwarding chunk to ${subscribers.size} local subscribers for: ${conversationId}`);
             subscribers.forEach((callback) => {
               try {
                 callback(chunk);
@@ -166,23 +174,29 @@ class RedisStreamingCacheManager {
                 console.error("Error notifying subscriber:", error);
               }
             });
+          } else {
+            console.log(`📭 No local subscribers for conversation: ${conversationId} (available: [${Array.from(this.localSubscribers.keys()).join(', ')}])`);
           }
         } catch (error) {
           console.error("Error handling chunk message:", error);
         }
       }
     );
+    console.log(`✅ Successfully pattern-subscribed to streaming:chunk:* [${this.instanceId}]`);
 
-    // Listen for completion updates
-    await this.subClient.subscribe(
+    // Listen for completion updates using pattern subscription
+    await this.subClient.pSubscribe(
       "streaming:complete:*",
       (message: string, channel: string) => {
         try {
           const conversationId = channel.split(":")[2];
 
+          console.log(`🏁 Received Redis completion from channel: ${channel} [${this.instanceId}]`);
+
           const completionSubscribers =
             this.localCompletionSubscribers.get(conversationId);
-          if (completionSubscribers) {
+          if (completionSubscribers && completionSubscribers.size > 0) {
+            console.log(`📡 Notifying ${completionSubscribers.size} completion subscribers for: ${conversationId}`);
             completionSubscribers.forEach((callback) => {
               try {
                 callback();
@@ -200,6 +214,8 @@ class RedisStreamingCacheManager {
         }
       }
     );
+
+    console.log("✅ Redis pub/sub listeners configured");
   }
 
   private startCleanup() {
@@ -290,26 +306,31 @@ class RedisStreamingCacheManager {
       completionSubscribers: new Set(),
     };
 
-    // Non-blocking Redis operation
-    this.fireAndForget(async () => {
-      if (!this.client) return;
+    // Synchronous Redis operation to ensure session exists before returning
+    try {
+      if (this.client && this.isConnected) {
+        // Store session metadata in Redis
+        await this.client.hSet(`session:${conversationId}`, {
+          userId,
+          conversationId,
+          status: "streaming",
+          startTime: session.startTime.toString(),
+          lastActivity: session.lastActivity.toString(),
+          chunkCount: "0",
+        });
 
-      // Store session metadata in Redis
-      await this.client.hSet(`session:${conversationId}`, {
-        userId,
-        conversationId,
-        status: "streaming",
-        startTime: session.startTime.toString(),
-        lastActivity: session.lastActivity.toString(),
-        chunkCount: "0",
-      });
-
-      // Set TTL
-      await this.client.expire(`session:${conversationId}`, this.CACHE_TTL);
-      console.log(
-        `✅ Created Redis session for conversation: ${conversationId}`
-      );
-    }, "createSession");
+        // Set TTL
+        await this.client.expire(`session:${conversationId}`, this.CACHE_TTL);
+        console.log(
+          `✅ Created Redis session for conversation: ${conversationId} [${this.instanceId}]`
+        );
+      } else {
+        console.warn(`⚠️ Redis not connected, session ${conversationId} created in memory only`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to create Redis session ${conversationId}:`, error);
+      // Continue anyway - session will work in memory for local subscribers
+    }
 
     return session;
   }
@@ -321,70 +342,80 @@ class RedisStreamingCacheManager {
   ): Promise<boolean> {
     if (!this.client || !this.isConnected) return false;
 
-    // Fire-and-forget operation to not block streaming
-    this.fireAndForget(async () => {
-      if (!this.client) return;
+    try {
+      // Get current chunk count first (synchronously to get correct index)
+      const chunkCountStr = await this.client.hGet(
+        `session:${conversationId}`,
+        "chunkCount"
+      );
+      const chunkCount = parseInt(chunkCountStr || "0");
 
-      // Retry logic for MOVED errors
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          // Get current chunk count
-          const chunkCountStr = await this.client.hGet(
-            `session:${conversationId}`,
-            "chunkCount"
-          );
-          const chunkCount = parseInt(chunkCountStr || "0");
+      const chunk: StreamingChunk = {
+        index: chunkCount,
+        content,
+        reasoning,
+        timestamp: Date.now(),
+      };
 
-          const chunk: StreamingChunk = {
-            index: chunkCount,
-            content,
-            reasoning,
-            timestamp: Date.now(),
-          };
+      // Store chunk and update metadata (fire-and-forget for storage)
+      this.fireAndForget(async () => {
+        if (!this.client) return;
 
-          // Store chunk in Redis list
-          await this.client.rPush(
-            `chunks:${conversationId}`,
-            JSON.stringify(chunk)
-          );
-
-          // Update session metadata
-          await this.client.hSet(`session:${conversationId}`, {
-            lastActivity: chunk.timestamp.toString(),
-            chunkCount: (chunkCount + 1).toString(),
-          });
-
-          // Refresh TTL
-          await this.client.expire(`session:${conversationId}`, this.CACHE_TTL);
-          await this.client.expire(`chunks:${conversationId}`, this.CACHE_TTL);
-
-          // Publish to subscribers
-          if (this.pubClient) {
-            await this.pubClient.publish(
-              `streaming:chunk:${conversationId}`,
+        // Retry logic for MOVED errors
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            // Store chunk in Redis list
+            await this.client.rPush(
+              `chunks:${conversationId}`,
               JSON.stringify(chunk)
             );
-          }
 
-          return;
-        } catch (error: unknown) {
-          const err = error as Error;
-          if (err.message && err.message.includes("MOVED") && attempt < 2) {
-            console.log(
-              `Redis MOVED error, retrying attempt ${attempt + 1}/3:`,
-              err.message
-            );
-            await new Promise((resolve) =>
-              setTimeout(resolve, 50 * (attempt + 1))
-            ); // Exponential backoff
-            continue;
+            // Update session metadata
+            await this.client.hSet(`session:${conversationId}`, {
+              lastActivity: chunk.timestamp.toString(),
+              chunkCount: (chunkCount + 1).toString(),
+            });
+
+            // Refresh TTL
+            await this.client.expire(`session:${conversationId}`, this.CACHE_TTL);
+            await this.client.expire(`chunks:${conversationId}`, this.CACHE_TTL);
+
+            return;
+          } catch (error: unknown) {
+            const err = error as Error;
+            if (err.message && err.message.includes("MOVED") && attempt < 2) {
+              console.log(
+                `Redis MOVED error, retrying attempt ${attempt + 1}/3:`,
+                err.message
+              );
+              await new Promise((resolve) =>
+                setTimeout(resolve, 50 * (attempt + 1))
+              ); // Exponential backoff
+              continue;
+            }
+            throw error;
           }
-          throw error;
         }
-      }
-    }, "addChunk");
+      }, "addChunk-storage");
 
-    return true; // Return immediately, don't wait for Redis
+      // Publish to subscribers immediately (more reliable)
+      if (this.pubClient && this.isConnected) {
+        try {
+          const channel = `streaming:chunk:${conversationId}`;
+          await this.pubClient.publish(channel, JSON.stringify(chunk));
+        } catch (error) {
+          console.error(`❌ Failed to publish chunk for ${conversationId}:`, error);
+          // Continue anyway - storage is still happening
+        }
+      } else {
+        console.warn(`⚠️ Cannot publish chunk - pubClient not ready: connected=${this.isConnected} [${this.instanceId}]`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error(`❌ Failed to process chunk for ${conversationId}:`, error);
+      return false;
+    }
   }
 
   subscribe(
@@ -392,9 +423,12 @@ class RedisStreamingCacheManager {
     onChunk: (chunk: StreamingChunk) => void,
     onComplete?: () => void
   ): () => void {
+    console.log(`🔗 Redis subscribe called for conversation: ${conversationId} [${this.instanceId}]`);
+    
     // Store local subscribers
     if (!this.localSubscribers.has(conversationId)) {
       this.localSubscribers.set(conversationId, new Set());
+      console.log(`📝 Created new subscriber set for conversation: ${conversationId} [${this.instanceId}]`);
     }
     if (!this.localCompletionSubscribers.has(conversationId)) {
       this.localCompletionSubscribers.set(conversationId, new Set());
@@ -405,7 +439,11 @@ class RedisStreamingCacheManager {
       this.localCompletionSubscribers.get(conversationId)!.add(onComplete);
     }
 
-    console.log(`➕ Added Redis subscriber to session: ${conversationId}`);
+    const subscriberCount = this.localSubscribers.get(conversationId)!.size;
+    console.log(`➕ Added Redis subscriber to session: ${conversationId} [${this.instanceId}] (total: ${subscriberCount})`);
+
+    // Debug: List all current subscribers
+    console.log(`🗂️ Current local subscribers: [${Array.from(this.localSubscribers.keys()).join(', ')}] [${this.instanceId}]`);
 
     // Return unsubscribe function
     return () => {
@@ -413,8 +451,9 @@ class RedisStreamingCacheManager {
       if (onComplete) {
         this.localCompletionSubscribers.get(conversationId)?.delete(onComplete);
       }
+      const remainingCount = this.localSubscribers.get(conversationId)?.size || 0;
       console.log(
-        `➖ Removed Redis subscriber from session: ${conversationId}`
+        `➖ Removed Redis subscriber from session: ${conversationId} [${this.instanceId}] (remaining: ${remainingCount})`
       );
     };
   }

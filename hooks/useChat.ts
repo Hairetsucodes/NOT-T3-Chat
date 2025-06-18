@@ -75,6 +75,9 @@ export const useChat = ({
   );
 
   const loadingConversationIdRef = useRef<string | null>(null);
+  
+  // Add ref to track ongoing reconnections
+  const activeReconnectionsRef = useRef<Set<string>>(new Set());
 
   // Custom hooks
   const streamingHook = useStreamingChat();
@@ -106,7 +109,7 @@ export const useChat = ({
     addConversation,
   } = conversationHook;
 
-  // Enhanced setConversationId with reconnection support
+  // Enhanced setConversationId with reconnection support and duplicate prevention
   const setConversationId = useCallback(
     async (newConversationId: string | null) => {
       // If no ID provided, just clear everything
@@ -114,6 +117,12 @@ export const useChat = ({
         setConversationIdState(null);
         setMessages([]);
         setConversationTitle(null);
+        return;
+      }
+
+      // Prevent duplicate reconnections to the same conversation
+      if (activeReconnectionsRef.current.has(newConversationId)) {
+        console.log("🚫 Reconnection already in progress for:", newConversationId);
         return;
       }
 
@@ -138,6 +147,9 @@ export const useChat = ({
           "🔄 Attempting to reconnect to generating conversation:",
           newConversationId
         );
+
+        // Mark this conversation as having an active reconnection
+        activeReconnectionsRef.current.add(newConversationId);
 
         try {
           // First check if there's an active streaming session
@@ -276,6 +288,9 @@ export const useChat = ({
                     : msg
                 )
               );
+              
+              // Remove from active reconnections
+              activeReconnectionsRef.current.delete(newConversationId);
             },
             onError: (error: Error) => {
               console.error("❌ Reconnection failed:", error);
@@ -294,6 +309,9 @@ export const useChat = ({
                   );
                   setMessages([]);
                 });
+              
+              // Remove from active reconnections
+              activeReconnectionsRef.current.delete(newConversationId);
             },
           });
 
@@ -310,6 +328,9 @@ export const useChat = ({
             console.error("Failed to load messages for fallback:", loadError);
             setMessages([]);
           }
+          
+          // Remove from active reconnections
+          activeReconnectionsRef.current.delete(newConversationId);
         }
       } else {
         // Regular conversation switch (not generating)
