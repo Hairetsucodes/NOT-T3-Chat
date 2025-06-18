@@ -52,7 +52,7 @@ export const Chat = ({ welcomeMessage }: { welcomeMessage?: boolean }) => {
 
       {/* Mobile sidebar toggle button - only visible on mobile */}
       <Button
-        variant="ghost"
+        variant={isMobileSidebarOpen ? "secondary" : "ghost"}
         size="icon"
         onClick={toggleMobileSidebar}
         className="fixed top-4 left-4 z-[60] md:hidden bg-chat-background/80 backdrop-blur-sm border border-chat-border/50 hover:bg-chat-background"
@@ -67,10 +67,10 @@ export const Chat = ({ welcomeMessage }: { welcomeMessage?: boolean }) => {
 
       {/* Desktop sidebar toggle button - only visible on desktop */}
       <Button
-        variant="ghost"
+        variant={isDesktopSidebarOpen ? "secondary" : "ghost"}
         size="icon"
         onClick={toggleDesktopSidebar}
-        className="fixed top-4 left-4 z-[60] hidden md:block bg-chat-background/80 backdrop-blur-sm border border-chat-border/50 hover:bg-chat-background"
+        className="fixed top-4 left-4 p-1 z-[60] hidden md:block bg-chat-background/80 backdrop-blur-sm border border-chat-border/50 hover:bg-chat-background"
         aria-label={isDesktopSidebarOpen ? "Hide sidebar" : "Show sidebar"}
       >
         {isDesktopSidebarOpen ? (
@@ -87,7 +87,7 @@ export const Chat = ({ welcomeMessage }: { welcomeMessage?: boolean }) => {
           onClick={() => setIsMobileSidebarOpen(false)}
         />
       )}
-    
+
       {/* Mobile Sidebar - only visible on mobile */}
       <div className="md:hidden">
         <Sidebar
