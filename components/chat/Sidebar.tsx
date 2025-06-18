@@ -190,11 +190,11 @@ export function Sidebar({ isOpen = false, onClose, isMobile = false }: SidebarPr
                                   href={`/chat/${thread.id}`}
                                   prefetch={false}
                                   onClick={() => {
-                                    setConversationId(thread.id);
                                     // Only close sidebar on mobile
                                     if (isMobile) {
                                       onClose?.();
                                     }
+                                    // Note: setConversationId is handled by navigation and server-side loading
                                   }}
                                 >
                                   <div className="relative flex w-full items-center">

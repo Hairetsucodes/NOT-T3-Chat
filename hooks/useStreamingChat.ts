@@ -89,6 +89,7 @@ export const useStreamingChat = () => {
           provider: options.provider || options.chatSettings?.provider || "openai",
           model: options.model || options.chatSettings?.model || "gpt-4o-mini",
         };
+        console.log(options.model, options.chatSettings?.model);
         let done = false;
         let hasReceivedFirstToken = false;
 

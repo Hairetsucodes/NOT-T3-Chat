@@ -63,7 +63,7 @@ export function ChatInput({
       >
         <form
           onSubmit={onSubmit}
-          className="relative flex w-full flex-col items-stretch gap-2 rounded-t-xl border border-b-0 border-white/70 bg-chat-input-background px-2 pt-3 text-secondary-foreground outline outline-8 outline-[hsl(var(--chat-input-gradient)/0.5)] pb-safe-offset-3 max-sm:pb-6 sm:max-w-3xl dark:border-[hsl(0,0%,83%)]/[0.04] dark:outline-chat-background/40"
+          className="relative flex w-full flex-col items-stretch gap-2 rounded-t-xl border border-b-0 border-white/70 bg-chat-input-background px-2 pt-3 text-secondary-foreground outline outline-8 outline-[hsl(var(--chat-input-gradient)/0.5)] pb-safe-offset-3 max-sm:pb-6 dark:border-[hsl(0,0%,83%)]/[0.04] dark:outline-chat-background/40"
         >
           <div className="flex flex-grow flex-col">
             <div className="flex flex-grow flex-row items-start">

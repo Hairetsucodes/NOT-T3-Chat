@@ -50,7 +50,7 @@ export function ChatContainer({
 
       {/* Chat input area */}
       <div className="absolute bottom-0 z-10 w-full px-2">
-        <div className="relative mx-auto flex w-full max-w-3xl flex-col text-center">
+        <div className="relative mx-auto flex w-full max-w-[768px] flex-col text-center">
           <ChatInput
             input={input}
             handleInputChange={handleInputChange}

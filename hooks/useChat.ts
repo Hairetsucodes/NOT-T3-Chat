@@ -130,6 +130,7 @@ export const useChat = ({
 
       // Prevent duplicate reconnections to the same conversation
       if (activeReconnectionsRef.current.has(newConversationId)) {
+        console.log(`🚫 Prevented duplicate reconnection to conversation: ${newConversationId}`);
         return;
       }
 
@@ -149,7 +150,8 @@ export const useChat = ({
       }
 
       if (conversation?.isGenerating) {
-        // Mark this conversation as having an active reconnection
+        // Mark this conversation as having an active reconnection IMMEDIATELY
+        // to prevent race conditions
         activeReconnectionsRef.current.add(newConversationId);
 
         try {
@@ -198,7 +200,7 @@ export const useChat = ({
             partial_image: "",
             image_generation_status: "",
             provider: "openai",
-            model: "gpt-4o-mini",
+            model: chatSettings?.model || "gpt-4o-mini",
           };
 
           // Set messages with existing messages plus the placeholder
@@ -309,12 +311,15 @@ export const useChat = ({
     [conversations, updateConversation]
   );
 
-  // Handle client-side loading for generating conversations
+  // Use a ref to track if we've already processed needsClientSideLoading
+  const hasProcessedClientSideLoadingRef = useRef(false);
+  
   useEffect(() => {
-    if (needsClientSideLoading && !conversationId) {
+    if (needsClientSideLoading && !conversationId && !hasProcessedClientSideLoadingRef.current) {
+      hasProcessedClientSideLoadingRef.current = true;
       setConversationId(needsClientSideLoading);
     }
-  }, [needsClientSideLoading, conversationId, setConversationId]);
+  }, [needsClientSideLoading, conversationId]);
 
   const handleConversationCreated = useCallback(
     (newConversationId: string, title?: string) => {
