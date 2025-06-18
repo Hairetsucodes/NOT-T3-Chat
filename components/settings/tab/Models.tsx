@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useState, useMemo } from "react";
+import { useContext, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,7 +26,7 @@ export default function Models() {
     refreshPreferredModels,
     preferredModels,
     setPreferredModels,
-    activeProviders,
+    activeProviders,  
   } = useContext(ChatContext);
   const [displayedCount, setDisplayedCount] = useState(50);
   const [loading, setLoading] = useState(false);
