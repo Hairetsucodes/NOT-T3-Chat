@@ -21,6 +21,7 @@ export function ChatWrapper({
   children,
 }: ChatWrapperProps) {
   const {
+    messages,
     setMessages,
     setConversationId,
     sendMessage,
@@ -32,6 +33,26 @@ export function ChatWrapper({
   const searchParams = useSearchParams();
   const hasRetriedRef = useRef(false);
   const lastConversationIdRef = useRef<string | null>(null);
+
+  // Helper function to check if current messages have more content than initial messages
+  const hasMoreContentThanInitial = (currentMessages: Message[], initialMessages: Message[]) => {
+    if (currentMessages.length !== initialMessages.length) {
+      return currentMessages.length > initialMessages.length;
+    }
+    
+    // If same length, check if any message has more content (indicating streaming occurred)
+    for (let i = 0; i < currentMessages.length; i++) {
+      const current = currentMessages[i];
+      const initial = initialMessages[i];
+      
+      if (current.content.length > initial.content.length || 
+          (current.reasoning_content || "").length > (initial.reasoning_content || "").length) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
 
   useEffect(() => {
     // Only update if the conversation ID actually changed
@@ -63,15 +84,21 @@ export function ChatWrapper({
         (conv) => conv.id === initialConversationId
       );
       
-      // Only update messages if conversation is not generating
+      // Only update messages if conversation is not generating AND
+      // current messages don't already have more content (from reconnection)
       if (!conversation?.isGenerating) {
-        console.log("📝 ChatWrapper: Updating messages for same conversation (not generating)");
-        setMessages(initialMessages);
+        const hasMoreContent = hasMoreContentThanInitial(messages, initialMessages);
+        if (!hasMoreContent) {
+          console.log("📝 ChatWrapper: Updating messages for same conversation (not generating)");
+          setMessages(initialMessages);
+        } else {
+          console.log("✅ ChatWrapper: Skipping message update - current messages have more content (reconnection completed)");
+        }
       } else {
         console.log("⚠️ ChatWrapper: Skipping message update - conversation is generating");
       }
     }
-  }, [initialConversationId, initialMessages, setMessages, setConversationId, conversations]);
+  }, [initialConversationId, initialMessages, messages, setMessages, setConversationId, conversations]);
 
   // Second useEffect: Handle retry logic (run only once per retry)
   useEffect(() => {
