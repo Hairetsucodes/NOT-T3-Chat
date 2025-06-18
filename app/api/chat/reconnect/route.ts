@@ -1,5 +1,9 @@
 import { auth } from "@/auth";
-import { streamingCache, StreamingChunk, ChunkBatch } from "@/lib/cache/streamingCache";
+import {
+  streamingCache,
+  StreamingChunk,
+  ChunkBatch,
+} from "@/lib/cache/streamingCache";
 import { NextRequest } from "next/server";
 
 // Support HEAD method to check if session exists without streaming
@@ -50,13 +54,6 @@ async function handleReconnectRequest(
       });
     }
 
-    console.log("📊 Reconnect data found:", {
-      status: reconnectData.status,
-      isComplete: reconnectData.isComplete,
-      chunkCount: reconnectData.chunks.length,
-      batchCount: reconnectData.batches?.length || 0,
-    });
-
     // Verify the session belongs to the user
     const sessionData = await streamingCache.getSession(conversationId);
     if (sessionData && sessionData.userId !== userId) {
@@ -74,9 +71,7 @@ async function handleReconnectRequest(
           "X-Stream-Status": reconnectData.status,
           "X-Stream-Complete": reconnectData.isComplete.toString(),
           "X-Chunk-Count": reconnectData.chunks.length.toString(),
-          "X-Batch-Count": (
-            reconnectData.batches?.length || 0
-          ).toString(),
+          "X-Batch-Count": (reconnectData.batches?.length || 0).toString(),
         },
       });
     }

@@ -4,9 +4,5 @@ import { NewChatWrapper } from "@/components/chat/NewChatWrapper";
 export const dynamic = "force-dynamic";
 
 export default function Page() {
-  return (
-    <NewChatWrapper>
-      <Chat noWelcomeMessage={false} />
-    </NewChatWrapper>
-  );
+  return <Chat welcomeMessage={true} />;
 }

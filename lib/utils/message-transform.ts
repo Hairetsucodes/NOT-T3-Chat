@@ -16,12 +16,16 @@ export type DatabaseMessage = {
 };
 
 // Type guard for message roles
-export function isValidMessageRole(role: string): role is "user" | "assistant" | "system" {
+export function isValidMessageRole(
+  role: string
+): role is "user" | "assistant" | "system" {
   return ["user", "assistant", "system"].includes(role);
 }
 
 // Transform database messages to frontend message format
-export function transformDatabaseMessages(dbMessages: DatabaseMessage[]): Message[] {
+export async function transformDatabaseMessages(
+  dbMessages: DatabaseMessage[]
+): Promise<Message[]> {
   return dbMessages
     .filter((msg) => isValidMessageRole(msg.role))
     .map((msg) => ({
@@ -35,13 +39,16 @@ export function transformDatabaseMessages(dbMessages: DatabaseMessage[]): Messag
 }
 
 // Validate message data integrity
-export function validateMessageData(dbMessages: DatabaseMessage[], transformedMessages: Message[]): void {
+export async function validateMessageData(
+  dbMessages: DatabaseMessage[],
+  transformedMessages: Message[]
+): Promise<void> {
   if (dbMessages.length > 0 && transformedMessages.length === 0) {
     console.warn("All messages filtered out - possible data integrity issue");
   }
-  
+
   const filteredCount = dbMessages.length - transformedMessages.length;
   if (filteredCount > 0) {
     console.warn(`${filteredCount} messages filtered out due to invalid roles`);
   }
-} 
+}

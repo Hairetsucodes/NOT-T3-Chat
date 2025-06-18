@@ -18,17 +18,17 @@ import {
 import { reconnectToStream } from "@/lib/utils/reconnect";
 interface UseChatOptions {
   activeUser: ChatUser;
-  initialConversations: ConversationWithLoading[];
-  initialActiveProviders: {
+  initialConversations?: ConversationWithLoading[];
+  initialActiveProviders?: {
     id: string;
     provider: string;
   }[];
-  availableModels: UnifiedModel[];
-  preferredModels: PreferredModel[];
+  availableModels?: UnifiedModel[];
+  preferredModels?: PreferredModel[];
   initialMessages?: Message[];
   initialConversationId?: string;
-  initialUserSettings: UserCustomization | null;
-  initialChatSettings: ChatSettings | null;
+  initialUserSettings?: UserCustomization | null;
+  initialChatSettings?: ChatSettings | null;
 }
 
 // Client-side wrapper for loading messages
@@ -50,17 +50,17 @@ const loadConversationMessages = async (
 
 export const useChat = ({
   activeUser,
-  initialConversations,
-  initialActiveProviders,
-  availableModels,
-  preferredModels,
+  initialConversations = [],
+  initialActiveProviders = [],
+  availableModels = [],
+  preferredModels = [],
   initialMessages = [],
   initialConversationId,
-  initialUserSettings,
-  initialChatSettings,
+  initialUserSettings = null,
+  initialChatSettings = null,
 }: UseChatOptions) => {
   const router = useRouter();
-  
+
   // Core state
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [conversationId, setConversationIdState] = useState<string | null>(
@@ -124,10 +124,6 @@ export const useChat = ({
 
       // Prevent duplicate reconnections to the same conversation
       if (activeReconnectionsRef.current.has(newConversationId)) {
-        console.log(
-          "🚫 Reconnection already in progress for:",
-          newConversationId
-        );
         return;
       }
 
@@ -136,23 +132,11 @@ export const useChat = ({
         (conv) => conv.id === newConversationId
       );
 
-      console.log("🔍 Conversation found:", {
-        id: newConversationId,
-        title: conversation?.title,
-        isGenerating: conversation?.isGenerating,
-        exists: !!conversation,
-      });
-
       // Set conversation state first
       setConversationIdState(newConversationId);
       setConversationTitle(conversation?.title || null);
 
       if (conversation?.isGenerating) {
-        console.log(
-          "🔄 Attempting to reconnect to generating conversation:",
-          newConversationId
-        );
-
         // Mark this conversation as having an active reconnection
         activeReconnectionsRef.current.add(newConversationId);
 
@@ -166,9 +150,6 @@ export const useChat = ({
           );
 
           if (!checkResponse.ok && checkResponse.status === 404) {
-            console.log(
-              "⚠️ No active streaming session found, stream likely completed. Loading messages normally."
-            );
             updateConversation(newConversationId, { isGenerating: false });
 
             // Just load messages normally since stream is complete
@@ -191,10 +172,6 @@ export const useChat = ({
           const existingMessages = await loadConversationMessages(
             newConversationId
           );
-          console.log(
-            "📥 Loaded existing messages count:",
-            existingMessages.length
-          );
 
           // Create a placeholder assistant message for the ongoing stream
           const assistantMessageId = `assistant-reconnect-${Date.now()}-${Math.random()
@@ -212,11 +189,6 @@ export const useChat = ({
             model: "gpt-4o-mini",
           };
 
-          console.log(
-            "🎯 Created placeholder assistant message with ID:",
-            assistantMessageId
-          );
-
           // Set messages with existing messages plus the placeholder
           setMessages([...existingMessages, assistantMessage]);
 
@@ -225,26 +197,14 @@ export const useChat = ({
           let accumulatedReasoning = "";
           let chunkCount = 0;
 
-          console.log("🚀 Starting reconnectToStream...");
-
           await reconnectToStream({
             conversationId: newConversationId,
             onChunk: (content: string, reasoning?: string) => {
               chunkCount++;
-              console.log(`📦 Chunk ${chunkCount} received:`, {
-                contentLength: content?.length || 0,
-                reasoningLength: reasoning?.length || 0,
-                content:
-                  content?.substring(0, 50) +
-                  (content?.length > 50 ? "..." : ""),
-              });
 
               if (content) {
                 accumulatedContent += content;
-                console.log(
-                  "📝 Updated content length:",
-                  accumulatedContent.length
-                );
+
                 setMessages((prev) =>
                   prev.map((msg) =>
                     msg.id === assistantMessageId
@@ -256,10 +216,7 @@ export const useChat = ({
 
               if (reasoning) {
                 accumulatedReasoning += reasoning;
-                console.log(
-                  "🤔 Updated reasoning length:",
-                  accumulatedReasoning.length
-                );
+
                 setMessages((prev) =>
                   prev.map((msg) =>
                     msg.id === assistantMessageId
@@ -270,15 +227,6 @@ export const useChat = ({
               }
             },
             onComplete: (fullContent: string, fullReasoning: string) => {
-              console.log(
-                "✅ Reconnection completed for conversation:",
-                newConversationId
-              );
-              console.log("📊 Final stats:", {
-                contentLength: fullContent.length,
-                reasoningLength: fullReasoning.length,
-                totalChunks: chunkCount,
-              });
               updateConversation(newConversationId, { isGenerating: false });
 
               // Ensure final content is set
@@ -299,7 +247,6 @@ export const useChat = ({
             },
             onError: (error: Error) => {
               console.error("❌ Reconnection failed:", error);
-              console.log("🔄 Falling back to normal message loading");
               updateConversation(newConversationId, { isGenerating: false });
 
               // Fall back to loading messages normally
@@ -319,8 +266,6 @@ export const useChat = ({
               activeReconnectionsRef.current.delete(newConversationId);
             },
           });
-
-          console.log("🏁 reconnectToStream completed");
         } catch (error) {
           console.error("Error during reconnection:", error);
           updateConversation(newConversationId, { isGenerating: false });
@@ -437,11 +382,16 @@ export const useChat = ({
         selectedModel?: string;
         provider?: string;
         model?: string;
+        retry?: boolean;
       }
     ) => {
       // Add user message to the messages array
       const newMessages = [...messages, message];
-      setMessages(newMessages);
+      if (!options?.retry) {
+        setMessages(newMessages);
+      } else {
+        setMessages([message]);
+      }
 
       // Get the conversation ID we'll be working with
       const targetConversationId = options?.conversationId || conversationId;
@@ -451,10 +401,6 @@ export const useChat = ({
       try {
         // Set isGenerating to true for the current conversation
         if (targetConversationId) {
-          console.log(
-            "🚀 Setting isGenerating: true for conversation:",
-            targetConversationId
-          );
           updateConversation(targetConversationId, { isGenerating: true });
         }
 
@@ -465,7 +411,7 @@ export const useChat = ({
         }
 
         const streamingResult = await streamingHook.sendStreamingMessage(
-          newMessages,
+          options?.retry ? [message] : newMessages,
           {
             ...options,
             chatSettings,
@@ -478,15 +424,15 @@ export const useChat = ({
 
         // Ensure isGenerating is still true after streaming setup
         if (actualConversationId) {
-          console.log(
-            "🔄 Re-confirming isGenerating: true for conversation:",
-            actualConversationId
-          );
           updateConversation(actualConversationId, { isGenerating: true });
         }
 
         // Add assistant message to messages
-        setMessages([...newMessages, streamingResult.assistantMessage]);
+        setMessages(
+          options?.retry
+            ? [...[message], streamingResult.assistantMessage]
+            : [...newMessages, streamingResult.assistantMessage]
+        );
 
         // Wait for streaming to complete
         await streamingResult.streamPromise;

@@ -54,30 +54,31 @@ export const ChatContext = createContext<ChatContextType>({
 
 export const ChatProvider = ({
   activeUser,
-  initialConversations,
-  initialActiveProviders,
-  availableModels,
-  preferredModels: initialPreferredModels,
+  initialConversations = [],
+  initialActiveProviders = [],
+  availableModels = [],
+  preferredModels: initialPreferredModels = [],
   initialMessages,
   initialConversationId,
-  initialUserSettings,
-  initialChatSettings,
+  initialUserSettings = null,
+  initialChatSettings = null,
   children,
 }: {
   activeUser: ChatUser;
-  initialConversations: Conversation[];
-  initialActiveProviders: {
+  initialConversations?: Conversation[];
+  initialActiveProviders?: {
     id: string;
     provider: string;
   }[];
-  availableModels: UnifiedModel[];
-  preferredModels: PreferredModel[];
+  availableModels?: UnifiedModel[];
+  preferredModels?: PreferredModel[];
   initialMessages?: Message[];
   initialConversationId?: string;
-  initialUserSettings: UserCustomization | null;
-  initialChatSettings: ChatSettings | null;
+  initialUserSettings?: UserCustomization | null;
+  initialChatSettings?: ChatSettings | null;
   children: React.ReactNode;
 }) => {
+  
   const chatHook = useChat({
     activeUser,
     initialConversations,
@@ -94,3 +95,6 @@ export const ChatProvider = ({
     <ChatContext.Provider value={chatHook}>{children}</ChatContext.Provider>
   );
 };
+
+// Re-export the server provider for convenience
+export { ChatServerProvider } from "./ChatServerProvider";

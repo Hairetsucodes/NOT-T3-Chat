@@ -100,6 +100,7 @@ export interface ChatContextType {
       selectedModel?: string;
       provider?: string;
       model?: string;
+      retry?: boolean;
     }
   ) => Promise<void>;
   handleInputChange: (

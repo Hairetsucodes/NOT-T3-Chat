@@ -22,7 +22,7 @@ interface ChatContainerProps {
     event?: { preventDefault?: () => void; currentInput?: string } | undefined
   ) => void;
   handleSuggestionSelect: (suggestion: string) => void;
-  noWelcomeMessage?: boolean;
+  welcomeMessage?: boolean;
 }
 
 export function ChatContainer({
@@ -32,7 +32,7 @@ export function ChatContainer({
   handleInputChange,
   handleSubmit,
   handleSuggestionSelect,
-  noWelcomeMessage,
+  welcomeMessage,
 }: ChatContainerProps) {
   // Check for retry query parameter
   const searchParams = useSearchParams();
@@ -64,9 +64,9 @@ export function ChatContainer({
         className="absolute inset-0 overflow-y-auto mt-4 md:mt-4"
         style={{ paddingBottom: "144px", scrollbarGutter: "stable both-edges" }}
       >
-        {messages.length === 0 && !hasRetryParam && !noWelcomeMessage ? (
+        {messages.length === 0 && !hasRetryParam && welcomeMessage ? (
           <WelcomeScreen onSelectSuggestion={handleSuggestionSelect} />
-        ) : noWelcomeMessage && messages.length === 0 ? (
+        ) : !welcomeMessage && messages.length === 0 ? (
           <div className="flex justify-center items-center h-full">
             <Spinner size="xl" type="spin" />
           </div>

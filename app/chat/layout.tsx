@@ -1,50 +1,14 @@
 "use server";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
-import { getConversations } from "@/data/messages";
-import { ChatProvider } from "@/context/ChatContext";
-import { getUserById } from "@/data/user";
-import { getProviders } from "@/data/providers";
-import { getAvailableModels, getPreferredModels } from "@/data/models";
-import { getChatSettings, getUserSettings } from "@/data/settings";
+import { ChatServerProvider } from "@/context/ChatServerProvider";
 
 export default async function ChatLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await auth();
-  if (!user) {
-    redirect("/");
-  }
-  const userData = await getUserById();
-
-  // Handle error case or null response
-  if (!userData || "error" in userData) {
-    redirect("/");
-  }
-  const conversations = await getConversations();
-  const providers = await getProviders();
-  const chatSettings = await getChatSettings();
-  const userSettings = await getUserSettings();
-  // Always load all available models, filter client-side by active providers
-  const models = await getAvailableModels();
-  const preferredModels = await getPreferredModels();
   return (
-    <ChatProvider
-      activeUser={userData}
-      initialUserSettings={
-        userSettings && "error" in userSettings ? null : userSettings
-      }
-      initialConversations={conversations}
-      initialActiveProviders={providers}
-      availableModels={models}
-      preferredModels={preferredModels}
-      initialChatSettings={
-        chatSettings && "error" in chatSettings ? null : chatSettings
-      }
-    >
+    <ChatServerProvider>
       <div className="">{children}</div>
-    </ChatProvider>
+    </ChatServerProvider>
   );
 }

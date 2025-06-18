@@ -12,7 +12,9 @@ interface ChatInputProps {
   handleInputChange: (
     e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLTextAreaElement>
   ) => void;
-  handleSubmit: (event?: { preventDefault?: () => void; currentInput?: string } | undefined) => void;
+  handleSubmit: (
+    event?: { preventDefault?: () => void; currentInput?: string } | undefined
+  ) => void;
 }
 
 export function ChatInput({
@@ -27,11 +29,11 @@ export function ChatInput({
     const currentValue = textareaRef.current?.value || "";
     if (currentValue.trim()) {
       // Pass the current input value directly to handleSubmit
-      handleSubmit({ 
+      handleSubmit({
         preventDefault: () => e.preventDefault(),
-        currentInput: currentValue 
+        currentInput: currentValue,
       });
-      
+
       // Clear the textarea after submission
       if (textareaRef.current) {
         textareaRef.current.value = "";
@@ -78,7 +80,7 @@ export function ChatInput({
               />
             </div>
 
-            <div className="mt-2 flex w-full flex-row-reverse justify-between">
+            <div className="mb-3 flex w-full flex-row-reverse justify-between">
               <div className="flex items-center justify-center gap-2">
                 <Button
                   variant="callToAction"
@@ -91,7 +93,7 @@ export function ChatInput({
               </div>
 
               <div className="flex flex-col  sm:flex-row sm:items-center">
-                <div className="flex items-center gap-1 pb-2">
+                <div className="flex items-center gap-1">
                   <ModelSelector />
                   <InputActions />
                 </div>

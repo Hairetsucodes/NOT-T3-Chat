@@ -7,15 +7,16 @@ export const useConversations = (
   initialConversations: ConversationWithLoading[],
   activeUserId?: string | null
 ) => {
-  const [conversations, setConversations] = useState<ConversationWithLoading[]>(initialConversations);
+  const [conversations, setConversations] =
+    useState<ConversationWithLoading[]>(initialConversations);
 
-  const pinnedConversations = useMemo(() => 
-    conversations.filter((conv) => conv.isPinned), 
+  const pinnedConversations = useMemo(
+    () => conversations.filter((conv) => conv.isPinned),
     [conversations]
   );
-  
-  const unpinnedConversations = useMemo(() => 
-    conversations.filter((conv) => !conv.isPinned), 
+
+  const unpinnedConversations = useMemo(
+    () => conversations.filter((conv) => !conv.isPinned),
     [conversations]
   );
 
@@ -43,12 +44,7 @@ export const useConversations = (
 
   const updateConversation = useCallback(
     (id: string, updates: Partial<ConversationWithLoading>) => {
-      if (updates.hasOwnProperty('isGenerating')) {
-        console.log("🔄 updateConversation - isGenerating changed:", {
-          conversationId: id,
-          newValue: updates.isGenerating,
-          updateSource: new Error().stack?.split('\n')[2]?.trim()
-        });
+      if (updates.hasOwnProperty("isGenerating")) {
       }
       setConversations((prev) =>
         prev.map((conv) =>
@@ -96,10 +92,13 @@ export const useConversations = (
   );
 
   const deleteConversation = useCallback(
-    async (id: string, options?: {
-      onNavigateAway?: () => void;
-      isCurrentConversation?: boolean;
-    }) => {
+    async (
+      id: string,
+      options?: {
+        onNavigateAway?: () => void;
+        isCurrentConversation?: boolean;
+      }
+    ) => {
       if (!activeUserId) return;
 
       // Store backup for potential revert
@@ -143,4 +142,4 @@ export const useConversations = (
     togglePinConversation,
     deleteConversation,
   };
-}; 
+};

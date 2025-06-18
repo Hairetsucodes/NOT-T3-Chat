@@ -11,18 +11,24 @@ export async function createStreamTransformer(
   userId: string,
   selectedModel: APISelectedModel,
   currentConversationId: string | undefined
-): Promise<{ transformedStream: ReadableStream; conversationId: string | undefined }> {
+): Promise<{
+  transformedStream: ReadableStream;
+  conversationId: string | undefined;
+}> {
   let fullContent = "";
   let fullReasoning = "";
   let responseId: string | undefined;
-  
+
   // Create cache session for streaming reconnection support
   let cacheSession: StreamingSession | null = null;
-  
+
   if (currentConversationId) {
-    cacheSession = await streamingCache.createSession(userId, currentConversationId);
+    cacheSession = await streamingCache.createSession(
+      userId,
+      currentConversationId
+    );
   }
-  
+
   const transformedStream = new ReadableStream({
     start(controller) {
       const reader = stream.getReader();
@@ -49,18 +55,9 @@ export async function createStreamTransformer(
               }
               // Mark cache session as complete
               if (cacheSession && currentConversationId) {
-                console.log("✅ Marking cache session as complete for:", currentConversationId);
                 await streamingCache.completeSession(currentConversationId);
-                
-                // Debug: Check final cache state
-                const finalSession = await streamingCache.getSession(currentConversationId);
-                console.log("📈 Final cache session state:", {
-                  conversationId: currentConversationId,
-                  status: finalSession?.status,
-                  chunkCount: finalSession?.chunks.length,
-                });
               }
-              
+
               controller.close();
               break;
             }
@@ -76,29 +73,36 @@ export async function createStreamTransformer(
                     const data = line.slice(6);
                     if (data.trim()) {
                       const parsed = JSON.parse(data);
-                      
+
                       // Process content and reasoning together to avoid splitting into separate chunks
                       let hasContent = false;
                       let hasReasoning = false;
                       let chunkContent = "";
                       let chunkReasoning = "";
-                      
+
                       if (parsed.content || parsed.image_url) {
                         chunkContent = parsed.content || parsed.image_url;
                         fullContent += chunkContent;
                         hasContent = true;
                       }
-                      
+
                       if (parsed.reasoning) {
                         chunkReasoning = parsed.reasoning;
                         fullReasoning += chunkReasoning;
                         hasReasoning = true;
                       }
-                      
+
                       // Cache the chunk for streaming reconnection - combine content and reasoning in one chunk
-                      if (cacheSession && currentConversationId && (hasContent || hasReasoning)) {
-                        
-                        await streamingCache.addChunk(currentConversationId, chunkContent, chunkReasoning || undefined);
+                      if (
+                        cacheSession &&
+                        currentConversationId &&
+                        (hasContent || hasReasoning)
+                      ) {
+                        await streamingCache.addChunk(
+                          currentConversationId,
+                          chunkContent,
+                          chunkReasoning || undefined
+                        );
                       }
                       if (parsed.previous_response_id) {
                         responseId = parsed.previous_response_id;
@@ -125,6 +129,6 @@ export async function createStreamTransformer(
       pump();
     },
   });
-  
+
   return { transformedStream, conversationId: currentConversationId };
 }

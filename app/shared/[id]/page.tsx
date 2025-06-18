@@ -20,7 +20,7 @@ export default async function SharedPage({
 
   const { messages: dbMessages } = chatData;
 
-  const messages = transformDatabaseMessages(dbMessages);
+  const messages = await transformDatabaseMessages(dbMessages);
 
   return <SharedChat messages={messages} />;
 }

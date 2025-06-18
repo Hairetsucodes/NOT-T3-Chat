@@ -1,13 +1,13 @@
-import React from "react";
 import { getMessagesByConversationId } from "@/data/messages";
 import { Chat } from "@/components/chat/Chat";
-import { ChatWrapper } from "@/components/chat/ChatWrapper";
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import {
   transformDatabaseMessages,
   validateMessageData,
 } from "@/lib/utils/message-transform";
+
+export const dynamic = "force-dynamic";
 
 export default async function Page(props: {
   params: Promise<{ id: string }>;
@@ -53,19 +53,10 @@ export default async function Page(props: {
   }
 
   // Transform messages with proper type safety
-  const messages = transformDatabaseMessages(dbMessages);
+  const messages = await transformDatabaseMessages(dbMessages);
 
   // Validate data integrity
-  validateMessageData(dbMessages, messages);
+  await validateMessageData(dbMessages, messages);
 
-  return (
-    <ChatWrapper
-      initialMessages={messages}
-      initialConversationId={id}
-      initialProvider={provider || "openai"}
-      initialModel={model || "gpt-4o-mini"}
-    >
-      <Chat noWelcomeMessage={true} />
-    </ChatWrapper>
-  );
+  return <Chat welcomeMessage={false} />;
 }

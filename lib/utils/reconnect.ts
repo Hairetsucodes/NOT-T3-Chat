@@ -25,11 +25,11 @@ export interface ReconnectResponse {
 /**
  * Reconnect to a streaming session
  */
-export async function reconnectToStream(options: ReconnectOptions): Promise<void> {
+export async function reconnectToStream(
+  options: ReconnectOptions
+): Promise<void> {
   const { conversationId, onChunk, onComplete, onError } = options;
-  
-  console.log("🔗 reconnectToStream called for conversation:", conversationId);
-  
+
   if (!conversationId) {
     console.error("❌ No conversation ID provided to reconnectToStream");
     onError?.(new Error("Conversation ID is required"));
@@ -37,42 +37,31 @@ export async function reconnectToStream(options: ReconnectOptions): Promise<void
   }
 
   try {
-    console.log("📡 Fetching reconnect data from API...");
-    const response = await fetch(`/api/chat/reconnect?conversationId=${conversationId}`, {
-      method: "GET",
-      headers: {
-        "Accept": "text/plain",
-      },
-    });
-
-    console.log("📄 Reconnect API response:", {
-      status: response.status,
-      ok: response.ok,
-      headers: Object.fromEntries(response.headers.entries()),
-    });
+    const response = await fetch(
+      `/api/chat/reconnect?conversationId=${conversationId}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "text/plain",
+        },
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("❌ Reconnect API failed:", response.status, errorText);
-      onError?.(new Error(`Reconnect failed: ${response.status} - ${errorText}`));
+      onError?.(
+        new Error(`Reconnect failed: ${response.status} - ${errorText}`)
+      );
       return;
     }
 
     const contentType = response.headers.get("content-type");
-    console.log("📋 Response content type:", contentType);
-    
+
     // If response is JSON, the stream is complete
     if (contentType?.includes("application/json")) {
-      console.log("📦 Response is JSON (complete stream)");
       const data: ReconnectResponse = await response.json();
-      console.log("📊 Complete stream data:", {
-        status: data.status,
-        isComplete: data.isComplete,
-        contentLength: data.content?.length || 0,
-        reasoningLength: data.reasoning?.length || 0,
-        chunkCount: data.chunkCount,
-      });
-      
+
       if (data.isComplete && data.content !== undefined) {
         onComplete?.(data.content, data.reasoning || "");
         return;
@@ -104,17 +93,17 @@ export async function reconnectToStream(options: ReconnectOptions): Promise<void
             if (data.trim()) {
               try {
                 const parsed = JSON.parse(data);
-                
+
                 if (parsed.content) {
                   fullContent += parsed.content;
                   onChunk?.(parsed.content, undefined, parsed.cached);
                 }
-                
+
                 if (parsed.reasoning) {
                   fullReasoning += parsed.reasoning;
                   onChunk?.("", parsed.reasoning, parsed.cached);
                 }
-                
+
                 if (parsed.isComplete) {
                   onComplete?.(fullContent, fullReasoning);
                   return;
@@ -126,16 +115,14 @@ export async function reconnectToStream(options: ReconnectOptions): Promise<void
           }
         }
       }
-      
+
       // Stream ended
       onComplete?.(fullContent, fullReasoning);
-      
     } catch (streamError) {
       onError?.(streamError as Error);
     } finally {
       reader.releaseLock();
     }
-    
   } catch (error) {
     onError?.(error as Error);
   }
@@ -144,7 +131,9 @@ export async function reconnectToStream(options: ReconnectOptions): Promise<void
 /**
  * Check if a streaming session exists
  */
-export async function checkStreamingSession(conversationId: string): Promise<ReconnectResponse | null> {
+export async function checkStreamingSession(
+  conversationId: string
+): Promise<ReconnectResponse | null> {
   try {
     const response = await fetch(`/api/chat/reconnect`, {
       method: "POST",
@@ -169,13 +158,13 @@ export async function checkStreamingSession(conversationId: string): Promise<Rec
  */
 export function createReconnectHandler() {
   let currentConversationId: string | null = null;
-  
+
   return {
     // Store conversationId from response headers
     setConversationId: (conversationId: string) => {
       currentConversationId = conversationId;
     },
-    
+
     // Handle reconnection
     reconnect: async (
       onChunk: (content: string, reasoning?: string, cached?: boolean) => void,
@@ -186,7 +175,7 @@ export function createReconnectHandler() {
         onError(new Error("No conversation ID available for reconnection"));
         return;
       }
-      
+
       await reconnectToStream({
         conversationId: currentConversationId,
         onChunk,
@@ -194,13 +183,13 @@ export function createReconnectHandler() {
         onError,
       });
     },
-    
+
     // Check if reconnection is possible
     canReconnect: () => currentConversationId !== null,
-    
+
     // Clear stored conversationId
     clear: () => {
       currentConversationId = null;
     },
   };
-} 
+}

@@ -27,6 +27,7 @@ import { MessageActionsProps } from "@/types/chat";
 import { getProviderIcon } from "@/components/ui/provider-images";
 import { updateModelAndProvider } from "@/data/settings";
 import { ChatSettings } from "@prisma/client";
+import { Message } from "@/types/chat";
 
 // Provider display names and order
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
@@ -67,6 +68,7 @@ export function MessageActions({
     setConversationId,
     chatSettings,
     setChatSettings,
+    sendMessage,
   } = useContext(ChatContext);
 
   // Group models by provider
@@ -134,34 +136,55 @@ export function MessageActions({
       toast.error("Cannot retry: Missing conversation data");
       return;
     }
-    if (selectedRetryModel || selectedRetryProvider) {
-      setChatSettings({
-        ...chatSettings,
-        model: newModelId || message.model || "",
-        provider: newProvider || message.provider || "",
-      } as ChatSettings);
-    }
-    // COMPLETELY clear and reset conversation state BEFORE navigation
-    setMessages([]);
+
+    setIsLoading(true);
+
     try {
-      // Create new conversations
+      // Create new retry conversation
       const newConversation = await createRetryConversation(conversationId);
 
       // Add the new conversation to the list
       addConversation(newConversation);
 
-      setConversationId(newConversation.id);
+      // Immediately clear all conversation state
+      setMessages([]);
+      setConversationId(null);
 
-      const retryParams = new URLSearchParams({
-        retry: "true",
-        message: inputMessage,
-        ...(newModelId && { model: newModelId }),
-        ...(newProvider && { provider: newProvider }),
+      // Update chat settings if new model/provider provided
+      if (newModelId || newProvider) {
+        setChatSettings({
+          ...chatSettings,
+          model: newModelId || message.model || "",
+          provider: newProvider || message.provider || "",
+        } as ChatSettings);
+      }
+
+      // Set the new conversation as active - this should trigger proper state switching
+      await setConversationId(newConversation.id);
+
+      router.push(`/chat/${newConversation.id}`, { scroll: true});
+
+      // Create and send the retry message directly
+      const retryMessageObj: Message = {
+        id: Date.now().toString(),
+        role: "user" as const,
+        content: inputMessage,
+      };
+
+      // Send the message directly
+      await sendMessage(retryMessageObj, {
+        conversationId: newConversation.id,
+        model: newModelId,
+        provider: newProvider,
+        retry: true,
       });
-      router.push(`/chat/${newConversation.id}?${retryParams.toString()}`);
+
+      toast.success("Message retried successfully!");
     } catch (error) {
       console.error("Error during retry:", error);
       toast.error("Failed to retry message");
+    } finally {
+      setIsLoading(false);
     }
   };
 
