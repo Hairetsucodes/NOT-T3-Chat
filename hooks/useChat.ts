@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Message, ConversationWithLoading, ChatUser } from "@/types/chat";
 import {
   ChatSettings,
@@ -15,7 +16,6 @@ import {
   DatabaseMessage,
 } from "@/lib/utils/message-transform";
 import { reconnectToStream } from "@/lib/utils/reconnect";
-
 interface UseChatOptions {
   activeUser: ChatUser;
   initialConversations: ConversationWithLoading[];
@@ -59,6 +59,8 @@ export const useChat = ({
   initialUserSettings,
   initialChatSettings,
 }: UseChatOptions) => {
+  const router = useRouter();
+  
   // Core state
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [conversationId, setConversationIdState] = useState<string | null>(
@@ -75,7 +77,7 @@ export const useChat = ({
   );
 
   const loadingConversationIdRef = useRef<string | null>(null);
-  
+
   // Add ref to track ongoing reconnections
   const activeReconnectionsRef = useRef<Set<string>>(new Set());
 
@@ -122,7 +124,10 @@ export const useChat = ({
 
       // Prevent duplicate reconnections to the same conversation
       if (activeReconnectionsRef.current.has(newConversationId)) {
-        console.log("🚫 Reconnection already in progress for:", newConversationId);
+        console.log(
+          "🚫 Reconnection already in progress for:",
+          newConversationId
+        );
         return;
       }
 
@@ -288,7 +293,7 @@ export const useChat = ({
                     : msg
                 )
               );
-              
+
               // Remove from active reconnections
               activeReconnectionsRef.current.delete(newConversationId);
             },
@@ -309,7 +314,7 @@ export const useChat = ({
                   );
                   setMessages([]);
                 });
-              
+
               // Remove from active reconnections
               activeReconnectionsRef.current.delete(newConversationId);
             },
@@ -328,7 +333,7 @@ export const useChat = ({
             console.error("Failed to load messages for fallback:", loadError);
             setMessages([]);
           }
-          
+
           // Remove from active reconnections
           activeReconnectionsRef.current.delete(newConversationId);
         }
@@ -379,7 +384,11 @@ export const useChat = ({
         if (anId) {
           updateConversation(anId, { title });
           if (!conversationId && newConversationId) {
-            window.history.pushState(null, "", `/chat/${newConversationId}`);
+            // Use pushState to update URL without triggering navigation
+            // This preserves the streaming connection
+            if (typeof window !== "undefined") {
+              window.history.pushState(null, "", `/chat/${newConversationId}`);
+            }
           }
         }
       }
@@ -546,13 +555,11 @@ export const useChat = ({
         onNavigateAway: () => {
           setConversationId(null);
           setMessages([]);
-          if (typeof window !== "undefined") {
-            window.history.replaceState(null, "", "/chat");
-          }
+          router.replace("/chat");
         },
       });
     },
-    [conversationHook, conversationId, setConversationId]
+    [conversationHook, conversationId, setConversationId, router]
   );
 
   return {
