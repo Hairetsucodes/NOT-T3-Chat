@@ -29,9 +29,10 @@ interface SidebarProps {
   conversations: ConversationWithLoading[];
   isOpen?: boolean;
   onClose?: () => void;
+  isMobile?: boolean;
 }
 
-export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
+export function Sidebar({ isOpen = false, onClose, isMobile = false }: SidebarProps) {
   const [searchValue, setSearchValue] = useState("");
   const router = useRouter();
   const {
@@ -190,7 +191,10 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                                   prefetch={false}
                                   onClick={() => {
                                     setConversationId(thread.id);
-                                    onClose?.();
+                                    // Only close sidebar on mobile
+                                    if (isMobile) {
+                                      onClose?.();
+                                    }
                                   }}
                                 >
                                   <div className="relative flex w-full items-center">

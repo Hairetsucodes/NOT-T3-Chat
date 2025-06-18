@@ -94,6 +94,7 @@ export const Chat = ({ welcomeMessage }: { welcomeMessage?: boolean }) => {
           conversations={conversations}
           isOpen={isMobileSidebarOpen}
           onClose={() => setIsMobileSidebarOpen(false)}
+          isMobile={true}
         />
       </div>
 
@@ -103,6 +104,7 @@ export const Chat = ({ welcomeMessage }: { welcomeMessage?: boolean }) => {
           conversations={conversations}
           isOpen={isDesktopSidebarOpen}
           onClose={() => setIsDesktopSidebarOpen(false)}
+          isMobile={false}
         />
       </div>
 
