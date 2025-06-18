@@ -526,7 +526,9 @@ class OptimizedInMemoryStreamingCacheManager
 
 // Global cache instances to prevent multiple Redis connections
 declare global {
+  // eslint-disable-next-line no-var
   var __redisStreamingCache: RedisStreamingCacheManager | undefined;
+  // eslint-disable-next-line no-var
   var __inMemoryStreamingCache:
     | OptimizedInMemoryStreamingCacheManager
     | undefined;

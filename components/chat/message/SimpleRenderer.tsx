@@ -283,8 +283,6 @@ export const SimpleMessageRenderer = memo(function SimpleMessageRenderer({
             conversationId={conversationId || message.conversationId}
             inputMessage={userInputMessage}
             message={message}
-            selectedRetryModel={message.model}
-            selectedRetryProvider={message.provider}
           />
         </div>
       )}

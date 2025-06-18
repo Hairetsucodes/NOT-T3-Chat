@@ -14,7 +14,6 @@ export default async function Page(props: {
   searchParams: Promise<{ provider?: string; model?: string }>;
 }) {
   const { id } = await props.params;
-  const { provider, model } = await props.searchParams;
 
   // Validate conversation ID format (basic check)
   if (!id || id.length < 10) {

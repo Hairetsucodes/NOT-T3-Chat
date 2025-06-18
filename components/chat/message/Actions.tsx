@@ -56,8 +56,6 @@ export function MessageActions({
   conversationId,
   inputMessage,
   message,
-  selectedRetryProvider,
-  selectedRetryModel,
 }: MessageActionsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -162,7 +160,7 @@ export function MessageActions({
       // Set the new conversation as active - this should trigger proper state switching
       await setConversationId(newConversation.id);
 
-      router.push(`/chat/${newConversation.id}`, { scroll: true});
+      router.push(`/chat/${newConversation.id}`, { scroll: true });
 
       // Create and send the retry message directly
       const retryMessageObj: Message = {
