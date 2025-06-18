@@ -86,13 +86,12 @@ async function handleReconnectRequest(
       console.log("✅ Stream complete, using optimized delivery");
 
       // Use batches for faster transfer if available
-      const batchData = reconnectData as any;
-      if (batchData.batches && batchData.batches.length > 0) {
+      if (reconnectData.batches && reconnectData.batches.length > 0) {
         let fullContent = "";
         let fullReasoning = "";
 
         // Process batches efficiently
-        for (const batch of batchData.batches) {
+        for (const batch of reconnectData.batches) {
           const batchChunks =
             batch.chunks.length > 0
               ? batch.chunks
@@ -102,7 +101,7 @@ async function handleReconnectRequest(
                   batch.endIndex
                 );
 
-          batchChunks.forEach((chunk: any) => {
+          batchChunks.forEach((chunk: StreamingChunk) => {
             if (chunk.content) fullContent += chunk.content;
             if (chunk.reasoning) fullReasoning += chunk.reasoning;
           });
@@ -111,7 +110,7 @@ async function handleReconnectRequest(
         console.log("📦 Optimized batch response:", {
           contentLength: fullContent.length,
           reasoningLength: fullReasoning.length,
-          batchCount: batchData.batches.length,
+          batchCount: reconnectData.batches.length,
         });
 
         return new Response(
@@ -121,7 +120,7 @@ async function handleReconnectRequest(
             content: fullContent,
             reasoning: fullReasoning,
             chunkCount: reconnectData.chunks.length,
-            batchCount: batchData.batches.length,
+            batchCount: reconnectData.batches.length,
             optimized: true,
           }),
           {
@@ -182,7 +181,7 @@ async function handleReconnectRequest(
 
               // Send batch content efficiently
               if (batch.chunks.length > 0) {
-                batch.chunks.forEach((chunk) => {
+                batch.chunks.forEach((chunk: StreamingChunk) => {
                   if (chunk.content) {
                     const data = JSON.stringify({
                       content: chunk.content,
@@ -245,7 +244,7 @@ async function handleReconnectRequest(
             unsubscribe = streamingCache.subscribeToBatches(
               conversationId,
               // onBatch callback
-              (batch) => {
+              (batch: ChunkBatch) => {
                 const batchData = JSON.stringify({
                   type: "batch",
                   startIndex: batch.startIndex,
@@ -256,7 +255,7 @@ async function handleReconnectRequest(
                 controller.enqueue(encoder.encode(`data: ${batchData}\n\n`));
 
                 // Send batch chunks
-                batch.chunks.forEach((chunk) => {
+                batch.chunks.forEach((chunk: StreamingChunk) => {
                   if (chunk.content) {
                     const data = JSON.stringify({
                       content: chunk.content,
