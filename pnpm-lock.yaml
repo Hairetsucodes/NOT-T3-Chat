@@ -179,7 +179,7 @@ devDependencies:
     specifier: ^19
     version: 19.1.6(@types/react@19.1.6)
   eslint:
-    specifier: ^9
+    specifier: ^9.28.0
     version: 9.28.0
   eslint-config-next:
     specifier: 15.3.3

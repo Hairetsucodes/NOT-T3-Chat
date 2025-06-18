@@ -209,12 +209,10 @@ export const useChat = ({
           // Use the proper reconnect utility
           let accumulatedContent = "";
           let accumulatedReasoning = "";
-          let chunkCount = 0;
 
           await reconnectToStream({
             conversationId: newConversationId,
             onChunk: (content: string, reasoning?: string) => {
-              chunkCount++;
 
               if (content) {
                 accumulatedContent += content;
@@ -343,7 +341,6 @@ export const useChat = ({
           addConversation(newConversation);
         }
       }
-
       if (title && !conversationTitle) {
         setConversationTitle(title);
         // Use the new ID directly, as state update is async
