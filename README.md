@@ -64,8 +64,20 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
   </tr>
   <tr>
     <td align="center">
+      <img src="public/images/previews/light.png" alt="Light Mode Interface" width="800"/>
+      <br/><strong>Light Mode Interface</strong>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
       <img src="public/images/previews/reasoning.png" alt="Reasoning Mode" width="800"/>
       <br/><strong>Reasoning/Thinking Mode</strong>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="public/images/previews/codereasoning.png" alt="Code Reasoning" width="800"/>
+      <br/><strong>Code Reasoning Mode</strong>
     </td>
   </tr>
   <tr>
@@ -112,6 +124,16 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
     <td align="center">
       <img src="public/images/previews/bugreports.png" alt="Bug Reports" width="400"/>
       <br/><strong>Bug Report System</strong>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="public/images/previews/attachments.png" alt="Attachments" width="400"/>
+      <br/><strong>File Attachments</strong>
+    </td>
+    <td align="center">
+      <img src="public/images/previews/share.png" alt="Chat Sharing" width="400"/>
+      <br/><strong>Chat Sharing</strong>
     </td>
   </tr>
 </table>
@@ -404,6 +426,9 @@ Users can retry any AI response with:
 ├── lib/               # Utility libraries and configurations
 ├── prisma/            # Database schema and migrations
 ├── public/            # Static assets and images
+│   └── images/        # UI assets and preview screenshots
+│       ├── noise.png  # Background texture/visual effect
+│       └── previews/  # Application screenshots
 ├── schemas/           # Validation schemas (Zod, etc.)
 ├── scripts/           # utility scripts
 └── types/             # TypeScript type definitions
