@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatContext } from "@/context/ChatContext";
 import { addPreferredModel, removePreferredModel } from "@/data/models";
-import { Search, Sparkles, Loader2, ImageIcon, Globe } from "lucide-react";
+import { Search, Loader2, ImageIcon, Globe } from "lucide-react";
 import { getProviderIcon } from "@/components/ui/provider-images";
 import {
   Card,
@@ -28,26 +28,11 @@ export default function Models() {
     setPreferredModels,
     activeProviders,
   } = useContext(ChatContext);
-  const [showNotification, setShowNotification] = useState(true);
   const [displayedCount, setDisplayedCount] = useState(50);
   const [loading, setLoading] = useState(false);
 
   const displayedModels = filteredModels.slice(0, displayedCount);
   const hasMore = displayedCount < filteredModels.length;
-
-  // Calculate provider counts for the notification banner
-  const providerCounts = useMemo(() => {
-    if (!availableModels) return {};
-
-    const counts: Record<string, number> = {};
-    availableModels.forEach((model) => {
-      // Group OpenRouter models together, keep direct API models separate
-      const provider = model.direct ? model.provider : "openrouter";
-      counts[provider] = (counts[provider] || 0) + 1;
-    });
-
-    return counts;
-  }, [availableModels]);
 
   const loadMore = () => {
     setLoading(true);
