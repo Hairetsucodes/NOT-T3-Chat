@@ -6,13 +6,10 @@ services:
     volumes:
       # Mount a volume for the SQLite database to persist data
       - ./docker-data:/app/data
-    # Use .env file from docker-data folder if it exists
-    env_file:
-      - ./docker-data/.env
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/auth/session"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s 
+      start_period: 40s

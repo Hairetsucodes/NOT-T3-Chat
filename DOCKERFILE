@@ -26,8 +26,12 @@ RUN pnpm run build
 # Production stage
 FROM node:20-alpine AS runner
 
-# Install pnpm globally and curl for healthcheck
-RUN npm install -g pnpm && apk add --no-cache curl
+# Install pnpm globally, curl for healthcheck, and Azure CLI
+RUN npm install -g pnpm && \
+    apk add --no-cache curl python3 py3-pip gcc musl-dev python3-dev libffi-dev openssl-dev cargo make && \
+    pip3 install --upgrade pip && \
+    pip3 install azure-cli && \
+    apk del gcc musl-dev python3-dev libffi-dev openssl-dev cargo make
 
 # Set the working directory
 WORKDIR /app
