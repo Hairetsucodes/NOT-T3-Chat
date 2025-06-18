@@ -1,24 +1,22 @@
 import { createClient } from "redis";
-import { DefaultAzureCredential } from "@azure/identity";
 
 let redisClient: ReturnType<typeof createClient> | null = null;
 
 export async function getRedisClient() {
   if (!redisClient) {
     try {
-      // Construct a Token Credential from Identity library
-      const credential = new DefaultAzureCredential();
-      const redisScope = "https://redis.azure.com/.default";
+      if (!process.env.REDIS_HOST || !process.env.REDIS_PASSWORD) {
+        throw new Error("Redis environment variables not configured");
+      }
 
-      // Fetch a Microsoft Entra token to be used for authentication
-      const accessToken = await credential.getToken(redisScope);
-      console.log("Successfully obtained Azure access token");
-
-      // Create redis client
+      // Create redis client with access key
       redisClient = createClient({
-        username: process.env.REDIS_SERVICE_PRINCIPAL_ID,
-        password: accessToken.token,
-        url: `redis://${process.env.AZURE_MANAGED_REDIS_HOST_NAME}:10000`,
+        password: process.env.REDIS_PASSWORD,
+        socket: {
+          host: process.env.REDIS_HOST,
+          port: parseInt(process.env.REDIS_PORT || "6380"),
+          tls: true,
+        },
         pingInterval: 100000,
       });
 

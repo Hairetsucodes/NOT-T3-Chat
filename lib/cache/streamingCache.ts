@@ -297,7 +297,7 @@ class InMemoryStreamingCacheManager implements StreamingCacheInterface {
 
 // Factory function to create the appropriate cache instance
 function createStreamingCache(): StreamingCacheInterface {
-  const useRedis = !!process.env.REDIS_SERVICE_PRINCIPAL_ID;
+      const useRedis = !!process.env.REDIS_HOST && !!process.env.REDIS_PASSWORD;
   
   if (useRedis) {
     console.log('🔴 Using Redis for streaming cache (production mode)');
@@ -315,7 +315,7 @@ class StreamingCacheAdapter {
 
   constructor() {
     this.cache = createStreamingCache();
-    this.isRedis = !!process.env.REDIS_SERVICE_PRINCIPAL_ID;
+    this.isRedis = !!process.env.REDIS_HOST && !!process.env.REDIS_PASSWORD;
   }
 
   async createSession(userId: string, conversationId: string): Promise<StreamingSession> {

@@ -1,5 +1,4 @@
 import { createClient, RedisClientType } from "redis";
-import { DefaultAzureCredential } from "@azure/identity";
 
 export interface StreamingChunk {
   index: number;
@@ -40,8 +39,8 @@ class RedisStreamingCacheManager {
   private async initializeRedis() {
     try {
       if (
-        !process.env.REDIS_SERVICE_PRINCIPAL_ID ||
-        !process.env.AZURE_MANAGED_REDIS_HOST_NAME
+        !process.env.REDIS_HOST ||
+        !process.env.REDIS_PASSWORD
       ) {
         console.log(
           "Redis environment variables not set, Redis cache will not be available"
@@ -49,24 +48,18 @@ class RedisStreamingCacheManager {
         return;
       }
 
-      console.log("Initializing Redis connection with Azure authentication...");
-      console.log(process.env.REDIS_SERVICE_PRINCIPAL_ID);
+      console.log("Initializing Redis connection...");
 
-      // Get Azure access token
-      const credential = new DefaultAzureCredential({});
-      const redisScope = "https://redis.azure.com/.default";
-      const accessToken = await credential.getToken(redisScope);
-
-      // Create Redis clients configuration
+      // Create Redis clients configuration using access key
       const redisConfig = {
-        username: process.env.REDIS_SERVICE_PRINCIPAL_ID,
-        password: accessToken.token,
+        password: process.env.REDIS_PASSWORD,
         socket: {
-          host: process.env.AZURE_MANAGED_REDIS_HOST_NAME,
-          port: 10000,
+          host: process.env.REDIS_HOST,
+          port: parseInt(process.env.REDIS_PORT || "6380"),
           tls: true as const,
+          connectTimeout: 10000,
+          commandTimeout: 5000,
         },
-        // Handle MOVED errors with retries
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
         maxRetriesPerRequest: 3,
@@ -88,6 +81,9 @@ class RedisStreamingCacheManager {
 
       // Set up error handlers
       this.client.on("error", (err: Error) => {
+        if (err.message.includes("WRONGPASS")) {
+          console.error("Redis authentication failed - check access key");
+        }
         console.error("Redis Client Error:", err);
         this.handleConnectionError();
       });
@@ -118,9 +114,6 @@ class RedisStreamingCacheManager {
 
       // Start cleanup interval
       this.startCleanup();
-
-      // Set up token refresh
-      this.setupTokenRefresh(credential, redisScope);
     } catch (error) {
       console.error("Failed to initialize Redis:", error);
       this.isConnected = false;
@@ -151,23 +144,7 @@ class RedisStreamingCacheManager {
     }, delay);
   }
 
-  private async setupTokenRefresh(
-    credential: DefaultAzureCredential,
-    redisScope: string
-  ) {
-    // Refresh token every 50 minutes (tokens typically last 60 minutes)
-    setInterval(async () => {
-      try {
-        console.log("Refreshing Redis access token...");
-        await credential.getToken(redisScope);
-        // Note: With Azure access tokens, auth is handled during connection.
-        // Token refresh requires reconnection, not re-auth.
-        console.log("✅ Redis access token refreshed");
-      } catch (error) {
-        console.error("Failed to refresh Redis token:", error);
-      }
-    }, 50 * 60 * 1000); // 50 minutes
-  }
+
 
   private async setupPubSubListener() {
     if (!this.subClient) return;
