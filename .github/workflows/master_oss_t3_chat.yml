@@ -25,8 +25,9 @@ jobs:
           push: false
           load: true
           tags: oss-t3-chat:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Use cache with proper key based on package files
+          cache-from: type=gha,key=docker-cache-${{ hashFiles('package.json', 'pnpm-lock.yaml', 'Dockerfile') }}
+          cache-to: type=gha,mode=max,key=docker-cache-${{ hashFiles('package.json', 'pnpm-lock.yaml', 'Dockerfile') }}
           
       - name: Test Docker container
         run: |
