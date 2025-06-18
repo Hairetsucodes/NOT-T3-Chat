@@ -44,6 +44,16 @@ if [ ! -f "docker-data/.env" ]; then
 # API Configuration
 # API_KEY_SALT="your-api-key-salt-here-or-leave-empty-for-auto-generation"
 
+# OAuth Providers (for user authentication)
+# GitHub OAuth (create app at: https://github.com/settings/developers)
+# GITHUB_CLIENT_ID="your-github-client-id"
+# GITHUB_CLIENT_SECRET="your-github-client-secret"
+
+# Google OAuth (create app at: https://console.developers.google.com/)
+# GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
+# GOOGLE_CLIENT_SECRET="your-google-client-secret"
+
+# AI Provider API Keys
 # OpenAI Configuration
 # NEXT_PUBLIC_DEFAULT_MODEL_ID="gpt-4o-mini"
 # OPENAI_API_KEY="sk-your-openai-api-key-here"
@@ -51,8 +61,8 @@ if [ ! -f "docker-data/.env" ]; then
 # Anthropic Configuration
 # ANTHROPIC_API_KEY="sk-ant-your-anthropic-api-key-here"
 
-# Google Configuration
-# GOOGLE_GENERATIVE_AI_API_KEY="your-google-api-key-here"
+# Google AI Configuration
+# GOOGLE_GENERATIVE_AI_API_KEY="your-google-ai-api-key-here"
 
 # Other AI Providers
 # GROQ_API_KEY="your-groq-api-key-here"

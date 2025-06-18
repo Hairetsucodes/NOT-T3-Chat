@@ -2,6 +2,18 @@
 
 echo "🚀 Starting OSS T3 Chat container..."
 
+# Load environment variables from .env file if it exists
+if [ -f "/app/data/.env" ]; then
+    echo "📋 Loading environment variables from .env file..."
+    # Export all variables from the .env file
+    set -a  # automatically export all variables
+    . /app/data/.env
+    set +a  # turn off automatic export
+    echo "✅ Environment variables loaded"
+else
+    echo "📋 No .env file found - using container defaults"
+fi
+
 # Always ensure AUTH_SECRET is available
 if [ -z "$AUTH_SECRET" ]; then
     if [ -f "/app/data/.auth_secret" ]; then
