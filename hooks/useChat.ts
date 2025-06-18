@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Message, ConversationWithLoading, ChatUser } from "@/types/chat";
 import {
@@ -28,6 +28,7 @@ interface UseChatOptions {
   preferredModels?: PreferredModel[];
   initialMessages?: Message[];
   initialConversationId?: string;
+  needsClientSideLoading?: string;
   initialUserSettings?: UserCustomization | null;
   initialChatSettings?: ChatSettings | null;
 }
@@ -37,7 +38,6 @@ const loadConversationMessages = async (
   conversationId: string
 ): Promise<Message[]> => {
   try {
-    
     const response = await fetch(`/api/messages/${conversationId}`);
     if (!response.ok) {
       throw new Error(`Failed to load messages: ${response.status}`);
@@ -58,6 +58,7 @@ export const useChat = ({
   preferredModels = [],
   initialMessages = [],
   initialConversationId,
+  needsClientSideLoading,
   initialUserSettings = null,
   initialChatSettings = null,
 }: UseChatOptions) => {
@@ -115,7 +116,10 @@ export const useChat = ({
 
   // Enhanced setConversationId with reconnection support and duplicate prevention
   const setConversationId = useCallback(
-    async (newConversationId: string | null, options?: { skipMessageLoading?: boolean }) => {
+    async (
+      newConversationId: string | null,
+      options?: { skipMessageLoading?: boolean }
+    ) => {
       // If no ID provided, just clear everything
       if (!newConversationId) {
         setConversationIdState(null);
@@ -153,7 +157,7 @@ export const useChat = ({
           const checkResponse = await fetch(
             `/api/chat/reconnect?conversationId=${newConversationId}`,
             {
-              method: "HEAD", // Just check if it exists
+              method: "HEAD",
             }
           );
 
@@ -175,7 +179,7 @@ export const useChat = ({
             }
             return;
           }
-          
+
           // Load existing messages first
           const existingMessages = await loadConversationMessages(
             newConversationId
@@ -298,20 +302,25 @@ export const useChat = ({
           setMessages(messages);
         } catch (error) {
           console.error("Failed to load conversation messages:", error);
-          setMessages([]); // Fall back to empty messages on error
+          setMessages([]);
         }
       }
     },
     [conversations, updateConversation]
   );
 
-  // Conversation creation handler
+  // Handle client-side loading for generating conversations
+  useEffect(() => {
+    if (needsClientSideLoading && !conversationId) {
+      setConversationId(needsClientSideLoading);
+    }
+  }, [needsClientSideLoading, conversationId, setConversationId]);
+
   const handleConversationCreated = useCallback(
     (newConversationId: string, title?: string) => {
       if (!conversationId) {
         setConversationIdState(newConversationId);
 
-        // Add new conversation to context immediately
         if (title && activeUser?.id) {
           const newConversation = {
             id: newConversationId,
@@ -324,7 +333,7 @@ export const useChat = ({
             isPinned: false,
             isRetry: false,
             isPublic: false,
-            isGenerating: true, // Set to true when creating a new conversation during message sending
+            isGenerating: true,
           };
           addConversation(newConversation);
         }

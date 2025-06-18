@@ -1,13 +1,7 @@
-import { getMessagesByConversationId } from "@/data/messages";
 import { Chat } from "@/components/chat/Chat";
+import { ChatServerProvider } from "@/context/ChatServerProvider";
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
-import {
-  transformDatabaseMessages,
-  validateMessageData,
-} from "@/lib/utils/message-transform";
-
-export const dynamic = "force-dynamic";
 
 export default async function Page(props: {
   params: Promise<{ id: string }>;
@@ -15,47 +9,18 @@ export default async function Page(props: {
 }) {
   const { id } = await props.params;
 
-  // Validate conversation ID format (basic check)
   if (!id || id.length < 10) {
     notFound();
   }
 
-  // Check authentication first
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/");
   }
 
-  let dbMessages;
-  try {
-    dbMessages = await getMessagesByConversationId(id);
-  } catch (error) {
-    console.error("Error fetching messages:", error);
-
-    // Handle specific error types
-    if (error instanceof Error) {
-      if (error.message === "Unauthorized") {
-        redirect("/chat");
-      }
-      if (error.message === "Conversation not found") {
-        notFound();
-      }
-    }
-
-    // Generic error fallback
-    redirect("/chat");
-  }
-
-  // Handle null response (shouldn't happen with proper error handling above, but defensive)
-  if (!dbMessages) {
-    redirect("/chat");
-  }
-
-  // Transform messages with proper type safety
-  const messages = await transformDatabaseMessages(dbMessages);
-
-  // Validate data integrity
-  await validateMessageData(dbMessages, messages);
-
-  return <Chat welcomeMessage={false} />;
+  return (
+    <ChatServerProvider conversationId={id}>
+      <Chat welcomeMessage={false} />
+    </ChatServerProvider>
+  );
 }

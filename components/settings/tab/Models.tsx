@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatContext } from "@/context/ChatContext";
 import { addPreferredModel, removePreferredModel } from "@/data/models";
-import { Search, Sparkles, Loader2, ImageIcon } from "lucide-react";
+import { Search, Sparkles, Loader2, ImageIcon, Globe } from "lucide-react";
 import { getProviderIcon } from "@/components/ui/provider-images";
 import {
   Card,
@@ -26,6 +26,7 @@ export default function Models() {
     refreshPreferredModels,
     preferredModels,
     setPreferredModels,
+    activeProviders,
   } = useContext(ChatContext);
   const [showNotification, setShowNotification] = useState(true);
   const [displayedCount, setDisplayedCount] = useState(50);
@@ -141,48 +142,6 @@ export default function Models() {
         </CardDescription>
       </CardHeader>
       <CardContent className="">
-        {showNotification && (
-          <div className="flex items-center justify-between rounded-lg border border-pink-500/20 bg-pink-500/10 p-4 my-2">
-            <div className="flex items-center gap-2">
-              <Sparkles className="hidden h-5 w-5 text-[#ffb525f7] drop-shadow-[0px_3px_8px_#ffae1082] sm:block dark:text-amber-200/80 dark:drop-shadow-[0px_3px_8px_rgba(186,130,21,0.62)]" />
-              <div>
-                <h3 className="font-medium text-muted-foreground">
-                  Models loaded!
-                </h3>
-                <p className="text-start text-sm text-muted-foreground">
-                  {availableModels.length} models loaded
-                  {Object.keys(providerCounts).length > 0 && (
-                    <>
-                      {" "}
-                      (
-                      {Object.entries(providerCounts)
-                        .sort(([, a], [, b]) => b - a) // Sort by count descending
-                        .map(([provider, count], index, array) => (
-                          <span key={provider}>
-                            {count} {provider}
-                            {index < array.length - 1 && ", "}
-                          </span>
-                        ))}
-                      )
-                    </>
-                  )}
-                  !
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-pink-500/30 bg-pink-500/10 text-pink-400 hover:bg-pink-500/20"
-                onClick={() => setShowNotification(false)}
-              >
-                Got it
-              </Button>
-            </div>
-          </div>
-        )}
-
         <ModelFilter
           setDisplayedCount={setDisplayedCount}
           displayedCount={displayedCount}
@@ -263,9 +222,15 @@ export default function Models() {
                             imageCapableModels.includes(
                               model.modelId.toLowerCase()
                             ) && (
-                              <div className="flex items-center gap-1 rounded-full bg-yellow-500/10 px-2 py-1 text-xs text-yellow-600 dark:text-yellow-400">
-                                <ImageIcon className="h-3 w-3" />
-                                Image Generation
+                              <div>
+                                <div className="flex items-center gap-1 rounded-full bg-yellow-500/10 px-2 py-1 text-xs text-yellow-600 dark:text-yellow-400">
+                                  <ImageIcon className="h-3 w-3" />
+                                  Image Generation
+                                </div>
+                                <div className="flex items-center gap-1 rounded-full bg-yellow-500/10 px-2 py-1 text-xs text-yellow-600 dark:text-yellow-400">
+                                  <Globe className="h-3 w-3" />
+                                  Web Search
+                                </div>
                               </div>
                             )}
                         </div>
@@ -310,8 +275,14 @@ export default function Models() {
                 </Button>
               </div>
             )}
-
-            {filteredModels.length === 0 && (
+            {activeProviders.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="mt-2 text-sm text-muted-foreground">
+                  No active providers found. Please add an API key.
+                </p>
+              </div>
+            )}
+            {filteredModels.length === 0 && activeProviders.length > 0 && (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <Search className="h-12 w-12 text-muted-foreground/40" />
                 <h3 className="mt-4 text-lg font-medium">No models found</h3>

@@ -20,16 +20,40 @@ import { useState, useContext } from "react";
 import { createAPIKey, deleteAPIKey } from "@/data/apikeys";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import ActiveProviders from "@/components/settings/ActiveProviders";
+import ActiveProvidersSection from "@/components/settings/tab/ActiveProviders";
 import { ChatContext } from "@/context/ChatContext";
+import { addPreferredModel, getAvailableModels } from "@/data/models";
+import { updateModelAndProvider } from "@/data/settings";
+
+// Define basic/default models for each provider
+const getBasicModelForProvider = (provider: string): string => {
+  const basicModels: Record<string, string> = {
+    openai: "gpt-4o-mini",
+    anthropic: "claude-3-5-sonnet",
+    google: "gemini-1.5-flash",
+    deepseek: "deepseek-chat",
+    xai: "grok-3-fast",
+    openrouter: "openai/gpt-3.5-turbo",
+  };
+
+  return basicModels[provider.toLowerCase()] || "gpt-3.5-turbo";
+};
 
 export function ApiKeysTab() {
   const [selectedProvider, setSelectedProvider] = useState("");
   const [customProviderName, setCustomProviderName] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { activeUser, activeProviders, setActiveProviders } =
-    useContext(ChatContext);
+  const {
+    activeUser,
+    activeProviders,
+    setActiveProviders,
+    setAvailableModels,
+    chatSettings,
+    setChatSettings,
+    setPreferredModels,
+    preferredModels,
+  } = useContext(ChatContext);
 
   const handleSaveApiKey = async () => {
     const finalProvider =
@@ -56,6 +80,66 @@ export function ApiKeysTab() {
 
     try {
       await createAPIKey(apiKey.trim(), finalProvider);
+      const models = await getAvailableModels();
+      setAvailableModels(models);
+
+      // Set chat settings to use the new provider with a basic model
+      const basicModelName = getBasicModelForProvider(finalProvider);
+
+      // Find the actual model from the fetched models that matches our basic model name
+      const matchingModel = models.find(
+        (model) =>
+          model.provider === finalProvider &&
+          (model.name.toLowerCase().includes(basicModelName.toLowerCase()) ||
+            model.modelId.toLowerCase().includes(basicModelName.toLowerCase()))
+      );
+
+      // If we found a matching model, use its ID, otherwise fallback to the first model from this provider
+      const modelToUse =
+        matchingModel ||
+        models.find((model) => model.provider === finalProvider);
+
+      if (modelToUse) {
+        if (chatSettings) {
+          // Update existing chat settings
+          setChatSettings({
+            ...chatSettings,
+            provider: finalProvider,
+            model: modelToUse.modelId,
+          });
+        } else {
+          // Create new chat settings if none exist
+          setChatSettings({
+            id: "", // Will be set by the database
+            userId: activeUser.id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            provider: finalProvider,
+            model: modelToUse.modelId,
+            promptId: null,
+            reasoningEffort: null,
+            temperature: null,
+            maxTokens: null,
+            topP: null,
+            isWebSearch: false,
+            isImageGeneration: false,
+          });
+        }
+        setPreferredModels([
+          ...preferredModels,
+          {
+            id: "",
+            userId: activeUser.id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            provider: finalProvider,
+            model: modelToUse.modelId,
+          },
+        ]);
+        await addPreferredModel(modelToUse.modelId, finalProvider);
+        await updateModelAndProvider(modelToUse.modelId, finalProvider);
+      }
+
       toast.success("API key saved successfully");
       // Reset form
       setApiKey("");
@@ -223,7 +307,7 @@ export function ApiKeysTab() {
           </Button>
         </form>
 
-        <ActiveProviders
+        <ActiveProvidersSection
           apiKeys={activeProviders}
           customModels={[]}
           ollamaModels={[]}

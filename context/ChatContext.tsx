@@ -34,6 +34,7 @@ export const ChatContext = createContext<ChatContextType>({
   activeProviders: [],
   setActiveProviders: () => {},
   availableModels: [],
+  setAvailableModels: () => {},
   preferredModels: [],
   setPreferredModels: () => {},
   refreshPreferredModels: async () => {},
@@ -60,6 +61,7 @@ export const ChatProvider = ({
   preferredModels: initialPreferredModels = [],
   initialMessages,
   initialConversationId,
+  needsClientSideLoading,
   initialUserSettings = null,
   initialChatSettings = null,
   children,
@@ -74,6 +76,7 @@ export const ChatProvider = ({
   preferredModels?: PreferredModel[];
   initialMessages?: Message[];
   initialConversationId?: string;
+  needsClientSideLoading?: string;
   initialUserSettings?: UserCustomization | null;
   initialChatSettings?: ChatSettings | null;
   children: React.ReactNode;
@@ -87,6 +90,7 @@ export const ChatProvider = ({
     preferredModels: initialPreferredModels,
     initialMessages,
     initialConversationId,
+    needsClientSideLoading,
     initialUserSettings,
     initialChatSettings,
   });

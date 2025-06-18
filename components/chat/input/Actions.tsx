@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Globe, Paperclip, Image as ImageIcon } from "lucide-react";
 import { updateIsWebSearch } from "@/data/settings";
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { ChatContext } from "@/context/ChatContext";
 import { updateIsPublic } from "@/data/shared";
 import {
@@ -25,6 +25,7 @@ export function InputActions() {
     setConversations,
   } = useContext(ChatContext);
   const [copied, setCopied] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
 
   const isWebSearch = chatSettings?.isWebSearch;
   const provider = chatSettings?.provider;
@@ -33,9 +34,14 @@ export function InputActions() {
     (conversation) => conversation.id === conversationId
   )?.isPublic;
 
-  const shareUrl = conversationId
-    ? `${window.location.origin}/shared/${conversationId}`
-    : "";
+  // Set share URL on client side
+  useEffect(() => {
+    if (conversationId && typeof window !== 'undefined') {
+      setShareUrl(`${window.location.origin}/shared/${conversationId}`);
+    } else {
+      setShareUrl("");
+    }
+  }, [conversationId]);
 
   const handleCopyLink = async () => {
     if (shareUrl) {

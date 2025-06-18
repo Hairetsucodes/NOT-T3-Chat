@@ -17,6 +17,7 @@ import {
   Gem,
   Key,
   Search,
+  Globe,
 } from "lucide-react";
 import {
   GeminiIcon,
@@ -62,6 +63,10 @@ export function ModelFilter({
           description.includes("vision") ||
           description.includes("multimodal") ||
           name.includes("vision")
+        );
+      case "websearch":
+        return (
+          description.includes("web search") || name.includes("web search")
         );
       case "reasoning":
         return (
@@ -206,6 +211,13 @@ export function ModelFilter({
             >
               <ImageIcon className="mr-2 h-4 w-4" />
               Image Generation
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={selectedFilters.includes("websearch")}
+              onCheckedChange={() => toggleFilter("websearch")}
+            >
+              <Globe className="mr-2 h-4 w-4" />
+              Web Search
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={selectedFilters.includes("vision")}

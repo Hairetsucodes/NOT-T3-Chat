@@ -81,6 +81,7 @@ export interface ChatContextType {
     }[]
   ) => void;
   availableModels: UnifiedModel[];
+  setAvailableModels: (models: UnifiedModel[]) => void;
   preferredModels: PreferredModel[];
   setPreferredModels: (models: PreferredModel[]) => void;
   refreshPreferredModels: () => Promise<void>;

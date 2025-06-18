@@ -9,16 +9,17 @@ interface ProviderInfo {
 }
 
 export const useModelManagement = (
-  availableModels: UnifiedModel[],
+  initialAvailableModels: UnifiedModel[],
   initialActiveProviders: ProviderInfo[],
   initialPreferredModels: PreferredModel[]
 ) => {
+  const [availableModels, setAvailableModels] = useState<UnifiedModel[]>(initialAvailableModels);
   const [activeProviders, setActiveProviders] = useState<ProviderInfo[]>(initialActiveProviders);
   const [preferredModels, setPreferredModels] = useState<PreferredModel[]>(initialPreferredModels);
   
   // Initialize filtered models based on initial active providers
   const [filteredModels, setFilteredModels] = useState<UnifiedModel[]>(
-    availableModels.filter((model) =>
+    initialAvailableModels.filter((model) =>
       initialActiveProviders.some(
         (activeProvider) =>
           activeProvider.provider.toLowerCase() === model.provider.toLowerCase()
@@ -56,5 +57,6 @@ export const useModelManagement = (
     setPreferredModels,
     refreshPreferredModels,
     availableModels,
+    setAvailableModels,
   };
 }; 

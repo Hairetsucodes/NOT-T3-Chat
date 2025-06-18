@@ -57,7 +57,11 @@ export async function callOpenAIStreaming(
         partial_images: 3,
       },
     ];
-  } else if (isWebSearch) {
+  } else if (
+    isWebSearch &&
+    imageCapableModels.includes(modelId) &&
+    modelId !== "gpt-4.1-nano"
+  ) {
     tools = [{ type: "web_search_preview" }];
   }
 

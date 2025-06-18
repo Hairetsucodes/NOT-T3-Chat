@@ -5,7 +5,7 @@ A modern AI chat application built with Next.js, Prisma, NextAuth supporting mul
 ## ✨ Features
 
 - 🤖 Multiple AI provider support (OpenAI, Anthropic, Google, DeepSeek, Xai, OpenRouter, and more)
-- 🌐 Grounding/web search for Google models
+- 🌐 Grounding/web search for Google models and OpenAI that allow it.
 - 🖼️ Image generation with OpenAI models with follow ups (
   "gpt-4o-mini",
   "gpt-4o",

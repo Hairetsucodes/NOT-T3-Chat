@@ -34,4 +34,5 @@ export type FilterType =
   | "anthropic"
   | "xai"
   | "deepseek"
-  | "image";
+  | "image"
+  | "websearch";
