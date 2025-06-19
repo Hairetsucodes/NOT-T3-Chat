@@ -27,11 +27,11 @@ import {
   DeepSeekIcon,
   OpenRouterIcon,
 } from "@/components/ui/provider-images";
-import { FilterType, UnifiedModel } from "@/types/models";
+import { FilterType } from "@/types/models";
 import { Input } from "@/components/ui/input";
 import { useContext, useState, useEffect } from "react";
 import { ChatContext } from "@/context/ChatContext";
-import { imageCapableModels } from "@/constants/imageModels";
+import { modelMatchesFilter } from "./capability";
 
 export function ModelFilter({
   setDisplayedCount,
@@ -46,90 +46,6 @@ export function ModelFilter({
   const [searchTerm, setSearchTerm] = useState("");
   const { availableModels, setFilteredModels, activeProviders } =
     useContext(ChatContext);
-
-  const modelMatchesFilter = (
-    model: UnifiedModel,
-    filter: FilterType
-  ): boolean => {
-    const name = model.name.toLowerCase();
-    const description = (model.description || "").toLowerCase();
-    const provider = model.provider.toLowerCase();
-
-    switch (filter) {
-      case "all":
-        return true;
-      case "vision":
-        return (
-          description.includes("vision") ||
-          description.includes("multimodal") ||
-          name.includes("vision")
-        );
-      case "websearch":
-        return (
-          description.includes("web search") || name.includes("web search")
-        );
-      case "reasoning":
-        return (
-          description.includes("reasoning") ||
-          description.includes("thinking") ||
-          name.includes("reasoning") ||
-          name.includes("o1") ||
-          name.includes("r1")
-        );
-      case "code":
-        return (
-          description.includes("code") ||
-          description.includes("programming") ||
-          name.includes("code")
-        );
-      case "fast":
-        return (
-          description.includes("fast") ||
-          description.includes("speed") ||
-          name.includes("flash") ||
-          name.includes("mini") ||
-          name.includes("nano")
-        );
-      case "experimental":
-        return (
-          description.includes("experimental") ||
-          description.includes("beta") ||
-          name.includes("experimental") ||
-          name.includes("beta")
-        );
-      case "premium":
-        return (
-          name.includes("pro") ||
-          name.includes("plus") ||
-          name.includes("opus") ||
-          name.includes("sonnet")
-        );
-      case "image":
-        return (
-          (provider === "openai" &&
-            imageCapableModels.includes(model.modelId.toLowerCase())) ||
-          description.includes("image generation") ||
-          description.includes("dall-e") ||
-          name.includes("dall-e")
-        );
-      case "direct":
-        return model.direct === true;
-      case "openrouter":
-        return model.direct === false;
-      case "openai":
-        return provider === "openai";
-      case "google":
-        return provider === "google";
-      case "anthropic":
-        return provider === "anthropic";
-      case "xai":
-        return provider === "xai";
-      case "deepseek":
-        return provider === "deepseek";
-      default:
-        return true;
-    }
-  };
 
   // Apply filters whenever selectedFilters, searchTerm, or availableModels change
   useEffect(() => {

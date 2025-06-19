@@ -16,8 +16,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { imageCapableModels } from "@/constants/imageModels";
-import { ModelFilter } from "./ModelFilter";
-import { getCapabilities } from "./helpers/modelCapability";
+import { ModelFilter } from "./models/ModelFilter";
+import { getCapabilities } from "./models/capability";
 
 export default function Models() {
   const {

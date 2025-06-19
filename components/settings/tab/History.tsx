@@ -40,7 +40,6 @@ export function HistoryTab() {
 
   // State management
   const [saveHistory, setSaveHistory] = useState(true);
-  const [syncDevices, setSyncDevices] = useState(false);
   const [retentionPeriod, setRetentionPeriod] = useState("forever");
   const [stats, setStats] = useState<HistoryStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -367,22 +366,6 @@ export function HistoryTab() {
                 checked={saveHistory}
                 onCheckedChange={setSaveHistory}
                 disabled={isLoading}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="font-medium text-base text-foreground/80">
-                  Sync across devices (coming soon)
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Keep your history synchronized across all your devices
-                </p>
-              </div>
-              <Switch
-                checked={syncDevices}
-                onCheckedChange={setSyncDevices}
-                disabled={true}
               />
             </div>
 
