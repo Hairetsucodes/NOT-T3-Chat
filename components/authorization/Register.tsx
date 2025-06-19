@@ -9,6 +9,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import FormResults from "@/components/authorization/form/Results";
@@ -48,6 +49,7 @@ export default function Register() {
         router.push("/chat");
       } else {
         setError(registerData.error);
+        setIsLoading(false);
       }
     });
   }
@@ -74,6 +76,7 @@ export default function Register() {
                   disabled={isLoading}
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -97,6 +100,7 @@ export default function Register() {
                   disabled={isLoading}
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -120,6 +124,7 @@ export default function Register() {
                   disabled={isLoading}
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
