@@ -200,7 +200,7 @@ export default function Models() {
                               key={index}
                               className="flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-1 text-xs text-blue-600 dark:text-blue-400"
                             >
-                              <capability.icon className="h-3 w-3" />
+                              {capability.icon}
                               {capability.label}
                             </div>
                           ))}

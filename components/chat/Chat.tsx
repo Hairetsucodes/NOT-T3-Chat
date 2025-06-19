@@ -12,15 +12,7 @@ export const Chat = ({ welcomeMessage }: { welcomeMessage?: boolean }) => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
 
-  const {
-    conversations,
-    messages,
-    input,
-    isLoading,
-    handleInputChange,
-    handleSubmit,
-    handleSuggestionSelect,
-  } = useContext(ChatContext);
+  const { conversations } = useContext(ChatContext);
 
   const toggleMobileSidebar = () => {
     setIsMobileSidebarOpen(!isMobileSidebarOpen);
@@ -95,15 +87,7 @@ export const Chat = ({ welcomeMessage }: { welcomeMessage?: boolean }) => {
       </div>
 
       <div className="flex-1 relative z-10">
-        <ChatContainer
-          messages={messages}
-          input={input}
-          isLoading={isLoading}
-          handleInputChange={handleInputChange}
-          handleSubmit={handleSubmit}
-          handleSuggestionSelect={handleSuggestionSelect}
-          welcomeMessage={welcomeMessage}
-        />
+        <ChatContainer welcomeMessage={welcomeMessage} />
       </div>
     </div>
   );

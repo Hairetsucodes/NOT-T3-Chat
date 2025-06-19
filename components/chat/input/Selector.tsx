@@ -8,18 +8,7 @@ import {
   useCallback,
   memo,
 } from "react";
-import {
-  Search,
-  ChevronDown,
-  Pin,
-  ChevronUp,
-  Filter,
-  Eye,
-  Brain,
-  Globe,
-  FileText,
-  ImagePlus,
-} from "lucide-react";
+import { Search, ChevronDown, Pin, ChevronUp, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,169 +16,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ModelCard } from "./ModelCard";
-import { ModelListItem } from "./ModelListItem";
+import { ModelCard } from "./models/Card";
+import { ModelListItem } from "./models/ListItem";
 import { ChatContext } from "@/context/ChatContext";
 import { getProviderIcon } from "@/components/ui/provider-images";
 import { ChatSettings } from "@prisma/client";
 import { updateModelAndProvider } from "@/data/settings";
-
-// Helper function to detect if model is pro/premium
-const isProModel = (name: string, pricing: unknown): boolean => {
-  const lowercaseName = name.toLowerCase();
-  const nameBasedCheck =
-    lowercaseName.includes("pro") ||
-    lowercaseName.includes("plus") ||
-    lowercaseName.includes("opus") ||
-    lowercaseName.includes("sonnet");
-
-  // Check pricing if it's an object with a prompt property
-  const pricingBasedCheck =
-    pricing &&
-    typeof pricing === "object" &&
-    pricing !== null &&
-    "prompt" in pricing &&
-    typeof (pricing as { prompt: unknown }).prompt === "number" &&
-    (pricing as { prompt: number }).prompt > 0.005;
-
-  return nameBasedCheck || Boolean(pricingBasedCheck);
-};
-
-// Helper function to detect if model requires key
-const requiresKey = (name: string, pricing: unknown): boolean => {
-  // Check if it's a premium model with high pricing
-  if (
-    pricing &&
-    typeof pricing === "object" &&
-    pricing !== null &&
-    "prompt" in pricing
-  ) {
-    const promptPrice = (pricing as { prompt: unknown }).prompt;
-    if (typeof promptPrice === "number" && promptPrice > 0.01) {
-      return true;
-    }
-  }
-
-  // Some models that typically require keys
-  const lowercaseName = name.toLowerCase();
-  return (
-    lowercaseName.includes("opus") ||
-    (lowercaseName.includes("o3") && lowercaseName.includes("pro"))
-  );
-};
-
-// Helper function to detect if model is new
-const isNewModel = (name: string): boolean => {
-  const lowercaseName = name.toLowerCase();
-  return (
-    lowercaseName.includes("o3") ||
-    lowercaseName.includes("4.5") ||
-    lowercaseName.includes("deepseek-r1") ||
-    lowercaseName.includes("grok-3") ||
-    lowercaseName.includes("claude-4")
-  );
-};
-
-// Helper function to get special styling for certain models
-const getSpecialStyling = (
-  name: string
-): { border?: string; shadow?: string } => {
-  const lowercaseName = name.toLowerCase();
-
-  if (lowercaseName.includes("o3") && lowercaseName.includes("pro")) {
-    return {
-      border: "border-[#ffb525f7]",
-      shadow:
-        "shadow-[0px_3px_8px_#ffae1082,inset_0px_-4px_20px_#ffb52575] dark:border-amber-200/80 dark:shadow-[0px_3px_8px_rgba(186,130,21,0.32),inset_0px_-4px_20px_rgba(186,130,21,0.43)]",
-    };
-  }
-
-  return {};
-};
-
-// Capability generation logic
-const getCapabilities = (modelName: string, description?: string | null) => {
-  const capabilities = [];
-  const desc = description?.toLowerCase() || "";
-  const name = modelName.toLowerCase();
-
-  // Vision capability
-  if (
-    desc.includes("vision") ||
-    desc.includes("image") ||
-    desc.includes("multimodal") ||
-    name.includes("vision") ||
-    name.includes("turbo") ||
-    name.includes("4o") ||
-    name.includes("claude") ||
-    name.includes("gemini") ||
-    name.includes("grok")
-  ) {
-    capabilities.push({ icon: <Eye className="h-4 w-4" />, label: "Vision" });
-  }
-
-  // Web search capability
-  if (
-    desc.includes("search") ||
-    desc.includes("web") ||
-    desc.includes("browse") ||
-    name.includes("flash") ||
-    name.includes("gemini")
-  ) {
-    capabilities.push({
-      icon: <Globe className="h-4 w-4" />,
-      label: "Web Access",
-    });
-  }
-
-  // Code capability
-  if (
-    desc.includes("code") ||
-    desc.includes("programming") ||
-    name.includes("claude") ||
-    name.includes("gpt") ||
-    name.includes("deepseek") ||
-    name.includes("qwen")
-  ) {
-    capabilities.push({
-      icon: <FileText className="h-4 w-4" />,
-      label: "Files",
-    });
-  }
-
-  // Reasoning capability
-  if (
-    desc.includes("reasoning") ||
-    desc.includes("thinking") ||
-    name.includes("reasoning") ||
-    name.includes("o1") ||
-    name.includes("o3") ||
-    name.includes("r1") ||
-    name.includes("qwq") ||
-    name.includes("sonnet") ||
-    name.includes("grok")
-  ) {
-    capabilities.push({
-      icon: <Brain className="h-4 w-4" />,
-      label: "Reasoning",
-    });
-  }
-
-  // Image generation capability
-  if (
-    desc.includes("image generation") ||
-    desc.includes("dall") ||
-    name.includes("imagegen") ||
-    name.includes("dall")
-  ) {
-    capabilities.push({
-      icon: <ImagePlus className="h-4 w-4" />,
-      label: "Image Generation",
-    });
-  }
-
-  return capabilities;
-};
+import { getCapabilities } from "@/components/settings/tab/models/capability";
+import { getDefaultModels, getSpecialStyling } from "./models/helpers";
 
 // Custom hook for debounced value
 function useDebounce<T>(value: T, delay: number): T {
@@ -207,85 +41,6 @@ function useDebounce<T>(value: T, delay: number): T {
 
   return debouncedValue;
 }
-
-// Helper function to get default models based on available providers
-const getDefaultModels = (
-  availableModels: Array<{
-    id: string;
-    name: string;
-    subtitle: string;
-    icon: React.ReactNode;
-    capabilities: Array<{ icon: React.ReactNode; label: string }>;
-    provider: string;
-    isPro: boolean;
-    requiresKey: boolean;
-    isDisabled: boolean;
-    isFavorite: boolean;
-    isExperimental?: boolean;
-    isNew?: boolean;
-    specialStyling?: { border?: string; shadow?: string };
-  }>
-) => {
-  if (availableModels.length === 0) return [];
-
-  // Get unique providers
-  const providers = [
-    ...new Set(availableModels.map((model) => model.provider)),
-  ];
-  const defaults: typeof availableModels = [];
-
-  // Default model preferences by provider (in order of preference)
-  const providerDefaults: Record<string, string[]> = {
-    anthropic: ["claude-3-5-sonnet", "claude-3-5-haiku", "claude-3-opus"],
-    openai: ["gpt-4o", "gpt-4o-mini", "o1-preview", "o1-mini"],
-    google: ["gemini-2.0-flash-exp", "gemini-1.5-pro", "gemini-1.5-flash"],
-    deepseek: ["deepseek-chat", "deepseek-reasoner"],
-    xai: ["grok-beta", "grok-vision-beta"],
-    openrouter: [
-      "anthropic/claude-3.5-sonnet",
-      "openai/gpt-4o",
-      "google/gemini-2.0-flash-exp",
-    ],
-  };
-
-  // For each provider, try to find the best available model
-  providers.forEach((provider) => {
-    const providerModels = availableModels.filter(
-      (model) => model.provider === provider
-    );
-    const preferredNames = providerDefaults[provider] || [];
-
-    // Try to find preferred models in order
-    for (const preferredName of preferredNames) {
-      const found = providerModels.find(
-        (model) =>
-          (model.name?.toLowerCase()?.includes(preferredName.toLowerCase()) ??
-            false) ||
-          (model.id?.toLowerCase()?.includes(preferredName.toLowerCase()) ??
-            false)
-      );
-      if (found && !defaults.some((d) => d.id === found.id)) {
-        defaults.push(found);
-        break; // Only add one model per provider for now
-      }
-    }
-
-    // If no preferred model found, add the first non-pro model from this provider
-    if (!defaults.some((d) => d.provider === provider)) {
-      const fallback =
-        providerModels.find(
-          (model) => !model.isPro && !model.requiresKey && !model.isDisabled
-        ) || providerModels[0]; // Fallback to first model if all are pro/require keys
-
-      if (fallback && !defaults.some((d) => d.id === fallback.id)) {
-        defaults.push(fallback);
-      }
-    }
-  });
-
-  // Limit to 8 default models to avoid overwhelming the user
-  return defaults.slice(0, 8);
-};
 
 const ModelSelector = memo(function ModelSelector() {
   const {
@@ -321,10 +76,14 @@ const ModelSelector = memo(function ModelSelector() {
       )
       .map((model) => {
         const icon = getProviderIcon(model.provider, "h-8 w-8 bg-transparent");
-        const capabilities = getCapabilities(model.name, model.description);
-        const isPro = isProModel(model.name, model.pricing);
-        const requiresApiKey = requiresKey(model.name, model.pricing);
-        const isNew = isNewModel(model.name);
+        const capabilities = getCapabilities(
+          model.provider,
+          model.name,
+          model.description
+        );
+        const isPro = false;
+        const requiresApiKey = true;
+        const isNew = false;
         const specialStyling = getSpecialStyling(model.name);
 
         return {

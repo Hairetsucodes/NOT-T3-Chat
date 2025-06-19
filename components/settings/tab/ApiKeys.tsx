@@ -24,7 +24,6 @@ import { ChatContext } from "@/context/ChatContext";
 import { addPreferredModel, getAvailableModels } from "@/data/models";
 import { updateModelAndProvider } from "@/data/settings";
 
-// Define basic/default models for each provider
 const getBasicModelForProvider = (provider: string): string => {
   const basicModels: Record<string, string> = {
     openai: "gpt-4o-mini",

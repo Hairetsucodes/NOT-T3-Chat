@@ -4,7 +4,7 @@ import { ChangeEvent, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowUp } from "lucide-react";
 import { InputActions } from "./Actions";
-import ModelSelector from "./ModelSelector";
+import ModelSelector from "./Selector";
 import { Textarea } from "@/components/ui/textarea";
 
 interface ChatInputProps {

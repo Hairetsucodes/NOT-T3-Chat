@@ -5,38 +5,28 @@ import { WelcomeScreen } from "./welcome/Welcome";
 import { ChatHeader } from "./ui/Header";
 import CornerDecorator from "./ui/CornerDecorator";
 import { ChatSkeleton } from "./ui/ChatSkeleton";
-import { Message } from "@/types/chat";
-import { ChangeEvent, Suspense } from "react";
+import { Suspense, useContext } from "react";
 import { useSearchParams } from "next/navigation";
 import { MessageList } from "./message/MessageList";
 import { Spinner } from "@/components/ui/spinner";
-
-interface ChatContainerProps {
-  messages: Message[];
-  input: string;
-  isLoading: boolean;
-  handleInputChange: (
-    e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLTextAreaElement>
-  ) => void;
-  handleSubmit: (
-    event?: { preventDefault?: () => void; currentInput?: string } | undefined
-  ) => void;
-  handleSuggestionSelect: (suggestion: string) => void;
-  welcomeMessage?: boolean;
-}
+import { ChatContext } from "@/context/ChatContext";
 
 export function ChatContainer({
-  messages,
-  input,
-  isLoading,
-  handleInputChange,
-  handleSubmit,
-  handleSuggestionSelect,
   welcomeMessage,
-}: ChatContainerProps) {
+}: {
+  welcomeMessage?: boolean;
+}) {
   // Check for retry query parameter
   const searchParams = useSearchParams();
   const hasRetryParam = searchParams.get("retry") === "true";
+  const {
+    messages,
+    input,
+    isLoading,
+    handleInputChange,
+    handleSubmit,
+    handleSuggestionSelect,
+  } = useContext(ChatContext);
 
   return (
     <main className="relative flex w-full h-full flex-col overflow-hidden transition-[width,height]">

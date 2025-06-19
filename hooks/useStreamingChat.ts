@@ -19,7 +19,10 @@ export const useStreamingChat = () => {
       options: ChatOptions & {
         chatSettings?: ChatSettings | null;
         onMessageUpdate: (messageId: string, updates: Partial<Message>) => void;
-        onConversationCreated?: (conversationId: string, title?: string) => void;
+        onConversationCreated?: (
+          conversationId: string,
+          title?: string
+        ) => void;
       }
     ) => {
       setIsLoading(true);
@@ -41,8 +44,10 @@ export const useStreamingChat = () => {
               conversationId: options.conversationId,
             }),
             selectedModel: {
-              provider: options.provider || options.chatSettings?.provider || "openai",
-              model: options.model || options.chatSettings?.model || "gpt-4o-mini",
+              provider:
+                options.provider || options.chatSettings?.provider || "openai",
+              model:
+                options.model || options.chatSettings?.model || "gpt-4o-mini",
             },
           }),
           // Removed signal: abortControllerRef.current.signal,
@@ -57,13 +62,18 @@ export const useStreamingChat = () => {
 
         // Handle conversation ID and title from response headers
         const generatedTitle = response.headers.get("X-Generated-Title");
-        const responseConversationId = response.headers.get("X-Conversation-Id");
+        const responseConversationId =
+          response.headers.get("X-Conversation-Id");
 
         // Determine the actual conversation ID being used
-        const actualConversationId = responseConversationId || options.conversationId;
+        const actualConversationId =
+          responseConversationId || options.conversationId;
 
         if (responseConversationId && !options.conversationId) {
-          options.onConversationCreated?.(responseConversationId, generatedTitle || undefined);
+          options.onConversationCreated?.(
+            responseConversationId,
+            generatedTitle || undefined
+          );
         }
 
         // Handle streaming response
@@ -78,7 +88,7 @@ export const useStreamingChat = () => {
         const messageId = `assistant-${Date.now()}-${Math.random()
           .toString(36)
           .substr(2, 9)}`;
-        
+
         const assistantMessage: Message = {
           id: messageId,
           role: "assistant",
@@ -86,7 +96,8 @@ export const useStreamingChat = () => {
           reasoning_content: "",
           partial_image: "",
           image_generation_status: "",
-          provider: options.provider || options.chatSettings?.provider || "openai",
+          provider:
+            options.provider || options.chatSettings?.provider || "openai",
           model: options.model || options.chatSettings?.model || "gpt-4o-mini",
         };
         let done = false;
@@ -122,25 +133,37 @@ export const useStreamingChat = () => {
                         assistantMessage.content += parsed.content;
                       }
                       if (parsed.reasoning) {
-                        const newReasoningContent = (assistantMessage.reasoning_content || "") + parsed.reasoning;
+                        const newReasoningContent =
+                          (assistantMessage.reasoning_content || "") +
+                          parsed.reasoning;
                         options.onMessageUpdate(messageId, {
                           reasoning_content: newReasoningContent,
                         });
-                        assistantMessage.reasoning_content = newReasoningContent;
+                        assistantMessage.reasoning_content =
+                          newReasoningContent;
                       }
                       if (parsed.partial_image) {
                         options.onMessageUpdate(messageId, {
                           partial_image: parsed.partial_image,
-                          image_generation_status: "",
+                          image_generation_status:
+                            "Image generation in progress...",
                         });
                         assistantMessage.partial_image = parsed.partial_image;
-                        assistantMessage.image_generation_status = "";
                       }
                       if (parsed.image_generation_status) {
                         options.onMessageUpdate(messageId, {
-                          image_generation_status: parsed.image_generation_status,
+                          image_generation_status:
+                            parsed.image_generation_status,
                         });
-                        assistantMessage.image_generation_status = parsed.image_generation_status;
+                        assistantMessage.image_generation_status =
+                          parsed.image_generation_status;
+                      }
+                      if (parsed.image_url) {
+                        options.onMessageUpdate(messageId, {
+                          image_url: parsed.image_url,
+                          image_generation_status: "",
+                        });
+                        assistantMessage.image_url = parsed.image_url;
                       }
                     } catch {
                       // Skip invalid JSON chunks
@@ -159,7 +182,11 @@ export const useStreamingChat = () => {
           }
         })();
 
-        return { assistantMessage, streamPromise, conversationId: actualConversationId };
+        return {
+          assistantMessage,
+          streamPromise,
+          conversationId: actualConversationId,
+        };
       } catch (error) {
         console.error("Error sending message:", error);
         throw error;
@@ -187,4 +214,4 @@ export const useStreamingChat = () => {
     stopStream,
     isLoading,
   };
-}; 
+};

@@ -24,14 +24,16 @@ const SmoothPartialImage = memo(function SmoothPartialImage({
   const [previousImage, setPreviousImage] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerHeight, setContainerHeight] = useState<number | undefined>(undefined);
+  const [containerHeight, setContainerHeight] = useState<number | undefined>(
+    undefined
+  );
 
   useEffect(() => {
     if (partialImage !== currentImage) {
       // Start transition
       setPreviousImage(currentImage);
       setIsTransitioning(true);
-      
+
       // Capture current height to prevent layout shift
       if (containerRef.current) {
         setContainerHeight(containerRef.current.offsetHeight);
@@ -41,7 +43,7 @@ const SmoothPartialImage = memo(function SmoothPartialImage({
       const timer = setTimeout(() => {
         setCurrentImage(partialImage);
         setIsTransitioning(false);
-        
+
         // Reset height after transition
         setTimeout(() => {
           setContainerHeight(undefined);
@@ -60,23 +62,23 @@ const SmoothPartialImage = memo(function SmoothPartialImage({
   }, [isTransitioning]);
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className="relative overflow-hidden"
-      style={{ 
-        height: containerHeight ? `${containerHeight}px` : 'auto',
-        minHeight: containerHeight ? `${containerHeight}px` : undefined
+      style={{
+        height: containerHeight ? `${containerHeight}px` : "auto",
+        minHeight: containerHeight ? `${containerHeight}px` : undefined,
       }}
     >
       {/* Current/New Image */}
       <div
         className={`transition-opacity duration-300 ${
-          isTransitioning ? 'opacity-0' : 'opacity-100'
+          isTransitioning ? "opacity-0" : "opacity-100"
         }`}
       >
         <MarkdownContent content={currentImage} />
       </div>
-      
+
       {/* Previous Image (for transition) */}
       {previousImage && isTransitioning && (
         <div
@@ -244,23 +246,19 @@ export const SimpleMessageRenderer = memo(function SimpleMessageRenderer({
       )}
 
       {/* Processed content with syntax highlighting and markdown */}
-      <div
-        className={
-          isUser ? "break-words overflow-wrap-anywhere" : ""
-        }
-      >
+      <div className={isUser ? "break-words overflow-wrap-anywhere" : ""}>
         {processedContent}
       </div>
 
       {message.role === "assistant" && message.image_generation_status && (
-        <div className="text-sm text-muted-foreground mt-2">
+        <div className="w-full flex justify-center items-center my-2 text-sm text-muted-foreground text-center">
           {message.image_generation_status}
         </div>
       )}
       {message.role === "assistant" &&
-        (message.image_generation_status === "Starting image generation..." ||
-          message.image_generation_status ===
-            "Image generation in progress...") && (
+        !message.partial_image &&
+        message.image_generation_status ===
+          "Image generation in progress..." && (
           <div className="animate-pulse">
             <div className="w-full h-88 bg-muted rounded-lg"></div>
             <div className="mt-2 flex items-center gap-2">
@@ -271,7 +269,7 @@ export const SimpleMessageRenderer = memo(function SimpleMessageRenderer({
         )}
       {/* Show partial image for assistant messages during generation with smooth transitions */}
       {message.role === "assistant" && message.partial_image && (
-        <div className="mt-4">
+        <div className="w-full flex justify-center items-center mt-4">
           <SmoothPartialImage partialImage={message.partial_image} />
         </div>
       )}

@@ -18,7 +18,7 @@ export const getCapabilities = (
     desc.includes("thinking") ||
     name.includes("reasoning")
   ) {
-    capabilities.push({ icon: Brain, label: "Reasoning" });
+    capabilities.push({ icon: <Brain className="h-4 w-4" />, label: "Reasoning" });
   }
 
   // Google Gemini and OpenAI GPT 4.1 specific grounding capability
@@ -32,17 +32,17 @@ export const getCapabilities = (
       name.includes("gpt 4.1") &&
       !name.includes("nano"))
   ) {
-    capabilities.push({ icon: Globe, label: "WebSearch / Grounding" });
+    capabilities.push({ icon: <Globe className="h-4 w-4" />, label: "WebSearch / Grounding" });
   } else if (
     desc.includes("search") ||
     desc.includes("web") ||
     desc.includes("browse")
   ) {
-    capabilities.push({ icon: Globe, label: "Web Search" });
+    capabilities.push({ icon: <Globe className="h-4 w-4" />, label: "Web Search" });
   }
 
   if (desc.includes("code") || desc.includes("programming")) {
-    capabilities.push({ icon: FileText, label: "Code" });
+    capabilities.push({ icon: <FileText className="h-4 w-4" />, label: "Code" });
   }
 
   if (
@@ -50,7 +50,7 @@ export const getCapabilities = (
     desc.includes("speed") ||
     name.includes("flash")
   ) {
-    capabilities.push({ icon: Zap, label: "Fast" });
+    capabilities.push({ icon: <Zap className="h-4 w-4" />, label: "Fast" });
   }
 
   return capabilities;
