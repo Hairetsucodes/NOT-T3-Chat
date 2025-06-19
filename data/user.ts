@@ -2,26 +2,33 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/prisma";
+import { CreateUserSchema, GetUserByEmailSchema } from "@/schemas/user";
 
 export const createUser = async (
   email: string,
   hashedPassword: string,
   name: string,
-  username: string
 ) => {
   try {
+    // Validate and sanitize input data
+    const validatedData = CreateUserSchema.parse({
+      email,
+      hashedPassword,
+      name,
+    });
+
     type UserCreateInput = {
       email: string;
       password: string;
       name: string;
       username: string;
     };
+    
     const newUser = await prisma.user.create({
       data: {
-        email,
-        password: hashedPassword,
-        username,
-        name,
+        email: validatedData.email,
+        password: validatedData.hashedPassword,
+        name: validatedData.name,
       } as UserCreateInput,
     });
 
@@ -29,35 +36,30 @@ export const createUser = async (
   } catch (e) {
     console.error("Error creating user:", e);
     if (e instanceof Error) {
-      console.error("Error message:", e.message);
-      console.error("Error stack:", e.stack);
+      throw new Error(e.message);
     }
-    return null;
+    throw new Error("Failed to create user");
   }
 };
 
 export const getUserByEmail = async (email: string) => {
-  if (!email) {
-    return null;
-  }
-
   try {
+    // Validate and sanitize input data
+    const validatedData = GetUserByEmailSchema.parse({ email });
+
     const user = await prisma.user.findUnique({
       where: {
-        email: email,
+        email: validatedData.email,
       },
     });
 
     return user;
   } catch (error) {
-    console.error("Error in getUserByEmail:");
+    console.error("Error in getUserByEmail:", error);
     if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-    } else {
-      console.error("Unknown error:", error);
+      throw new Error(error.message);
     }
-    throw error; // Re-throw the error to be handled by the auth logic
+    throw new Error("Failed to get user by email");
   }
 };
 

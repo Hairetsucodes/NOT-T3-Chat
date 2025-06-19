@@ -8,16 +8,21 @@ import {
   FormattedConversation,
   HistoryStats,
 } from "@/types/history";
+import {
+  ClearHistoryOlderThanSchema,
+  DeleteConversationSchema,
+  GetConversationsPaginatedSchema,
+  ImportChatHistorySchema,
+} from "@/schemas/history";
 
 export const getUserChatHistory = async (): Promise<
   UserChatHistory | { error: string }
 > => {
-  const { userId } = await checkUser();
-  if (!userId) {
-    return { error: "Unauthorized" };
-  }
-
   try {
+    const { userId } = await checkUser();
+    if (!userId) {
+      return { error: "Unauthorized" };
+    }
     const conversations = await prisma.conversation.findMany({
       where: { userId },
       include: {
@@ -62,6 +67,9 @@ export const getUserChatHistory = async (): Promise<
     };
   } catch (error) {
     console.error("Failed to get user chat history:", error);
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
     return { error: "Failed to retrieve chat history" };
   }
 };
@@ -69,12 +77,11 @@ export const getUserChatHistory = async (): Promise<
 export const getHistoryStats = async (): Promise<
   HistoryStats | { error: string }
 > => {
-  const { userId } = await checkUser();
-  if (!userId) {
-    return { error: "Unauthorized" };
-  }
-
   try {
+    const { userId } = await checkUser();
+    if (!userId) {
+      return { error: "Unauthorized" };
+    }
     const [conversations, messages] = await Promise.all([
       prisma.conversation.findMany({
         where: { userId },
@@ -112,6 +119,9 @@ export const getHistoryStats = async (): Promise<
     };
   } catch (error) {
     console.error("Failed to get history stats:", error);
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
     return { error: "Failed to retrieve history statistics" };
   }
 };
@@ -119,12 +129,12 @@ export const getHistoryStats = async (): Promise<
 export const clearAllHistory = async (): Promise<
   { success: boolean } | { error: string }
 > => {
-  const { userId } = await checkUser();
-  if (!userId) {
-    return { error: "Unauthorized" };
-  }
-
   try {
+    const { userId } = await checkUser();
+    if (!userId) {
+      return { error: "Unauthorized" };
+    }
+
     // Then delete all conversations
     await prisma.conversation.deleteMany({
       where: { userId },
@@ -133,6 +143,9 @@ export const clearAllHistory = async (): Promise<
     return { success: true };
   } catch (error) {
     console.error("Failed to clear chat history:", error);
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
     return { error: "Failed to clear chat history" };
   }
 };
@@ -143,17 +156,20 @@ export const clearHistoryOlderThan = async (
 ): Promise<
   { deletedConversations: number; deletedMessages: number } | { error: string }
 > => {
-  const { userId } = await checkUser();
-  if (!userId) {
-    return { error: "Unauthorized" };
-  }
-
   try {
+    // Validate input data
+    const validatedData = ClearHistoryOlderThanSchema.parse({ olderThanDate });
+
+    const { userId } = await checkUser();
+    if (!userId) {
+      return { error: "Unauthorized" };
+    }
+
     // Get conversations to delete
     const conversationsToDelete = await prisma.conversation.findMany({
       where: {
         userId,
-        createdAt: { lt: olderThanDate },
+        createdAt: { lt: validatedData.olderThanDate },
       },
       select: { id: true },
     });
@@ -171,7 +187,7 @@ export const clearHistoryOlderThan = async (
     const deletedConversations = await prisma.conversation.deleteMany({
       where: {
         userId,
-        createdAt: { lt: olderThanDate },
+        createdAt: { lt: validatedData.olderThanDate },
       },
     });
 
@@ -181,6 +197,9 @@ export const clearHistoryOlderThan = async (
     };
   } catch (error) {
     console.error("Failed to clear old history:", error);
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
     return { error: "Failed to clear old history" };
   }
 };
@@ -201,31 +220,33 @@ export const importChatHistory = async (
     }
   | { error: string }
 > => {
-  const { userId } = await checkUser();
-  if (!userId) {
-    return { error: "Unauthorized" };
-  }
-
-  // Allow importing from different users when transferFromDifferentUser is true
-  if (historyData.userId !== userId && !options.transferFromDifferentUser) {
-    return {
-      error:
-        "History data belongs to a different user. Set transferFromDifferentUser option to import anyway.",
-    };
-  }
-
   try {
+    // Validate input data
+    const validatedData = ImportChatHistorySchema.parse({ historyData, options });
+
+    const { userId } = await checkUser();
+    if (!userId) {
+      return { error: "Unauthorized" };
+    }
+
+    // Allow importing from different users when transferFromDifferentUser is true
+    if (validatedData.historyData.userId !== userId && !validatedData.options.transferFromDifferentUser) {
+      return {
+        error:
+          "History data belongs to a different user. Set transferFromDifferentUser option to import anyway.",
+      };
+    }
     let importedConversations = 0;
     let importedMessages = 0;
     let skippedConversations = 0;
 
-    for (const conv of historyData.conversations) {
+    for (const conv of validatedData.historyData.conversations) {
       try {
         // Check if conversation already exists (only relevant for same-user imports)
         let existingConv = null;
         if (
-          !options.transferFromDifferentUser ||
-          historyData.userId === userId
+          !validatedData.options.transferFromDifferentUser ||
+          validatedData.historyData.userId === userId
         ) {
           existingConv = await prisma.conversation.findFirst({
             where: {
@@ -234,8 +255,8 @@ export const importChatHistory = async (
             },
           });
 
-          if (existingConv && !options.overwrite) {
-            if (options.skipExisting) {
+          if (existingConv && !validatedData.options.overwrite) {
+            if (validatedData.options.skipExisting) {
               skippedConversations++;
               continue;
             } else {
@@ -249,8 +270,8 @@ export const importChatHistory = async (
         let conversation;
 
         if (
-          options.transferFromDifferentUser &&
-          historyData.userId !== userId
+          validatedData.options.transferFromDifferentUser &&
+          validatedData.historyData.userId !== userId
         ) {
           // When transferring from different user, always create new conversation with new ID
           conversation = await prisma.conversation.create({
@@ -280,7 +301,7 @@ export const importChatHistory = async (
         }
 
         // If overwriting, delete existing messages
-        if (existingConv && options.overwrite) {
+        if (existingConv && validatedData.options.overwrite) {
           await prisma.message.deleteMany({
             where: { conversationId: conv.id },
           });
@@ -289,8 +310,8 @@ export const importChatHistory = async (
         // Import messages
         for (const msg of conv.messages) {
           if (
-            options.transferFromDifferentUser &&
-            historyData.userId !== userId
+            validatedData.options.transferFromDifferentUser &&
+            validatedData.historyData.userId !== userId
           ) {
             // When transferring from different user, always create new message with new ID
             await prisma.message.create({
@@ -353,6 +374,9 @@ export const importChatHistory = async (
     };
   } catch (error) {
     console.error("Failed to import chat history:", error);
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
     return { error: "Failed to import chat history" };
   }
 };
@@ -361,16 +385,19 @@ export const importChatHistory = async (
 export const deleteConversation = async (
   conversationId: string
 ): Promise<{ success: boolean } | { error: string }> => {
-  const { userId } = await checkUser();
-  if (!userId) {
-    return { error: "Unauthorized" };
-  }
-
   try {
+    // Validate conversation ID format
+    const validatedData = DeleteConversationSchema.parse({ conversationId });
+
+    const { userId } = await checkUser();
+    if (!userId) {
+      return { error: "Unauthorized" };
+    }
+
     // Verify the conversation belongs to the user
     const conversation = await prisma.conversation.findFirst({
       where: {
-        id: conversationId,
+        id: validatedData.conversationId,
         userId,
       },
     });
@@ -381,17 +408,20 @@ export const deleteConversation = async (
 
     // Delete messages first
     await prisma.message.deleteMany({
-      where: { conversationId },
+      where: { conversationId: validatedData.conversationId },
     });
 
     // Delete conversation
     await prisma.conversation.delete({
-      where: { id: conversationId },
+      where: { id: validatedData.conversationId },
     });
 
     return { success: true };
   } catch (error) {
     console.error("Failed to delete conversation:", error);
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
     return { error: "Failed to delete conversation" };
   }
 };
@@ -413,25 +443,20 @@ export const getConversationsPaginated = async (
     }
   | { error: string }
 > => {
-  const { userId } = await checkUser();
-  if (!userId) {
-    return { error: "Unauthorized" };
-  }
-
-  const {
-    limit = 20,
-    offset = 0,
-    search = "",
-    sortBy = "updatedAt",
-    sortOrder = "desc",
-  } = options;
-
   try {
+    // Validate and sanitize pagination options
+    const validatedOptions = GetConversationsPaginatedSchema.parse(options);
+
+    const { userId } = await checkUser();
+    if (!userId) {
+      return { error: "Unauthorized" };
+    }
+
     const whereClause = {
       userId,
-      ...(search && {
+      ...(validatedOptions.search && {
         title: {
-          contains: search,
+          contains: validatedOptions.search,
           mode: "insensitive" as const,
         },
       }),
@@ -445,9 +470,9 @@ export const getConversationsPaginated = async (
             select: { Message: true },
           },
         },
-        orderBy: { [sortBy]: sortOrder },
-        take: limit,
-        skip: offset,
+        orderBy: { [validatedOptions.sortBy]: validatedOptions.sortOrder },
+        take: validatedOptions.limit,
+        skip: validatedOptions.offset,
       }),
       prisma.conversation.count({ where: whereClause }),
     ]);
@@ -460,10 +485,13 @@ export const getConversationsPaginated = async (
     return {
       conversations: formattedConversations,
       total,
-      hasMore: offset + limit < total,
+      hasMore: validatedOptions.offset + validatedOptions.limit < total,
     };
   } catch (error) {
     console.error("Failed to get paginated conversations:", error);
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
     return { error: "Failed to retrieve conversations" };
   }
 };
@@ -477,12 +505,12 @@ export const prepareSyncData = async (): Promise<
     }
   | { error: string }
 > => {
-  const { userId } = await checkUser();
-  if (!userId) {
-    return { error: "Unauthorized" };
-  }
-
   try {
+    const { userId } = await checkUser();
+    if (!userId) {
+      return { error: "Unauthorized" };
+    }
+
     // Get basic info for sync preparation
     const stats = await getHistoryStats();
 
@@ -504,6 +532,9 @@ export const prepareSyncData = async (): Promise<
     };
   } catch (error) {
     console.error("Failed to prepare sync data:", error);
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
     return { error: "Failed to prepare sync data" };
   }
 };

@@ -1,6 +1,7 @@
 "use server";
 import { checkUser } from "@/lib/auth/check";
 import { prisma } from "@/prisma";
+import { CreateMessageSchema, GetMessagesByConversationSchema } from "@/schemas/messages";
 
 export const createMessage = async (
   content: string,
@@ -11,68 +12,99 @@ export const createMessage = async (
   conversationId?: string,
   title?: string
 ) => {
-  const { userId } = await checkUser();
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
-
-  // Create conversation if it doesn't exist
-  if (!conversationId) {
-    const conversation = await prisma.conversation.create({
-      data: {
-        userId,
-        title: title || "New Conversation",
-      },
-    });
-    conversationId = conversation.id;
-  }
-
-  // Validate required fields
-  if (!content) {
-    throw new Error("Content is required");
-  }
-  if (!role) {
-    throw new Error("Role is required");
-  }
-
-  // Create and return the message
-  const message = await prisma.message.create({
-    data: {
-      userId,
-      conversationId,
+  try {
+    // Validate and sanitize input data
+    const validatedData = CreateMessageSchema.parse({
       content,
       role,
       provider,
-      model: modelId,
+      modelId,
       reasoningContent,
-    },
-  });
+      conversationId,
+      title,
+    });
 
-  return message;
+    const { userId } = await checkUser();
+    if (!userId) {
+      throw new Error("Unauthorized");
+    }
+
+    let finalConversationId = validatedData.conversationId;
+
+    // Create conversation if it doesn't exist
+    if (!finalConversationId) {
+      const conversation = await prisma.conversation.create({
+        data: {
+          userId,
+          title: validatedData.title || "New Conversation",
+        },
+      });
+      finalConversationId = conversation.id;
+    }
+
+    // Create and return the message
+    const message = await prisma.message.create({
+      data: {
+        userId,
+        conversationId: finalConversationId,
+        content: validatedData.content,
+        role: validatedData.role,
+        provider: validatedData.provider,
+        model: validatedData.modelId,
+        reasoningContent: validatedData.reasoningContent,
+      },
+    });
+
+    return message;
+  } catch (error) {
+    console.error("Error creating message:", error);
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error("Failed to create message");
+  }
 };
 
 export const getConversations = async () => {
-  const { userId } = await checkUser();
-  if (!userId) {
-    throw new Error("Unauthorized");
+  try {
+    const { userId } = await checkUser();
+    if (!userId) {
+      throw new Error("Unauthorized");
+    }
+    
+    const conversations = await prisma.conversation.findMany({
+      where: {
+        userId,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    return conversations;
+  } catch (error) {
+    console.error("Error getting conversations:", error);
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error("Failed to fetch conversations");
   }
-  const conversations = await prisma.conversation.findMany({
-    where: {
-      userId,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-  return conversations;
 };
 
 export const getMessagesByConversationId = async (conversationId: string) => {
-  const { userId } = await checkUser();
   try {
+    // Validate conversation ID format
+    const validatedData = GetMessagesByConversationSchema.parse({
+      conversationId,
+    });
+
+    const { userId } = await checkUser();
+    if (!userId) {
+      throw new Error("Unauthorized");
+    }
+
     const conversation = await prisma.conversation.findFirst({
       where: {
-        id: conversationId,
+        id: validatedData.conversationId,
         userId: userId,
       },
     });
@@ -83,7 +115,7 @@ export const getMessagesByConversationId = async (conversationId: string) => {
 
     const messages = await prisma.message.findMany({
       where: {
-        conversationId,
+        conversationId: validatedData.conversationId,
       },
       orderBy: {
         createdAt: "asc",

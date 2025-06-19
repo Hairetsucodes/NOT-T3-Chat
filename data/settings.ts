@@ -5,6 +5,12 @@ import { prisma } from "@/prisma";
 import { UserCustomization } from "@prisma/client";
 import { generateAndApplyPersonalizedPrompt } from "./prompt";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { 
+  UpdateUserSettingsSchema, 
+  UpdateWebSearchSchema, 
+  UpdateModelAndProviderSchema, 
+  UpdateImageGenerationSchema 
+} from "@/schemas/settings";
 
 export const getUserSettings = async () => {
   const { userId } = await checkUser();
@@ -62,29 +68,13 @@ export const getUserSettings = async () => {
 export const updateUserSettings = async (
   settings: Partial<UserCustomization>
 ) => {
-  const { userId } = await checkUser();
-  if (!userId) {
-    return { error: "Unauthorized" };
-  }
   try {
-    // Validate settings
-    if (settings.displayName && settings.displayName.length > 50) {
-      return { error: "Display name must be 50 characters or less" };
-    }
+    // Validate and sanitize input data
+    const validatedData = UpdateUserSettingsSchema.parse(settings);
 
-    if (settings.userRole && settings.userRole.length > 100) {
-      return { error: "User role must be 100 characters or less" };
-    }
-
-    if (settings.userTraits && settings.userTraits.length > 3000) {
-      return { error: "User traits must be 3000 characters or less" };
-    }
-
-    if (
-      settings.additionalContext &&
-      settings.additionalContext.length > 3000
-    ) {
-      return { error: "Additional context must be 3000 characters or less" };
+    const { userId } = await checkUser();
+    if (!userId) {
+      return { error: "Unauthorized" };
     }
 
     // Try to update first
@@ -92,7 +82,7 @@ export const updateUserSettings = async (
       const updatedSettings = await prisma.userCustomization.update({
         where: { userId },
         data: {
-          ...settings,
+          ...validatedData,
           updatedAt: new Date(),
         },
       });
@@ -105,7 +95,7 @@ export const updateUserSettings = async (
         "additionalContext",
       ];
       const hasPromptRelevantChanges = promptRelevantFields.some(
-        (field) => settings[field as keyof UserCustomization] !== undefined
+        (field) => validatedData[field as keyof typeof validatedData] !== undefined
       );
       
       if (hasPromptRelevantChanges) {
@@ -151,7 +141,7 @@ export const updateUserSettings = async (
           showStatsForNerds: false,
           mainTextFont: "Inter",
           codeFont: "mono",
-          ...settings,
+          ...validatedData,
         };
 
         return await prisma.userCustomization.create({
@@ -163,8 +153,7 @@ export const updateUserSettings = async (
   } catch (error) {
     console.error("Error updating user settings:", error);
     if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
+      return { error: error.message };
     }
     return { error: "Failed to update settings" };
   }
@@ -290,52 +279,99 @@ export const getChatSettings = async () => {
 };
 
 export const updateIsWebSearch = async (isWebSearch: boolean) => {
-  const { userId } = await checkUser();
-  const chatSettings = await prisma.chatSettings.findFirst({
-    where: { userId },
-  });
-  if (chatSettings) {
-    return await prisma.chatSettings.update({
-      where: { id: chatSettings.id },
-      data: { isWebSearch, updatedAt: new Date() },
+  try {
+    // Validate input data
+    const validatedData = UpdateWebSearchSchema.parse({ isWebSearch });
+
+    const { userId } = await checkUser();
+    if (!userId) {
+      throw new Error("Unauthorized");
+    }
+
+    const chatSettings = await prisma.chatSettings.findFirst({
+      where: { userId },
     });
+    if (chatSettings) {
+      return await prisma.chatSettings.update({
+        where: { id: chatSettings.id },
+        data: { isWebSearch: validatedData.isWebSearch, updatedAt: new Date() },
+      });
+    }
+    return null;
+  } catch (error) {
+    console.error("Error updating web search setting:", error);
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error("Failed to update web search setting");
   }
-  return null;
 };
 
 export async function updateModelAndProvider(model: string, provider: string) {
-  const { userId } = await checkUser();
-
   try {
+    // Validate input data
+    const validatedData = UpdateModelAndProviderSchema.parse({ model, provider });
+
+    const { userId } = await checkUser();
+    if (!userId) {
+      throw new Error("Unauthorized");
+    }
+
     const existingSettings = await prisma.chatSettings.findFirst({
       where: { userId },
     });
     if (existingSettings) {
       return await prisma.chatSettings.update({
         where: { id: existingSettings.id },
-        data: { model, provider, updatedAt: new Date() },
+        data: { 
+          model: validatedData.model, 
+          provider: validatedData.provider, 
+          updatedAt: new Date() 
+        },
       });
     } else {
       return await prisma.chatSettings.create({
-        data: { userId: userId!, model, provider },
+        data: { 
+          userId: userId, 
+          model: validatedData.model, 
+          provider: validatedData.provider 
+        },
       });
     }
   } catch (error) {
     console.error("Error updating chat settings:", error);
-    throw error;
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error("Failed to update chat settings");
   }
 }
 
 export const updateIsImageGeneration = async (isImageGeneration: boolean) => {
-  const { userId } = await checkUser();
-  const chatSettings = await prisma.chatSettings.findFirst({
-    where: { userId },
-  });
-  if (chatSettings) {
-    return await prisma.chatSettings.update({
-      where: { id: chatSettings.id },
-      data: { isImageGeneration, updatedAt: new Date() },
+  try {
+    // Validate input data
+    const validatedData = UpdateImageGenerationSchema.parse({ isImageGeneration });
+
+    const { userId } = await checkUser();
+    if (!userId) {
+      throw new Error("Unauthorized");
+    }
+
+    const chatSettings = await prisma.chatSettings.findFirst({
+      where: { userId },
     });
+    if (chatSettings) {
+      return await prisma.chatSettings.update({
+        where: { id: chatSettings.id },
+        data: { isImageGeneration: validatedData.isImageGeneration, updatedAt: new Date() },
+      });
+    }
+    return null;
+  } catch (error) {
+    console.error("Error updating image generation setting:", error);
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error("Failed to update image generation setting");
   }
-  return null;
 };

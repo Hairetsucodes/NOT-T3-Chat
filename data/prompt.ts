@@ -3,6 +3,7 @@ import { decrypt } from "@/lib/encryption/encrypt";
 import { generatePersonalizedPrompt } from "@/ai/utils/promptGeneration";
 import { updateChatSettingsWithPrompt } from "@/ai/utils/promptGeneration";
 import { checkUser } from "@/lib/auth/check";
+import { GeneratePersonalizedPromptSchema } from "@/schemas/prompt";
 
 export async function generateAndApplyPersonalizedPrompt(
   provider: string,
@@ -10,24 +11,32 @@ export async function generateAndApplyPersonalizedPrompt(
   apiKey: string
 ): Promise<string | null> {
   try {
+    // Validate input data
+    const validatedData = GeneratePersonalizedPromptSchema.parse({
+      provider,
+      modelId,
+      apiKey,
+    });
+
     const { userId } = await checkUser();
     if (!userId) {
       throw new Error("User not found");
     }
+    
     // decrypt api key
-    const decryptedApiKey = await decrypt(apiKey);
+    const decryptedApiKey = await decrypt(validatedData.apiKey);
     const promptId = await generatePersonalizedPrompt(
       userId,
-      provider,
-      modelId,
+      validatedData.provider,
+      validatedData.modelId,
       decryptedApiKey
     );
     if (promptId) {
       const success = await updateChatSettingsWithPrompt(
         userId,
         promptId,
-        provider,
-        modelId
+        validatedData.provider,
+        validatedData.modelId
       );
       if (success) {
         return promptId;

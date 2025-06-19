@@ -3,17 +3,25 @@ import { prisma } from "@/prisma";
 import { PreferredModel } from "@prisma/client";
 import { checkUser } from "@/lib/auth/check";
 import { UnifiedModel } from "@/types/models";
+import { 
+  GetModelsByProviderSchema, 
+  GetModelByIdSchema, 
+  SearchModelsSchema, 
+  AddPreferredModelSchema, 
+  RemovePreferredModelSchema 
+} from "@/schemas/models";
 
 export async function getAvailableModels(): Promise<UnifiedModel[]> {
-  // Fetch models from all provider tables in parallel
-  const [
-    openRouterModels,
-    anthropicModels,
-    openaiModels,
-    googleModels,
-    deepseekModels,
-    xaiModels,
-  ] = await Promise.all([
+  try {
+    // Fetch models from all provider tables in parallel
+    const [
+      openRouterModels,
+      anthropicModels,
+      openaiModels,
+      googleModels,
+      deepseekModels,
+      xaiModels,
+    ] = await Promise.all([
     prisma.openRouterModel.findMany({
       where: { isActive: true },
       orderBy: [{ provider: "asc" }, { name: "asc" }],
@@ -169,46 +177,70 @@ export async function getAvailableModels(): Promise<UnifiedModel[]> {
       return a.name.localeCompare(b.name);
     });
 
-  return allModels;
+    return allModels;
+  } catch (error) {
+    console.error("Error getting available models:", error);
+    return [];
+  }
 }
 
 export async function getPreferredModels(): Promise<PreferredModel[]> {
-  const { userId } = await checkUser();
-  if (!userId) {
+  try {
+    const { userId } = await checkUser();
+    if (!userId) {
+      return [];
+    }
+    const usersPreferredModels = await prisma.preferredModel.findMany({
+      where: { userId: userId },
+    });
+    return usersPreferredModels;
+  } catch (error) {
+    console.error("Error getting preferred models:", error);
     return [];
   }
-  const usersPreferredModels = await prisma.preferredModel.findMany({
-    where: { userId: userId },
-  });
-  return usersPreferredModels;
 }
 
 export async function getModelsByProvider(
   provider: string
 ): Promise<UnifiedModel[]> {
-  const allModels = await getAvailableModels();
-  return allModels.filter((model) => model.provider === provider);
+  try {
+    // Validate and sanitize input data
+    const validatedData = GetModelsByProviderSchema.parse({ provider });
+
+    const allModels = await getAvailableModels();
+    return allModels.filter((model) => model.provider === validatedData.provider);
+  } catch (error) {
+    console.error("Error getting models by provider:", error);
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error("Failed to get models by provider");
+  }
 }
 
 export async function getModelById(
   modelId: string
 ): Promise<UnifiedModel | null> {
-  // Check all provider tables for the model
-  const [
-    openRouterModel,
-    anthropicModel,
-    openaiModel,
-    googleModel,
-    deepseekModel,
-    xaiModel,
-  ] = await Promise.all([
-    prisma.openRouterModel.findUnique({ where: { modelId } }),
-    prisma.anthropicModel.findUnique({ where: { modelId } }),
-    prisma.openaiModel.findUnique({ where: { modelId } }),
-    prisma.googleModel.findUnique({ where: { modelId } }),
-    prisma.deepSeekModel.findUnique({ where: { modelId } }),
-    prisma.xaiModel.findUnique({ where: { modelId } }),
-  ]);
+  try {
+    // Validate and sanitize input data
+    const validatedData = GetModelByIdSchema.parse({ modelId });
+
+    // Check all provider tables for the model
+    const [
+      openRouterModel,
+      anthropicModel,
+      openaiModel,
+      googleModel,
+      deepseekModel,
+      xaiModel,
+    ] = await Promise.all([
+      prisma.openRouterModel.findUnique({ where: { modelId: validatedData.modelId } }),
+      prisma.anthropicModel.findUnique({ where: { modelId: validatedData.modelId } }),
+      prisma.openaiModel.findUnique({ where: { modelId: validatedData.modelId } }),
+      prisma.googleModel.findUnique({ where: { modelId: validatedData.modelId } }),
+      prisma.deepSeekModel.findUnique({ where: { modelId: validatedData.modelId } }),
+      prisma.xaiModel.findUnique({ where: { modelId: validatedData.modelId } }),
+    ]);
 
   // Return the first found model, normalized
   if (openRouterModel) {
@@ -322,19 +354,27 @@ export async function getModelById(
     };
   }
 
-  return null;
+    return null;
+  } catch (error) {
+    console.error("Error getting model by ID:", error);
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error("Failed to get model by ID");
+  }
 }
 
 export async function getProviders(): Promise<string[]> {
-  // Get providers from all model tables
-  const [
-    openRouterProviders,
-    anthropicModels,
-    openaiModels,
-    googleModels,
-    deepseekModels,
-    xaiModels,
-  ] = await Promise.all([
+  try {
+    // Get providers from all model tables
+    const [
+      openRouterProviders,
+      anthropicModels,
+      openaiModels,
+      googleModels,
+      deepseekModels,
+      xaiModels,
+    ] = await Promise.all([
     prisma.openRouterModel.findMany({
       where: { isActive: true },
       select: { provider: true },
@@ -379,34 +419,52 @@ export async function getProviders(): Promise<string[]> {
   if (deepseekModels.length > 0) providers.add("deepseek");
   if (xaiModels.length > 0) providers.add("xai");
 
-  return Array.from(providers).sort();
+    return Array.from(providers).sort();
+  } catch (error) {
+    console.error("Error getting providers:", error);
+    return [];
+  }
 }
 
 export async function searchModels(query: string): Promise<UnifiedModel[]> {
-  const allModels = await getAvailableModels();
+  try {
+    // Validate and sanitize input data
+    const validatedData = SearchModelsSchema.parse({ query });
 
-  const lowerQuery = query.toLowerCase();
-  return allModels.filter(
-    (model) =>
-      model.name.toLowerCase().includes(lowerQuery) ||
-      model.modelId.toLowerCase().includes(lowerQuery) ||
-      (model.description &&
-        model.description.toLowerCase().includes(lowerQuery))
-  );
+    const allModels = await getAvailableModels();
+
+    const lowerQuery = validatedData.query.toLowerCase();
+    return allModels.filter(
+      (model) =>
+        model.name.toLowerCase().includes(lowerQuery) ||
+        model.modelId.toLowerCase().includes(lowerQuery) ||
+        (model.description &&
+          model.description.toLowerCase().includes(lowerQuery))
+    );
+  } catch (error) {
+    console.error("Error searching models:", error);
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error("Failed to search models");
+  }
 }
 
 export const addPreferredModel = async (modelId: string, provider: string) => {
-  const { userId } = await checkUser();
-  if (!userId) {
-    return { error: "Unauthorized" };
-  }
-
   try {
+    // Validate and sanitize input data
+    const validatedData = AddPreferredModelSchema.parse({ modelId, provider });
+
+    const { userId } = await checkUser();
+    if (!userId) {
+      return { error: "Unauthorized" };
+    }
+
     // Check if model is already preferred
     const existingPreference = await prisma.preferredModel.findFirst({
       where: {
         userId,
-        model: modelId,
+        model: validatedData.modelId,
       },
     });
 
@@ -431,46 +489,55 @@ export const addPreferredModel = async (modelId: string, provider: string) => {
     const preferredModel = await prisma.preferredModel.create({
       data: {
         userId,
-        model: modelId,
-        provider,
+        model: validatedData.modelId,
+        provider: validatedData.provider,
       },
     });
 
     return preferredModel;
   } catch (error) {
     console.error("Error adding preferred model:", error);
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
     return { error: "Failed to add preferred model" };
   }
 };
 
 export const removePreferredModel = async (modelId: string) => {
-  const { userId } = await checkUser();
-  if (!userId) {
-    return { error: "Unauthorized" };
-  }
-
   try {
+    // Validate and sanitize input data
+    const validatedData = RemovePreferredModelSchema.parse({ modelId });
+
+    const { userId } = await checkUser();
+    if (!userId) {
+      return { error: "Unauthorized" };
+    }
+
     const preferredModel = await prisma.preferredModel.deleteMany({
       where: {
         userId,
-        model: modelId,
+        model: validatedData.modelId,
       },
     });
 
     return preferredModel;
   } catch (error) {
     console.error("Error removing preferred model:", error);
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
     return { error: "Failed to remove preferred model" };
   }
 };
 
 export const getUserPreferredModels = async () => {
-  const { userId } = await checkUser();
-  if (!userId) {
-    return { error: "Unauthorized" };
-  }
-
   try {
+    const { userId } = await checkUser();
+    if (!userId) {
+      return { error: "Unauthorized" };
+    }
+
     const preferredModels = await prisma.preferredModel.findMany({
       where: { userId },
       select: {
@@ -488,6 +555,9 @@ export const getUserPreferredModels = async () => {
     return preferredModels;
   } catch (error) {
     console.error("Error fetching preferred models:", error);
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
     return { error: "Failed to fetch preferred models" };
   }
 };
