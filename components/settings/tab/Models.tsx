@@ -26,7 +26,7 @@ export default function Models() {
     refreshPreferredModels,
     preferredModels,
     setPreferredModels,
-    activeProviders,  
+    activeProviders,
   } = useContext(ChatContext);
   const [displayedCount, setDisplayedCount] = useState(50);
   const [loading, setLoading] = useState(false);
@@ -137,6 +137,7 @@ export default function Models() {
           <div className="space-y-4">
             {displayedModels.map((model) => {
               const capabilities = getCapabilities(
+                model.provider,
                 model.name,
                 model.description
               );
@@ -207,8 +208,8 @@ export default function Models() {
                             imageCapableModels.includes(
                               model.modelId.toLowerCase()
                             ) && (
-                              <div>
-                                <div className="flex items-center gap-1 rounded-full bg-yellow-500/10 px-2 py-1 text-xs text-yellow-600 dark:text-yellow-400">
+                              <div className=" flex-row flex gap-1">
+                                <div className="flex items-center gap-1 rounded-full bg-orange-500/10 px-2 py-1 text-xs text-orange-600 dark:text-orange-400">
                                   <ImageIcon className="h-3 w-3" />
                                   Image Generation
                                 </div>

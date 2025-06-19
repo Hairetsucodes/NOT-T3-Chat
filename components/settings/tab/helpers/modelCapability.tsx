@@ -1,20 +1,13 @@
-import { Brain, Eye, FileText, Globe, Zap } from "lucide-react";
+import { Brain, FileText, Globe, Zap } from "lucide-react";
 // Capability mapping
 export const getCapabilities = (
+  provider: string,
   modelName: string,
   description: string | null | undefined
 ) => {
   const capabilities = [];
   const desc = description?.toLowerCase() || "";
   const name = modelName.toLowerCase();
-
-  if (
-    desc.includes("vision") ||
-    desc.includes("image") ||
-    desc.includes("multimodal")
-  ) {
-    capabilities.push({ icon: Eye, label: "Vision" });
-  }
 
   if (
     desc.includes("reasoning") ||
@@ -24,7 +17,15 @@ export const getCapabilities = (
     capabilities.push({ icon: Brain, label: "Reasoning" });
   }
 
+  // Google Gemini and OpenAI GPT 4.1 specific grounding capability
   if (
+    (provider.toLowerCase() === "google" && 
+     (name.includes("gemini 2.5") || 
+      (name.includes("gemini 2.0 flash") && !name.includes("lite") && !name.includes("image")))) ||
+    (provider.toLowerCase() === "openai" && name.includes("gpt 4.1") && !name.includes("nano"))
+  ) {
+    capabilities.push({ icon: Globe, label: "WebSearch / Grounding" });
+  } else if (
     desc.includes("search") ||
     desc.includes("web") ||
     desc.includes("browse")

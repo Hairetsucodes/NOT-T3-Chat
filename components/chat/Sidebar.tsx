@@ -1,14 +1,21 @@
 "use client";
 
 import { useContext, useEffect, useState } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { Conversation } from "@prisma/client";
 import { ChatContext } from "@/context/ChatContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import SettingsModal from "@/components/settings/SettingsModal";
 import { useRouter } from "next/navigation";
 import RenderList from "./conversations/RenderList";
-import DialogFooter from "./conversations/Footer";
 
 type ConversationWithLoading = Conversation & {
   isLoading?: boolean;
@@ -31,7 +38,7 @@ export function Sidebar({
 }: SidebarProps) {
   const [searchValue, setSearchValue] = useState("");
   const router = useRouter();
-  const { conversations, setConversationId, setMessages } =
+  const { conversations, activeUser, setConversationId, setMessages } =
     useContext(ChatContext);
   const [searchResults, setSearchResults] =
     useState<ConversationWithLoading[]>(conversations);
@@ -116,13 +123,51 @@ export function Sidebar({
               onClose={onClose || (() => {})}
             />
 
-            {/* User Settings Footer */}
-            <DialogFooter
-              filteredPinnedConversations={filteredPinnedConversations}
-              filteredUnpinnedConversations={filteredUnpinnedConversations}
-              isMobile={isMobile}
-              onClose={onClose || (() => {})}
-            />
+            {/* Footer */}
+            <div className="flex flex-col gap-2 m-0 p-2 pt-0 justify-end flex-shrink-0">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button
+                    aria-label="Go to settings"
+                    className="flex select-none flex-row items-center justify-between gap-3 rounded-lg px-3 py-3 hover:bg-sidebar-accent focus:bg-sidebar-accent focus:outline-2 w-full text-left"
+                  >
+                    <div className="flex w-full min-w-0 flex-row items-center gap-3">
+                      {activeUser?.image ? (
+                        <Image
+                          alt={activeUser.name || "User"}
+                          loading="lazy"
+                          width={32}
+                          height={32}
+                          className="h-8 w-8 rounded-full ring-1 ring-muted-foreground/20"
+                          src={activeUser.image}
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center ring-1 ring-muted-foreground/20">
+                          <span className="text-sm font-medium">
+                            {activeUser?.username?.[0] ||
+                              activeUser?.name?.[0] ||
+                              "U"}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex min-w-0 flex-col text-foreground">
+                        <span className="truncate text-sm font-medium">
+                          {activeUser?.username || activeUser?.name || "User"}
+                        </span>
+                        <span className="text-xs">OSS FREE FOR EVER</span>
+                      </div>
+                    </div>
+                  </button>
+                </DialogTrigger>
+                <DialogContent
+                  aria-describedby={undefined}
+                  className="h-[90vh] w-[90vw] max-w-[90vw] max-sm:h-[90vh] max-sm:w-[90vw]"
+                >
+                  <DialogTitle className="sr-only">Settings</DialogTitle>
+                  <SettingsModal />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
       </div>

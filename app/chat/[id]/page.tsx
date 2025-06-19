@@ -1,7 +1,6 @@
 import { Chat } from "@/components/chat/Chat";
 import { ChatServerProvider } from "@/context/ChatServerProvider";
-import { redirect, notFound } from "next/navigation";
-import { auth } from "@/auth";
+import { notFound } from "next/navigation";
 
 export default async function Page(props: {
   params: Promise<{ id: string }>;
@@ -11,11 +10,6 @@ export default async function Page(props: {
 
   if (!id || id.length < 10) {
     notFound();
-  }
-
-  const session = await auth();
-  if (!session?.user?.id) {
-    redirect("/");
   }
 
   return (

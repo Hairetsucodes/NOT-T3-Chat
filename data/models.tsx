@@ -147,7 +147,7 @@ export async function getAvailableModels(): Promise<UnifiedModel[]> {
     direct: true,
   }));
 
-  // Combine all models, filter out embedding models, and sort by provider then name
+  // Combine all models, filter out embedding, TTS, and image models, and sort by provider then name
   const allModels = [
     ...normalizedOpenRouter,
     ...normalizedAnthropic,
@@ -156,7 +156,12 @@ export async function getAvailableModels(): Promise<UnifiedModel[]> {
     ...normalizedDeepSeek,
     ...normalizedXai,
   ]
-    .filter((model) => !model.name.toLowerCase().includes("embed"))
+    .filter((model) => {
+      const name = model.name.toLowerCase();
+      return !name.includes("embed") && 
+             !name.includes("tts") && 
+             !name.includes("image");
+    })
     .sort((a, b) => {
       if (a.provider !== b.provider) {
         return a.provider.localeCompare(b.provider);
