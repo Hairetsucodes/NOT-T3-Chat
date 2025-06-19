@@ -37,18 +37,3 @@ export async function transformDatabaseMessages(
       reasoning_content: msg.reasoningContent || undefined,
     }));
 }
-
-// Validate message data integrity
-export async function validateMessageData(
-  dbMessages: DatabaseMessage[],
-  transformedMessages: Message[]
-): Promise<void> {
-  if (dbMessages.length > 0 && transformedMessages.length === 0) {
-    console.warn("All messages filtered out - possible data integrity issue");
-  }
-
-  const filteredCount = dbMessages.length - transformedMessages.length;
-  if (filteredCount > 0) {
-    console.warn(`${filteredCount} messages filtered out due to invalid roles`);
-  }
-}

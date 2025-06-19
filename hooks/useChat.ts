@@ -291,7 +291,6 @@ export const useChat = ({
     [conversations, updateConversation]
   );
 
-  // Use a ref to track if we've already processed needsClientSideLoading
   const hasProcessedClientSideLoadingRef = useRef(false);
   
   useEffect(() => {

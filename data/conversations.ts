@@ -1,4 +1,5 @@
 "use server";
+import { checkUser } from "@/lib/auth/check";
 import { prisma } from "@/prisma";
 import { Conversation } from "@prisma/client";
 
@@ -34,6 +35,10 @@ export const updateIsPublic = async (
   id: string,
   isPublic: boolean
 ): Promise<Conversation | { error: string }> => {
+  const { userId } = await checkUser();
+  if (!userId) {
+    return { error: "Unauthorized" };
+  }
   try {
     const updatedConversation = await prisma.conversation.update({
       where: { id },
