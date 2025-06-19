@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { ModeToggle } from "@/components/settings/theme/Toggle";
-import Footer from "@/components/Footer";
+import Footer from "@/components/authorization/Footer";
 import { SocialLogin } from "@/components/authorization/Social";
 
 export default function Home() {

@@ -29,7 +29,10 @@ export const createAPIKey = async (key: string, provider: string) => {
     // Validate inputs
     const validatedKey = apiKeySchema.parse(key);
     const validatedProvider = providerSchema.parse(provider);
-    
+    const { userId } = await checkUser();
+    if (!userId) {
+      throw new Error("Unauthorized");
+    }
     // Encrypt the API key before storing
     const encryptedKey = await encrypt(validatedKey);
     
@@ -51,10 +54,7 @@ export const createAPIKey = async (key: string, provider: string) => {
     if (validatedProvider.toLowerCase() === "xai") {
       await populateXaiModels(validatedKey);
     }
-    const { userId } = await checkUser();
-    if (!userId) {
-      throw new Error("Unauthorized");
-    }
+   
 
     const existingKey = await prisma.apiKey.findFirst({
       where: {
