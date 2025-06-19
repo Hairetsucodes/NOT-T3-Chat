@@ -118,7 +118,7 @@ export function Sidebar({ isOpen = false, onClose, isMobile = false }: SidebarPr
               </div>
             </div>
 
-            {/* Content - Scrollable Area */}
+            {/* Content - Scrollable Area */} 
             <div className="flex-1 overflow-hidden">
               <ScrollArea className="rounded-md h-[calc(98vh-14rem)]">
                 <div className="relative flex w-full min-w-0 flex-col p-2">

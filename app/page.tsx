@@ -15,6 +15,7 @@ export default function Home() {
   if (session) {
     redirect("/chat");
   }
+  
   return (
     <div className="min-h-screen bg-sidebar flex flex-col">
       {/* Theme toggle positioned at top right */}
