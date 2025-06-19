@@ -106,7 +106,6 @@ export const useChat = ({
     []
   );
 
-  // Destructure needed properties to avoid dependency issues
   const {
     conversations,
     updateConversation,

@@ -162,7 +162,6 @@ export function MessageActions({
       setConversationId(newConversation.id, { skipMessageLoading: true });
       setConversationTitle(newConversation.title);
 
-      router.push(`/chat/${newConversation.id}`, { scroll: true });
 
       // Create and send the retry message directly
       const retryMessageObj: Message = {
@@ -178,6 +177,7 @@ export function MessageActions({
         provider: newProvider,
         retry: true,
       });
+      router.push(`/chat/${newConversation.id}`, { scroll: true });
 
       toast.success("Message retried successfully!");
     } catch (error) {
