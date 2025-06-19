@@ -195,35 +195,6 @@ export function ApiKeysTab() {
     }
   };
 
-  // Show loading if session is loading
-  if (status === "loading") {
-    return (
-      <Card className="relative z-10 h-full flex flex-col bg-gradient-chat-overlay border-chat-border/50 backdrop-blur-sm">
-        <CardContent className="flex-1 flex items-center justify-center">
-          <div className="flex items-center gap-3">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span className="text-foreground/80 font-medium">
-              Loading API keys...
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Show error if no session
-  if (!activeUser) {
-    return (
-      <Card className="h-full flex flex-col">
-        <CardContent className="flex items-center justify-center h-64">
-          <p className="text-muted-foreground">
-            Please sign in to manage your API keys
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card className="h-full flex flex-col bg-chat-background">
       <CardHeader className="flex-shrink-0 pb-2">

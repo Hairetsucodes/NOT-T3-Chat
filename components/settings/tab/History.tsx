@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { useState, useEffect, useContext } from "react";
 import { toast } from "sonner";
-import { Loader2, Download, Upload, Trash2, BarChart3 } from "lucide-react";
+import { Loader2, Download, Upload, Trash2 } from "lucide-react";
 import { ChatContext } from "@/context/ChatContext";
 import {
   getUserChatHistory,
@@ -30,7 +30,6 @@ import {
 } from "@/data/history";
 import { HistoryStats, UserChatHistory } from "@/types/history";
 
-// Background component to match other tabs
 const HistoryBackground = ({ children }: { children: React.ReactNode }) => (
   <div className="relative h-full flex flex-col">{children}</div>
 );
@@ -273,26 +272,6 @@ export function HistoryTab() {
       setIsLoading(false);
     }
   };
-
-  // No user state
-  if (!activeUser) {
-    return (
-      <HistoryBackground>
-        <Card className="relative z-10 h-full flex flex-col bg-gradient-chat-overlay border-chat-border/50 backdrop-blur-sm">
-          <CardContent className="flex-1 flex items-center justify-center">
-            <div className="text-center space-y-3">
-              <div className="w-16 h-16 mx-auto rounded-full bg-muted/50 flex items-center justify-center">
-                <BarChart3 className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground">
-                Please sign in to manage your chat history settings
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </HistoryBackground>
-    );
-  }
 
   return (
     <HistoryBackground>
