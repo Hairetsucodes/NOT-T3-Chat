@@ -291,11 +291,10 @@ export const useChat = ({
     [conversations, updateConversation]
   );
 
-  const hasProcessedClientSideLoadingRef = useRef(false);
+ 
   
   useEffect(() => {
-    if (needsClientSideLoading && !conversationId && !hasProcessedClientSideLoadingRef.current) {
-      hasProcessedClientSideLoadingRef.current = true;
+    if (needsClientSideLoading && !conversationId ) {
       setConversationId(needsClientSideLoading);
     }
   }, [needsClientSideLoading, conversationId]);
