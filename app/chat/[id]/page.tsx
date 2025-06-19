@@ -1,5 +1,6 @@
 import { Chat } from "@/components/chat/Chat";
 import { ChatServerProvider } from "@/context/ChatServerProvider";
+import { getMessagesByConversationId } from "@/data/messages";
 import { notFound } from "next/navigation";
 
 export default async function Page(props: {
@@ -12,8 +13,10 @@ export default async function Page(props: {
     notFound();
   }
 
+  const messages = await getMessagesByConversationId(id);
+
   return (
-    <ChatServerProvider conversationId={id}>
+    <ChatServerProvider conversationId={id} messages={messages || []}>
       <Chat welcomeMessage={false} />
     </ChatServerProvider>
   );

@@ -20,6 +20,14 @@ interface ChatServerProviderProps {
    */
   conversationId?: string;
   /**
+   * Optional pre-fetched messages for the conversation.
+   *
+   * - When provided: Uses these messages instead of fetching them internally
+   * - When not provided: Fetches messages internally using conversationId
+   * - This is useful for server-side pages that want to pre-fetch messages for better performance
+   */
+  messages?: Awaited<ReturnType<typeof getMessagesByConversationId>>;
+  /**
    * Controls whether to load all initial data or just authenticate.
    *
    * - `true` (default): Loads all chat data (conversations, models, settings, etc.)
@@ -33,6 +41,11 @@ interface ChatServerProviderProps {
    * ```tsx
    * // Full chat functionality with specific conversation (default)
    * <ChatServerProvider conversationId="conv123">
+   *   <ChatInterface />
+   * </ChatServerProvider>
+   *
+   * // With pre-fetched messages for better performance
+   * <ChatServerProvider conversationId="conv123" messages={prefetchedMessages}>
    *   <ChatInterface />
    * </ChatServerProvider>
    *
@@ -67,6 +80,7 @@ interface ChatServerProviderProps {
 export async function ChatServerProvider({
   children,
   conversationId,
+  messages,
   loadInitialData = true,
 }: ChatServerProviderProps) {
   // Always authenticate first - this is required for all chat functionality
@@ -115,7 +129,8 @@ export async function ChatServerProvider({
 
   if (conversationId) {
     try {
-      const dbMessages = await getMessagesByConversationId(conversationId);
+      // Use pre-fetched messages if provided, otherwise fetch them
+      const dbMessages = messages ?? await getMessagesByConversationId(conversationId);
 
       // Check if this conversation is currently generating
       const conversation = conversations.find(

@@ -22,7 +22,7 @@ export async function GET(
 
     // Load messages from database
     const messages = await getMessagesByConversationId(id);
-    
+    console.log(messages);
     return NextResponse.json(messages);
   } catch (error) {
     console.error("Error loading messages:", error);
