@@ -71,13 +71,20 @@ export function ApiKeysTab() {
 
     setIsLoading(true);
 
-    // Optimistically update UI immediately
-    const newProvider = { id: apiKey.trim(), provider: finalProvider };
     const originalProviders = [...activeProviders];
-    setActiveProviders([...activeProviders, newProvider]);
 
     try {
-      await createAPIKey(apiKey.trim(), finalProvider);
+      const result = await createAPIKey(apiKey.trim(), finalProvider);
+      
+      // Handle both return types: string (ID) or object (full API key)
+      const keyId = typeof result === 'string' ? result : result.id;
+      const keyData = typeof result === 'string' ? 
+        { id: keyId, provider: finalProvider } : 
+        { id: result.id, provider: result.provider };
+
+      // Update providers with the correct API key data
+      setActiveProviders([...activeProviders, keyData]);
+
       const models = await getAvailableModels();
       setAvailableModels(models);
 

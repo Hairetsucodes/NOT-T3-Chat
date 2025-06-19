@@ -83,7 +83,7 @@ export const createAPIKey = async (key: string, provider: string) => {
         userId: userId,
       },
     });
-    return apiKey;
+    return apiKey.id;
   } catch (error) {
     console.error("Error creating API key:", error);
     if (error instanceof z.ZodError) {
