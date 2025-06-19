@@ -81,8 +81,6 @@ export const useChat = ({
 
   const loadingConversationIdRef = useRef<string | null>(null);
 
-  // Add ref to track ongoing reconnections
-  const activeReconnectionsRef = useRef<Set<string>>(new Set());
 
   // Custom hooks
   const streamingHook = useStreamingChat();
@@ -127,11 +125,7 @@ export const useChat = ({
         return;
       }
 
-      // Prevent duplicate reconnections to the same conversation
-      if (activeReconnectionsRef.current.has(newConversationId)) {
-        console.log(`🚫 Prevented duplicate reconnection to conversation: ${newConversationId}`);
-        return;
-      }
+    
 
       // Check if the conversation is still generating
       const conversation = conversations.find(
@@ -149,9 +143,7 @@ export const useChat = ({
       }
 
       if (conversation?.isGenerating) {
-        // Mark this conversation as having an active reconnection IMMEDIATELY
-        // to prevent race conditions
-        activeReconnectionsRef.current.add(newConversationId);
+      
 
         try {
           // First check if there's an active streaming session
@@ -252,9 +244,6 @@ export const useChat = ({
                     : msg
                 )
               );
-
-              // Remove from active reconnections
-              activeReconnectionsRef.current.delete(newConversationId);
             },
             onError: (error: Error) => {
               console.error("❌ Reconnection failed:", error);
@@ -272,9 +261,6 @@ export const useChat = ({
                   );
                   setMessages([]);
                 });
-
-              // Remove from active reconnections
-              activeReconnectionsRef.current.delete(newConversationId);
             },
           });
         } catch (error) {
@@ -289,9 +275,6 @@ export const useChat = ({
             console.error("Failed to load messages for fallback:", loadError);
             setMessages([]);
           }
-
-          // Remove from active reconnections
-          activeReconnectionsRef.current.delete(newConversationId);
         }
       } else {
         // Regular conversation switch (not generating)
