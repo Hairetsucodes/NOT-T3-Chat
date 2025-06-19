@@ -470,7 +470,6 @@ pnpm db:migrate
 - **Database**: Prisma ORM with SQLite (dev) / MSSQL (prod)
 - **Authentication**: NextAuth.js
 - **Styling**: Tailwind CSS + Radix UI
-- **AI Integration**: Multiple providers via AI SDK
 - **Type Safety**: TypeScript
 - **Package Manager**: pnpm
 
