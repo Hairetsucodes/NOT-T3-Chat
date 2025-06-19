@@ -17,12 +17,14 @@ export async function GET(
 
     // Validate conversation ID
     if (!id || id.length < 10) {
-      return NextResponse.json({ error: "Invalid conversation ID" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid conversation ID" },
+        { status: 400 }
+      );
     }
 
     // Load messages from database
     const messages = await getMessagesByConversationId(id);
-    console.log(messages);
     return NextResponse.json(messages);
   } catch (error) {
     console.error("Error loading messages:", error);
@@ -33,7 +35,10 @@ export async function GET(
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
       if (error.message === "Conversation not found") {
-        return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+        return NextResponse.json(
+          { error: "Conversation not found" },
+          { status: 404 }
+        );
       }
     }
 
@@ -42,4 +47,4 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}

@@ -1,19 +1,81 @@
 "use server";
 import { prisma } from "@/prisma";
 import { PreferredModel } from "@prisma/client";
+import { JsonValue } from "@prisma/client/runtime/library";
 import { checkUser } from "@/lib/auth/check";
 import { UnifiedModel } from "@/types/models";
-import { 
-  GetModelsByProviderSchema, 
-  GetModelByIdSchema, 
-  SearchModelsSchema, 
-  AddPreferredModelSchema, 
-  RemovePreferredModelSchema 
+import {
+  GetModelsByProviderSchema,
+  GetModelByIdSchema,
+  SearchModelsSchema,
+  AddPreferredModelSchema,
+  RemovePreferredModelSchema,
 } from "@/schemas/models";
+
+// Simple in-memory cache for models (models don't change frequently)
+let modelsCache: { data: UnifiedModel[]; timestamp: number } | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Union type for all provider model types using Prisma generated types
+type ProviderModel = {
+  id: string;
+  modelId: string;
+  name: string;
+  description?: string | null;
+  contextLength?: number | null;
+  pricing?: JsonValue | null;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  modelFamily?: string;
+  maxOutput?: number | null;
+  capabilities?: JsonValue | null;
+  provider?: string; // Only for OpenRouter models
+};
+
+// Helper function to normalize any model to UnifiedModel format
+async function normalizeModel(
+  model: ProviderModel,
+  provider: string,
+  direct: boolean = true
+): Promise<UnifiedModel> {
+  return {
+    id: model.id,
+    modelId: model.modelId,
+    name: model.name,
+    provider: provider,
+    description: model.description,
+    contextLength: model.contextLength,
+    pricing: model.pricing,
+    isActive: model.isActive,
+    createdAt: model.createdAt,
+    updatedAt: model.updatedAt,
+    ...(model.modelFamily && { modelFamily: model.modelFamily }),
+    ...(model.maxOutput && { maxOutput: model.maxOutput }),
+    ...(model.capabilities && { capabilities: model.capabilities }),
+    direct,
+  };
+}
 
 export async function getAvailableModels(): Promise<UnifiedModel[]> {
   try {
-    // Fetch models from all provider tables in parallel
+    // Check cache first
+    if (modelsCache && Date.now() - modelsCache.timestamp < CACHE_DURATION) {
+      return modelsCache.data;
+    }
+
+    // Define exclusion filters for unwanted model types
+    const exclusionFilters = {
+      NOT: {
+        OR: [
+          { name: { contains: "embed" } },
+          { name: { contains: "tts" } },
+          { name: { contains: "image" } },
+        ],
+      },
+    };
+
+    // Fetch models from all provider tables in parallel with database-level filtering
     const [
       openRouterModels,
       anthropicModels,
@@ -22,166 +84,88 @@ export async function getAvailableModels(): Promise<UnifiedModel[]> {
       deepseekModels,
       xaiModels,
     ] = await Promise.all([
-    prisma.openRouterModel.findMany({
-      where: { isActive: true },
-      orderBy: [{ provider: "asc" }, { name: "asc" }],
-    }),
-    prisma.anthropicModel.findMany({
-      where: { isActive: true },
-      orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
-    }),
-    prisma.openaiModel.findMany({
-      where: { isActive: true },
-      orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
-    }),
-    prisma.googleModel.findMany({
-      where: { isActive: true },
-      orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
-    }),
-    prisma.deepSeekModel.findMany({
-      where: { isActive: true },
-      orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
-    }),
-    prisma.xaiModel.findMany({
-      where: { isActive: true },
-      orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
-    }),
-  ]);
+      prisma.openRouterModel.findMany({
+        where: {
+          isActive: true,
+          ...exclusionFilters,
+        },
+        orderBy: [{ provider: "asc" }, { name: "asc" }],
+      }),
+      prisma.anthropicModel.findMany({
+        where: {
+          isActive: true,
+          ...exclusionFilters,
+        },
+        orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
+      }),
+      prisma.openaiModel.findMany({
+        where: {
+          isActive: true,
+          ...exclusionFilters,
+        },
+        orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
+      }),
+      prisma.googleModel.findMany({
+        where: {
+          isActive: true,
+          ...exclusionFilters,
+        },
+        orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
+      }),
+      prisma.deepSeekModel.findMany({
+        where: {
+          isActive: true,
+          ...exclusionFilters,
+        },
+        orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
+      }),
+      prisma.xaiModel.findMany({
+        where: {
+          isActive: true,
+          ...exclusionFilters,
+        },
+        orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
+      }),
+    ]);
 
-  // Normalize OpenRouter models
-  const normalizedOpenRouter: UnifiedModel[] = openRouterModels.map(
-    (model) => ({
-      id: model.id,
-      modelId: model.modelId,
-      name: model.name,
-      provider: "openrouter",
-      description: model.description,
-      contextLength: model.contextLength,
-      pricing: model.pricing,
-      isActive: model.isActive,
-      createdAt: model.createdAt,
-      updatedAt: model.updatedAt,
-      direct: false,
-    })
-  );
+    // Efficiently normalize and combine all models using the helper function
+    const allModels: UnifiedModel[] = await Promise.all([
+      ...openRouterModels.map((model) =>
+        normalizeModel(model, "openrouter", false)
+      ),
+      ...anthropicModels.map((model) =>
+        normalizeModel(model, "anthropic", true)
+      ),
+      ...openaiModels.map((model) => normalizeModel(model, "openai", true)),
+      ...googleModels.map((model) => normalizeModel(model, "google", true)),
+      ...deepseekModels.map((model) => normalizeModel(model, "deepseek", true)),
+      ...xaiModels.map((model) => normalizeModel(model, "xai", true)),
+    ]);
 
-  // Normalize Anthropic models
-  const normalizedAnthropic: UnifiedModel[] = anthropicModels.map((model) => ({
-    id: model.id,
-    modelId: model.modelId,
-    name: model.name,
-    provider: "anthropic",
-    description: model.description,
-    contextLength: model.contextLength,
-    pricing: model.pricing,
-    isActive: model.isActive,
-    createdAt: model.createdAt,
-    updatedAt: model.updatedAt,
-    modelFamily: model.modelFamily,
-    maxOutput: model.maxOutput,
-    capabilities: model.capabilities,
-    direct: true,
-  }));
-
-  // Normalize OpenAI models
-  const normalizedOpenAI: UnifiedModel[] = openaiModels.map((model) => ({
-    id: model.id,
-    modelId: model.modelId,
-    name: model.name,
-    provider: "openai",
-    description: model.description,
-    contextLength: model.contextLength,
-    pricing: model.pricing,
-    isActive: model.isActive,
-    createdAt: model.createdAt,
-    updatedAt: model.updatedAt,
-    modelFamily: model.modelFamily,
-    maxOutput: model.maxOutput,
-    capabilities: model.capabilities,
-    direct: true,
-  }));
-
-  // Normalize Google models
-  const normalizedGoogle: UnifiedModel[] = googleModels.map((model) => ({
-    id: model.id,
-    modelId: model.modelId,
-    name: model.name,
-    provider: "google",
-    description: model.description,
-    contextLength: model.contextLength,
-    pricing: model.pricing,
-    isActive: model.isActive,
-    createdAt: model.createdAt,
-    updatedAt: model.updatedAt,
-    modelFamily: model.modelFamily,
-    maxOutput: model.maxOutput,
-    capabilities: model.capabilities,
-    direct: true,
-  }));
-
-  // Normalize DeepSeek models
-  const normalizedDeepSeek: UnifiedModel[] = deepseekModels.map((model) => ({
-    id: model.id,
-    modelId: model.modelId,
-    name: model.name,
-    provider: "deepseek",
-    description: model.description,
-    contextLength: model.contextLength,
-    pricing: model.pricing,
-    isActive: model.isActive,
-    createdAt: model.createdAt,
-    updatedAt: model.updatedAt,
-    modelFamily: model.modelFamily,
-    maxOutput: model.maxOutput,
-    capabilities: model.capabilities,
-    direct: true,
-  }));
-
-  // Normalize xAI models
-  const normalizedXai: UnifiedModel[] = xaiModels.map((model) => ({
-    id: model.id,
-    modelId: model.modelId,
-    name: model.name,
-    provider: "xai",
-    description: model.description,
-    contextLength: model.contextLength,
-    pricing: model.pricing,
-    isActive: model.isActive,
-    createdAt: model.createdAt,
-    updatedAt: model.updatedAt,
-    modelFamily: model.modelFamily,
-    maxOutput: model.maxOutput,
-    capabilities: model.capabilities,
-    direct: true,
-  }));
-
-  // Combine all models, filter out embedding, TTS, and image models, and sort by provider then name
-  const allModels = [
-    ...normalizedOpenRouter,
-    ...normalizedAnthropic,
-    ...normalizedOpenAI,
-    ...normalizedGoogle,
-    ...normalizedDeepSeek,
-    ...normalizedXai,
-  ]
-    .filter((model) => {
-      const name = model.name.toLowerCase();
-      return !name.includes("embed") && 
-             !name.includes("tts") && 
-             !name.includes("image");
-    })
-    .sort((a, b) => {
+    // Final sort by provider then name (most data should already be sorted from DB)
+    allModels.sort((a, b) => {
       if (a.provider !== b.provider) {
         return a.provider.localeCompare(b.provider);
       }
       return a.name.localeCompare(b.name);
     });
 
+    // Cache the results
+    modelsCache = {
+      data: allModels,
+      timestamp: Date.now(),
+    };
+
     return allModels;
   } catch (error) {
     console.error("Error getting available models:", error);
     return [];
   }
+}
+
+// Helper function to clear models cache (useful for testing or when models are updated)
+export async function clearModelsCache() {
+  modelsCache = null;
 }
 
 export async function getPreferredModels(): Promise<PreferredModel[]> {
@@ -207,8 +191,109 @@ export async function getModelsByProvider(
     // Validate and sanitize input data
     const validatedData = GetModelsByProviderSchema.parse({ provider });
 
-    const allModels = await getAvailableModels();
-    return allModels.filter((model) => model.provider === validatedData.provider);
+    // Define exclusion filters for unwanted model types
+    const exclusionFilters = {
+      NOT: {
+        OR: [
+          { name: { contains: "embed" } },
+          { name: { contains: "tts" } },
+          { name: { contains: "image" } },
+        ],
+      },
+    };
+
+    let models: UnifiedModel[] = [];
+
+    // Query the specific provider's table directly
+    switch (validatedData.provider) {
+      case "openrouter":
+        const openRouterModels = await prisma.openRouterModel.findMany({
+          where: {
+            isActive: true,
+            ...exclusionFilters,
+          },
+          orderBy: [{ provider: "asc" }, { name: "asc" }],
+        });
+        models = await Promise.all(
+          openRouterModels.map((model) =>
+            normalizeModel(model, "openrouter", false)
+          )
+        );
+        break;
+
+      case "anthropic":
+        const anthropicModels = await prisma.anthropicModel.findMany({
+          where: {
+            isActive: true,
+            ...exclusionFilters,
+          },
+          orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
+        });
+        models = await Promise.all(
+          anthropicModels.map((model) =>
+            normalizeModel(model, "anthropic", true)
+          )
+        );
+        break;
+
+      case "openai":
+        const openaiModels = await prisma.openaiModel.findMany({
+          where: {
+            isActive: true,
+            ...exclusionFilters,
+          },
+          orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
+        });
+        models = await Promise.all(
+          openaiModels.map((model) => normalizeModel(model, "openai", true))
+        );
+        break;
+
+      case "google":
+        const googleModels = await prisma.googleModel.findMany({
+          where: {
+            isActive: true,
+            ...exclusionFilters,
+          },
+          orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
+        });
+        models = await Promise.all(
+          googleModels.map((model) => normalizeModel(model, "google", true))
+        );
+        break;
+
+      case "deepseek":
+        const deepseekModels = await prisma.deepSeekModel.findMany({
+          where: {
+            isActive: true,
+            ...exclusionFilters,
+          },
+          orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
+        });
+        models = await Promise.all(
+          deepseekModels.map((model) => normalizeModel(model, "deepseek", true))
+        );
+        break;
+
+      case "xai":
+        const xaiModels = await prisma.xaiModel.findMany({
+          where: {
+            isActive: true,
+            ...exclusionFilters,
+          },
+          orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
+        });
+        models = await Promise.all(
+          xaiModels.map((model) => normalizeModel(model, "xai", true))
+        );
+        break;
+
+      default:
+        // For unknown providers, return empty array
+        return [];
+    }
+
+    return models;
   } catch (error) {
     console.error("Error getting models by provider:", error);
     if (error instanceof Error) {
@@ -234,125 +319,135 @@ export async function getModelById(
       deepseekModel,
       xaiModel,
     ] = await Promise.all([
-      prisma.openRouterModel.findUnique({ where: { modelId: validatedData.modelId } }),
-      prisma.anthropicModel.findUnique({ where: { modelId: validatedData.modelId } }),
-      prisma.openaiModel.findUnique({ where: { modelId: validatedData.modelId } }),
-      prisma.googleModel.findUnique({ where: { modelId: validatedData.modelId } }),
-      prisma.deepSeekModel.findUnique({ where: { modelId: validatedData.modelId } }),
+      prisma.openRouterModel.findUnique({
+        where: { modelId: validatedData.modelId },
+      }),
+      prisma.anthropicModel.findUnique({
+        where: { modelId: validatedData.modelId },
+      }),
+      prisma.openaiModel.findUnique({
+        where: { modelId: validatedData.modelId },
+      }),
+      prisma.googleModel.findUnique({
+        where: { modelId: validatedData.modelId },
+      }),
+      prisma.deepSeekModel.findUnique({
+        where: { modelId: validatedData.modelId },
+      }),
       prisma.xaiModel.findUnique({ where: { modelId: validatedData.modelId } }),
     ]);
 
-  // Return the first found model, normalized
-  if (openRouterModel) {
-    return {
-      id: openRouterModel.id,
-      modelId: openRouterModel.modelId,
-      name: openRouterModel.name,
-      provider: openRouterModel.provider,
-      description: openRouterModel.description,
-      contextLength: openRouterModel.contextLength,
-      pricing: openRouterModel.pricing,
-      isActive: openRouterModel.isActive,
-      createdAt: openRouterModel.createdAt,
-      updatedAt: openRouterModel.updatedAt,
-      direct: false,
-    };
-  }
+    // Return the first found model, normalized
+    if (openRouterModel) {
+      return {
+        id: openRouterModel.id,
+        modelId: openRouterModel.modelId,
+        name: openRouterModel.name,
+        provider: openRouterModel.provider,
+        description: openRouterModel.description,
+        contextLength: openRouterModel.contextLength,
+        pricing: openRouterModel.pricing,
+        isActive: openRouterModel.isActive,
+        createdAt: openRouterModel.createdAt,
+        updatedAt: openRouterModel.updatedAt,
+        direct: false,
+      };
+    }
 
-  if (anthropicModel) {
-    return {
-      id: anthropicModel.id,
-      modelId: anthropicModel.modelId,
-      name: anthropicModel.name,
-      provider: "anthropic",
-      description: anthropicModel.description,
-      contextLength: anthropicModel.contextLength,
-      pricing: anthropicModel.pricing,
-      isActive: anthropicModel.isActive,
-      createdAt: anthropicModel.createdAt,
-      updatedAt: anthropicModel.updatedAt,
-      modelFamily: anthropicModel.modelFamily,
-      maxOutput: anthropicModel.maxOutput,
-      capabilities: anthropicModel.capabilities,
-      direct: true,
-    };
-  }
+    if (anthropicModel) {
+      return {
+        id: anthropicModel.id,
+        modelId: anthropicModel.modelId,
+        name: anthropicModel.name,
+        provider: "anthropic",
+        description: anthropicModel.description,
+        contextLength: anthropicModel.contextLength,
+        pricing: anthropicModel.pricing,
+        isActive: anthropicModel.isActive,
+        createdAt: anthropicModel.createdAt,
+        updatedAt: anthropicModel.updatedAt,
+        modelFamily: anthropicModel.modelFamily,
+        maxOutput: anthropicModel.maxOutput,
+        capabilities: anthropicModel.capabilities,
+        direct: true,
+      };
+    }
 
-  if (openaiModel) {
-    return {
-      id: openaiModel.id,
-      modelId: openaiModel.modelId,
-      name: openaiModel.name,
-      provider: "openai",
-      description: openaiModel.description,
-      contextLength: openaiModel.contextLength,
-      pricing: openaiModel.pricing,
-      isActive: openaiModel.isActive,
-      createdAt: openaiModel.createdAt,
-      updatedAt: openaiModel.updatedAt,
-      modelFamily: openaiModel.modelFamily,
-      maxOutput: openaiModel.maxOutput,
-      capabilities: openaiModel.capabilities,
-      direct: true,
-    };
-  }
+    if (openaiModel) {
+      return {
+        id: openaiModel.id,
+        modelId: openaiModel.modelId,
+        name: openaiModel.name,
+        provider: "openai",
+        description: openaiModel.description,
+        contextLength: openaiModel.contextLength,
+        pricing: openaiModel.pricing,
+        isActive: openaiModel.isActive,
+        createdAt: openaiModel.createdAt,
+        updatedAt: openaiModel.updatedAt,
+        modelFamily: openaiModel.modelFamily,
+        maxOutput: openaiModel.maxOutput,
+        capabilities: openaiModel.capabilities,
+        direct: true,
+      };
+    }
 
-  if (googleModel) {
-    return {
-      id: googleModel.id,
-      modelId: googleModel.modelId,
-      name: googleModel.name,
-      provider: "google",
-      description: googleModel.description,
-      contextLength: googleModel.contextLength,
-      pricing: googleModel.pricing,
-      isActive: googleModel.isActive,
-      createdAt: googleModel.createdAt,
-      updatedAt: googleModel.updatedAt,
-      modelFamily: googleModel.modelFamily,
-      maxOutput: googleModel.maxOutput,
-      capabilities: googleModel.capabilities,
-      direct: true,
-    };
-  }
+    if (googleModel) {
+      return {
+        id: googleModel.id,
+        modelId: googleModel.modelId,
+        name: googleModel.name,
+        provider: "google",
+        description: googleModel.description,
+        contextLength: googleModel.contextLength,
+        pricing: googleModel.pricing,
+        isActive: googleModel.isActive,
+        createdAt: googleModel.createdAt,
+        updatedAt: googleModel.updatedAt,
+        modelFamily: googleModel.modelFamily,
+        maxOutput: googleModel.maxOutput,
+        capabilities: googleModel.capabilities,
+        direct: true,
+      };
+    }
 
-  if (deepseekModel) {
-    return {
-      id: deepseekModel.id,
-      modelId: deepseekModel.modelId,
-      name: deepseekModel.name,
-      provider: "deepseek",
-      description: deepseekModel.description,
-      contextLength: deepseekModel.contextLength,
-      pricing: deepseekModel.pricing,
-      isActive: deepseekModel.isActive,
-      createdAt: deepseekModel.createdAt,
-      updatedAt: deepseekModel.updatedAt,
-      modelFamily: deepseekModel.modelFamily,
-      maxOutput: deepseekModel.maxOutput,
-      capabilities: deepseekModel.capabilities,
-      direct: true,
-    };
-  }
+    if (deepseekModel) {
+      return {
+        id: deepseekModel.id,
+        modelId: deepseekModel.modelId,
+        name: deepseekModel.name,
+        provider: "deepseek",
+        description: deepseekModel.description,
+        contextLength: deepseekModel.contextLength,
+        pricing: deepseekModel.pricing,
+        isActive: deepseekModel.isActive,
+        createdAt: deepseekModel.createdAt,
+        updatedAt: deepseekModel.updatedAt,
+        modelFamily: deepseekModel.modelFamily,
+        maxOutput: deepseekModel.maxOutput,
+        capabilities: deepseekModel.capabilities,
+        direct: true,
+      };
+    }
 
-  if (xaiModel) {
-    return {
-      id: xaiModel.id,
-      modelId: xaiModel.modelId,
-      name: xaiModel.name,
-      provider: "xai",
-      description: xaiModel.description,
-      contextLength: xaiModel.contextLength,
-      pricing: xaiModel.pricing,
-      isActive: xaiModel.isActive,
-      createdAt: xaiModel.createdAt,
-      updatedAt: xaiModel.updatedAt,
-      modelFamily: xaiModel.modelFamily,
-      maxOutput: xaiModel.maxOutput,
-      capabilities: xaiModel.capabilities,
-      direct: true,
-    };
-  }
+    if (xaiModel) {
+      return {
+        id: xaiModel.id,
+        modelId: xaiModel.modelId,
+        name: xaiModel.name,
+        provider: "xai",
+        description: xaiModel.description,
+        contextLength: xaiModel.contextLength,
+        pricing: xaiModel.pricing,
+        isActive: xaiModel.isActive,
+        createdAt: xaiModel.createdAt,
+        updatedAt: xaiModel.updatedAt,
+        modelFamily: xaiModel.modelFamily,
+        maxOutput: xaiModel.maxOutput,
+        capabilities: xaiModel.capabilities,
+        direct: true,
+      };
+    }
 
     return null;
   } catch (error) {
@@ -375,49 +470,49 @@ export async function getProviders(): Promise<string[]> {
       deepseekModels,
       xaiModels,
     ] = await Promise.all([
-    prisma.openRouterModel.findMany({
-      where: { isActive: true },
-      select: { provider: true },
-      distinct: ["provider"],
-    }),
-    prisma.anthropicModel.findMany({
-      where: { isActive: true },
-      select: { id: true }, // Just need to check if any exist
-      take: 1,
-    }),
-    prisma.openaiModel.findMany({
-      where: { isActive: true },
-      select: { id: true },
-      take: 1,
-    }),
-    prisma.googleModel.findMany({
-      where: { isActive: true },
-      select: { id: true },
-      take: 1,
-    }),
-    prisma.deepSeekModel.findMany({
-      where: { isActive: true },
-      select: { id: true },
-      take: 1,
-    }),
-    prisma.xaiModel.findMany({
-      where: { isActive: true },
-      select: { id: true },
-      take: 1,
-    }),
-  ]);
+      prisma.openRouterModel.findMany({
+        where: { isActive: true },
+        select: { provider: true },
+        distinct: ["provider"],
+      }),
+      prisma.anthropicModel.findMany({
+        where: { isActive: true },
+        select: { id: true }, // Just need to check if any exist
+        take: 1,
+      }),
+      prisma.openaiModel.findMany({
+        where: { isActive: true },
+        select: { id: true },
+        take: 1,
+      }),
+      prisma.googleModel.findMany({
+        where: { isActive: true },
+        select: { id: true },
+        take: 1,
+      }),
+      prisma.deepSeekModel.findMany({
+        where: { isActive: true },
+        select: { id: true },
+        take: 1,
+      }),
+      prisma.xaiModel.findMany({
+        where: { isActive: true },
+        select: { id: true },
+        take: 1,
+      }),
+    ]);
 
-  const providers = new Set<string>();
+    const providers = new Set<string>();
 
-  // Add OpenRouter providers
-  openRouterProviders.forEach((p) => providers.add(p.provider));
+    // Add OpenRouter providers
+    openRouterProviders.forEach((p) => providers.add(p.provider));
 
-  // Add other providers if they have active models
-  if (anthropicModels.length > 0) providers.add("anthropic");
-  if (openaiModels.length > 0) providers.add("openai");
-  if (googleModels.length > 0) providers.add("google");
-  if (deepseekModels.length > 0) providers.add("deepseek");
-  if (xaiModels.length > 0) providers.add("xai");
+    // Add other providers if they have active models
+    if (anthropicModels.length > 0) providers.add("anthropic");
+    if (openaiModels.length > 0) providers.add("openai");
+    if (googleModels.length > 0) providers.add("google");
+    if (deepseekModels.length > 0) providers.add("deepseek");
+    if (xaiModels.length > 0) providers.add("xai");
 
     return Array.from(providers).sort();
   } catch (error) {
@@ -559,5 +654,154 @@ export const getUserPreferredModels = async () => {
       return { error: error.message };
     }
     return { error: "Failed to fetch preferred models" };
+  }
+};
+
+export const getUserModels = async () => {
+  "use server";
+  try {
+    const { userId } = await checkUser();
+    if (!userId) {
+      return { error: "Unauthorized" };
+    }
+
+    // Get user's API keys to determine which providers they have access to
+    const userApiKeys = await prisma.apiKey.findMany({
+      where: {
+        userId,
+      },
+      select: {
+        provider: true,
+      },
+    });
+
+    // Get unique providers the user has API keys for
+    const userProviders = [...new Set(userApiKeys.map((key) => key.provider))];
+
+    if (userProviders.length === 0) {
+      return [];
+    }
+
+    // Define exclusion filters for unwanted model types
+    const exclusionFilters = {
+      NOT: {
+        OR: [
+          { name: { contains: "embed" } },
+          { name: { contains: "tts" } },
+          { name: { contains: "image" } },
+        ],
+      },
+    };
+
+    // Only fetch models from providers the user has API keys for
+    const providerQueries = [];
+
+    if (userProviders.includes("openrouter")) {
+      providerQueries.push(
+        prisma.openRouterModel
+          .findMany({
+            where: {
+              isActive: true,
+              ...exclusionFilters,
+            },
+            orderBy: [{ provider: "asc" }, { name: "asc" }],
+          })
+          .then((models) => ({ provider: "openrouter", models }))
+      );
+    }
+
+    if (userProviders.includes("anthropic")) {
+      providerQueries.push(
+        prisma.anthropicModel
+          .findMany({
+            where: {
+              isActive: true,
+              ...exclusionFilters,
+            },
+            orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
+          })
+          .then((models) => ({ provider: "anthropic", models }))
+      );
+    }
+
+    if (userProviders.includes("openai")) {
+      providerQueries.push(
+        prisma.openaiModel
+          .findMany({
+            where: {
+              isActive: true,
+              ...exclusionFilters,
+            },
+            orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
+          })
+          .then((models) => ({ provider: "openai", models }))
+      );
+    }
+
+    if (userProviders.includes("google")) {
+      providerQueries.push(
+        prisma.googleModel
+          .findMany({
+            where: {
+              isActive: true,
+              ...exclusionFilters,
+            },
+            orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
+          })
+          .then((models) => ({ provider: "google", models }))
+      );
+    }
+
+    if (userProviders.includes("deepseek")) {
+      providerQueries.push(
+        prisma.deepSeekModel
+          .findMany({
+            where: {
+              isActive: true,
+              ...exclusionFilters,
+            },
+            orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
+          })
+          .then((models) => ({ provider: "deepseek", models }))
+      );
+    }
+
+    if (userProviders.includes("xai")) {
+      providerQueries.push(
+        prisma.xaiModel
+          .findMany({
+            where: {
+              isActive: true,
+              ...exclusionFilters,
+            },
+            orderBy: [{ modelFamily: "asc" }, { name: "asc" }],
+          })
+          .then((models) => ({ provider: "xai", models }))
+      );
+    }
+
+    // Execute all provider queries in parallel
+    const providerResults = await Promise.all(providerQueries);
+
+    // Transform and normalize the results
+    const userModels = providerResults.map(({ provider, models }) => {
+      const normalizedModels = models.map((model) =>
+        normalizeModel(model, provider, provider !== "openrouter")
+      );
+
+      return {
+        id: provider,
+        provider: provider,
+        models: normalizedModels,
+      };
+    });
+
+    return userModels;
+  } catch (error) {
+    console.error("Error fetching user models:", error);
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
+    return { error: "Failed to fetch user models" };
   }
 };

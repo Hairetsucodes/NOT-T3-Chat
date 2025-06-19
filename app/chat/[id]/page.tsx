@@ -1,3 +1,4 @@
+"use server";
 import { Chat } from "@/components/chat/Chat";
 import { ChatServerProvider } from "@/context/ChatServerProvider";
 import { getMessagesByConversationId } from "@/data/messages";

@@ -111,7 +111,6 @@ export async function ChatServerProvider({
     getAvailableModels(),
     getPreferredModels(),
   ] as const;
-
   // Load base data first
   const [
     conversations,
@@ -121,16 +120,13 @@ export async function ChatServerProvider({
     models,
     preferredModels,
   ] = await Promise.all(baseDataPromises);
-
   // Transform and prepare initial messages if conversation was loaded
   let initialMessages: Message[] | undefined = undefined;
   let initialConversationId: string | undefined = undefined;
   let needsClientSideLoading: string | undefined = undefined;
-
   if (conversationId) {
     try {
       // Use pre-fetched messages if provided, otherwise fetch them
-      const dbMessages = messages ?? await getMessagesByConversationId(conversationId);
 
       // Check if this conversation is currently generating
       const conversation = conversations.find(
@@ -142,9 +138,9 @@ export async function ChatServerProvider({
         // Don't prefetch messages for generating conversations
         // Let client-side setConversationId handle reconnection
         needsClientSideLoading = conversationId;
-      } else if (dbMessages && dbMessages.length > 0) {
+      } else if (messages && messages.length > 0) {
         // Only set initial messages if there are actual messages and not generating
-        initialMessages = await transformDatabaseMessages(dbMessages);
+        initialMessages = await transformDatabaseMessages(messages);
         initialConversationId = conversationId;
       }
       // If no messages and not generating, let client-side handle it
